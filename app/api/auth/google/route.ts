@@ -11,6 +11,18 @@ const GOOGLE_ISSUERS = new Set([
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const OUR_JWT_SECRET = new TextEncoder().encode(process.env.OUR_JWT_SECRET!);
 
+const accessTokenConfig = {
+  name: "bookmaker_access_token",
+  duration: "15m",
+  maxAge: Number(15 * 60),
+};
+
+const refreshTokenConfig = {
+  name: "bookmaker_refresh_token",
+  duration: "15d",
+  maxAge: Number(15 * 60 * 60 * 24),
+};
+
 async function verifyGoogleIdToken(idToken: string) {
   const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
     audience: GOOGLE_CLIENT_ID,
@@ -32,7 +44,7 @@ async function issueOurJwt(params: { userId: string; email: string }) {
     .setAudience("bookmaker-web")
     .setSubject(params.userId)
     .setIssuedAt()
-    .setExpirationTime("3h") // 3h
+    .setExpirationTime(accessTokenConfig.duration)
     .sign(OUR_JWT_SECRET);
 }
 
@@ -52,11 +64,12 @@ export async function POST(req: Request) {
     const jwt = await issueOurJwt({ userId, email });
     const res = NextResponse.json({ ok: true }, { status: 200 });
 
-    res.cookies.set("bookmaker_auth", jwt, {
+    //  TODO: set access token and refresh token
+    res.cookies.set(accessTokenConfig.name, jwt, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 3, // 3 hours
+      maxAge: accessTokenConfig.maxAge,
       path: "/",
     });
 
