@@ -1,23 +1,86 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { BookOpen } from "lucide-react";
-import Button from "../book/_components/Button";
+
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    google: any;
+  }
+}
 
 export default function LoginPage() {
+  const [loading, setLoading] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      if (!googleBtnRef.current) return;
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential?: string }) => {
+          const idToken = response.credential;
+          if (!idToken) return;
+
+          setLoading(true);
+          try {
+            const res = await fetch("/api/auth/google", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ id_token: idToken }),
+            });
+
+            if (!res.ok) throw new Error("Login failed");
+            window.location.href = "/book";
+          } finally {
+            setLoading(false);
+          }
+        },
+        auto_select: false,
+      });
+
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "pill",
+        width: 320, // 필요시 조정
+      });
+    };
+
+    document.head.appendChild(script);
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center p-4">
-      <div className="w-full max-w-sm flex flex-col items-center gap-8">
-        {/* Logo Section */}
+      <div className="w-full flex flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-3">
           <div className="h-12 w-12 bg-brand-900 text-white flex items-center justify-center rounded-sm shadow-sm">
             <BookOpen size={24} />
           </div>
-          <h1 className="text-xl font-serif text-brand-900 tracking-wide">
+          <h1 className="text-2xl md:text-5xl font-bbh-sans-hegarty text-brand-900 tracking-wide">
             BookMaker Studio
           </h1>
         </div>
 
-        <Button type="button" variant="primary" className="w-full py-3">
-          Continue with Google
-        </Button>
+        <div
+          ref={googleBtnRef}
+          className={loading ? "pointer-events-none opacity-60" : ""}
+        />
       </div>
     </div>
   );

@@ -5,6 +5,13 @@
   --foreground: #171717;
 }
 
+@theme {
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-libre-baskerville);
+  --font-bbh-sans-hegarty: var(--font-bbh-sans-hegarty);
+  --font-mono: monospace;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -23,11 +30,6 @@
   --color-ink-400: #9ca3af;
 
   --color-accent-500: #d97706; /* Muted Amber */
-
-  /* Font mapping */
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-libre-baskerville);
-  --font-mono: monospace; /* Fallback */
 }
 
 /* Custom Scrollbar from copy/index.html */
