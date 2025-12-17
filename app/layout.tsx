@@ -20,6 +20,7 @@ const bbhSansHegarty = BBH_Sans_Hegarty({
   weight: ["400"],
   variable: "--font-bbh-sans-hegarty",
   display: "swap",
+  fallback: ["Inter"],
 });
 
 export const metadata: Metadata = {
