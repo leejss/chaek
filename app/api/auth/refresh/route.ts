@@ -115,10 +115,16 @@ export async function POST(req: NextRequest) {
     // 실패 시 쿠키 정리(선택이지만 UX/보안상 권장)
     // clearAuthCookies(res);
     res.cookies.set(accessTokenConfig.name, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
       maxAge: 0,
     });
     res.cookies.set(refreshTokenConfig.name, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
       maxAge: 0,
     });
