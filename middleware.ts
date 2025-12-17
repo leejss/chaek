@@ -7,7 +7,8 @@ const PUBLIC_LOGIN_PATH = "/login";
 const POST_LOGIN_PATH = "/book";
 
 function hasAccessTokenCookie(request: NextRequest) {
-  return Boolean(request.cookies.get(accessTokenConfig.name)?.value);
+  const value = request.cookies.get(accessTokenConfig.name)?.value;
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function isProtectedPath(pathname: string) {
