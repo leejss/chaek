@@ -3,10 +3,10 @@
 import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Sparkles, RefreshCw, FileText } from "lucide-react";
-import { useBook } from "../_lib/bookContext";
+import { useBook } from "@/lib/book/bookContext";
 import Button from "../_components/Button";
 import MarkdownRenderer from "../_components/MarkdownRenderer";
-import { GeminiModel } from "../_lib/types";
+import { GeminiModel } from "@/lib/book/types";
 
 export default function CreateBookPage() {
   const router = useRouter();

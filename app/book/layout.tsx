@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "../globals.css";
-import BookProvider from "./_lib/bookContext";
+import BookProvider from "@/lib/book/bookContext";
 import Link from "next/link";
 import { Settings } from "lucide-react";
 

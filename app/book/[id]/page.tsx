@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ChevronLeft, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import { useBook } from "../../_lib/bookContext";
+import { useBook } from "@/lib/book/bookContext";
 import Button from "../../_components/Button";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
-import { Book } from "../../_lib/types";
+import { Book } from "@/lib/book/types";
 
 export default function BookDetailPage() {
   const router = useRouter();

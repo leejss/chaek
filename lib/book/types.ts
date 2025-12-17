@@ -5,7 +5,12 @@ export interface Book {
   sourceText?: string;
   tableOfContents: string[];
   content: string;
-  status: 'draft' | 'generating_toc' | 'toc_review' | 'generating_book' | 'completed';
+  status:
+    | "draft"
+    | "generating_toc"
+    | "toc_review"
+    | "generating_book"
+    | "completed";
   selectedModel?: GeminiModel;
 }
 
@@ -16,8 +21,8 @@ export interface User {
 }
 
 export enum GeminiModel {
-  FLASH = 'gemini-2.5-flash',
-  PRO = 'gemini-2.5-pro',
+  FLASH = "gemini-2.5-flash",
+  PRO = "gemini-2.5-pro",
 }
 
 export type BookDraft = {
@@ -27,7 +32,7 @@ export type BookDraft = {
   sourceText: string;
   tableOfContents: string[];
   content: string;
-  status: Book['status'];
+  status: Book["status"];
   selectedModel?: GeminiModel;
 };
 
@@ -53,4 +58,3 @@ export type BookActions = {
   setSelectedModel: (model: GeminiModel) => void;
   getBookById: (id: string) => Book | undefined;
 };
-

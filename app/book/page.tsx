@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Plus, ChevronLeft } from "lucide-react";
-import { useBook } from "./_lib/bookContext";
+import { useBook } from "@/lib/book/bookContext";
 import Button from "./_components/Button";
 import EmptyState from "./_components/EmptyState";
 

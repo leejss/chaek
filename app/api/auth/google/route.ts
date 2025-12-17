@@ -1,74 +1,18 @@
+import { requireEnv } from "@/lib/env";
+import { HttpError } from "@/lib/errors";
+import { readJson } from "@/lib/request";
+import { isString } from "@/lib/typeGuards";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
-import { HttpError, isString, readJson, requireEnv } from "@/app/_lib/http";
-import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
-import { NextResponse } from "next/server";
+import {
+  accessTokenConfig,
+  issueAccessJWT,
+  refreshTokenConfig,
+  verifyGoogleIdToken,
+} from "@/lib/auth";
 import { generateRandomToken, sha256Hex } from "@/utils";
-import { add } from "date-fns";
-
-const GOOGLE_JWKS = createRemoteJWKSet(
-  new URL("https://www.googleapis.com/oauth2/v3/certs"),
-);
-const GOOGLE_ISSUERS = [
-  "https://accounts.google.com",
-  "accounts.google.com",
-] as const;
-
-const accessTokenConfig = {
-  name: "bookmaker_access_token",
-  duration: "15m",
-  maxAge: 15 * 60,
-};
-
-const refreshTokenConfig = {
-  name: "bookmaker_refresh_token",
-  duration: { days: 30 },
-  maxAge: 30 * 24 * 60 * 60,
-};
-
-async function verifyGoogleIdToken(idToken: string, googleClientId: string) {
-  try {
-    const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
-      audience: googleClientId,
-      issuer: [...GOOGLE_ISSUERS],
-    });
-
-    if (payload.email_verified !== true) {
-      throw new HttpError(401, "Invalid credentials");
-    }
-    if (!isString(payload.sub) || !isString(payload.email)) {
-      throw new HttpError(401, "Invalid credentials");
-    }
-
-    return { sub: payload.sub, email: payload.email };
-  } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    throw new HttpError(401, "Invalid credentials");
-  }
-}
-
-async function issueOurJwt(params: {
-  userId: string;
-  email: string;
-  secret: Uint8Array;
-}) {
-  const jwt = new SignJWT({ email: params.email })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuer("bookmaker")
-    .setAudience("bookmaker-web")
-    .setSubject(params.userId)
-    .setIssuedAt()
-    .setExpirationTime(accessTokenConfig.duration);
-
-  // Optional, but useful for debugging / revocation strategies.
-  if (typeof globalThis.crypto?.randomUUID === "function") {
-    jwt.setJti(globalThis.crypto.randomUUID());
-  }
-
-  return jwt.sign(params.secret);
-}
+import { add, Duration } from "date-fns";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
@@ -102,7 +46,7 @@ export async function POST(req: Request) {
       throw new Error("Failed to upsert user");
     }
 
-    const jwt = await issueOurJwt({
+    const jwt = await issueAccessJWT({
       userId: user.id,
       email: user.email,
       secret: ourJwtSecret,
@@ -115,7 +59,7 @@ export async function POST(req: Request) {
     await db.insert(refreshTokens).values({
       userId: user.id,
       tokenHash: refreshTokenHash,
-      expiresAt: add(new Date(), refreshTokenConfig.duration),
+      expiresAt: add(new Date(), refreshTokenConfig.duration as Duration),
     });
 
     const res = NextResponse.json({ ok: true }, { status: 200 });

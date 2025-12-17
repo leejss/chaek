@@ -8,7 +8,10 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { generateTableOfContents, streamBookGeneration } from "./geminiService";
+import {
+  generateTableOfContents,
+  streamBookGeneration,
+} from "@/lib/book/geminiService";
 import {
   Book,
   BookActions,
@@ -16,8 +19,8 @@ import {
   BookDraft,
   GeminiModel,
   User,
-} from "./types";
-import { clearMockAuth, readMockAuth, setMockAuth } from "../../_lib/authMock";
+} from "@/lib/book/types";
+import { clearMockAuth, readMockAuth, setMockAuth } from "@/lib/authMock";
 
 type BookContextValue = {
   state: BookContextState;
@@ -243,3 +246,5 @@ export const useBook = () => {
 };
 
 export default BookProvider;
+
+
