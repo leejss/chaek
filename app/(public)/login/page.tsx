@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BookOpen } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 declare global {
   interface Window {
@@ -13,6 +14,7 @@ declare global {
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -41,7 +43,17 @@ export default function LoginPage() {
             });
 
             if (!res.ok) throw new Error("Login failed");
-            window.location.href = "/book";
+
+            const next = searchParams.get("next");
+            const safeNext =
+              next &&
+              next.startsWith("/") &&
+              !next.startsWith("//") &&
+              !next.includes("://")
+                ? next
+                : null;
+
+            window.location.href = safeNext ?? "/book";
           } finally {
             setLoading(false);
           }

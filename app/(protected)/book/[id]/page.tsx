@@ -5,8 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { ChevronLeft, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import { useBook } from "@/lib/book/bookContext";
-import Button from "../../_components/Button";
-import MarkdownRenderer from "../../_components/MarkdownRenderer";
+import Button from "../_components/Button";
+import MarkdownRenderer from "../_components/MarkdownRenderer";
 import { Book } from "@/lib/book/types";
 
 export default function BookDetailPage() {

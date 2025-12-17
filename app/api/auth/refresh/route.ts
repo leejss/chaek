@@ -1,11 +1,13 @@
 import { HttpError } from "@/lib/errors";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
+import { issueAccessJWT } from "@/lib/auth";
 import {
+  accessAuthCookieOptions,
   accessTokenConfig,
-  issueAccessJWT,
+  refreshAuthCookieOptions,
   refreshTokenConfig,
-} from "@/lib/auth";
+} from "@/lib/authTokens";
 import { generateRandomToken, sha256Hex } from "@/utils";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
@@ -84,19 +86,11 @@ export async function POST(req: NextRequest) {
     });
 
     res.cookies.set(accessTokenConfig.name, newAccessJwt, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: accessTokenConfig.maxAge,
-      path: "/",
+      ...accessAuthCookieOptions,
     });
 
     res.cookies.set(refreshTokenConfig.name, newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: refreshTokenConfig.maxAge,
-      path: "/",
+      ...refreshAuthCookieOptions,
     });
     return res;
   } catch (error) {
@@ -115,17 +109,11 @@ export async function POST(req: NextRequest) {
     // 실패 시 쿠키 정리(선택이지만 UX/보안상 권장)
     // clearAuthCookies(res);
     res.cookies.set(accessTokenConfig.name, "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
+      ...accessAuthCookieOptions,
       maxAge: 0,
     });
     res.cookies.set(refreshTokenConfig.name, "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
+      ...refreshAuthCookieOptions,
       maxAge: 0,
     });
     return res;

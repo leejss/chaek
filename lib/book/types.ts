@@ -37,8 +37,6 @@ export type BookDraft = {
 };
 
 export type BookContextState = {
-  isAuthenticated: boolean;
-  currentUser: User | null;
   books: Book[];
   currentBook: BookDraft;
   streamingContent: string;
@@ -47,8 +45,6 @@ export type BookContextState = {
 };
 
 export type BookActions = {
-  login: () => void;
-  logout: () => void;
   startNewBook: () => void;
   updateDraft: (draft: Partial<BookDraft>) => void;
   setActiveBook: (book: BookDraft) => void;

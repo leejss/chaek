@@ -4,7 +4,6 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -18,9 +17,7 @@ import {
   BookContextState,
   BookDraft,
   GeminiModel,
-  User,
 } from "@/lib/book/types";
-import { clearMockAuth, readMockAuth, setMockAuth } from "@/lib/authMock";
 
 type BookContextValue = {
   state: BookContextState;
@@ -37,43 +34,14 @@ const emptyDraft: BookDraft = {
   selectedModel: GeminiModel.FLASH,
 };
 
-const defaultUser: User = {
-  id: "u1",
-  name: "Author",
-  email: "author@bookmaker.com",
-};
-
 const BookProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [currentBook, setCurrentBook] = useState<BookDraft>(emptyDraft);
   const [streamingContent, setStreamingContent] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const login = useCallback(() => {
-    setIsAuthenticated(true);
-    setCurrentUser(defaultUser);
-    setMockAuth();
-  }, []);
-
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setCurrentBook(emptyDraft);
-    setStreamingContent("");
-    clearMockAuth();
-  }, []);
-
-  useEffect(() => {
-    if (readMockAuth()) {
-      setIsAuthenticated(true);
-      setCurrentUser(defaultUser);
-    }
-  }, []);
 
   const startNewBook = useCallback(() => {
     setCurrentBook(emptyDraft);
@@ -184,29 +152,17 @@ const BookProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const state: BookContextState = useMemo(
     () => ({
-      isAuthenticated,
-      currentUser,
       books,
       currentBook,
       streamingContent,
       isProcessing,
       error,
     }),
-    [
-      books,
-      currentBook,
-      currentUser,
-      error,
-      isAuthenticated,
-      isProcessing,
-      streamingContent,
-    ],
+    [books, currentBook, error, isProcessing, streamingContent],
   );
 
   const actions: BookActions = useMemo(
     () => ({
-      login,
-      logout,
       startNewBook,
       updateDraft,
       setActiveBook,
@@ -219,8 +175,6 @@ const BookProvider: React.FC<{ children: React.ReactNode }> = ({
     [
       generateTOC,
       getBookById,
-      login,
-      logout,
       regenerateTOC,
       setActiveBook,
       setSelectedModel,
@@ -246,5 +200,3 @@ export const useBook = () => {
 };
 
 export default BookProvider;
-
-

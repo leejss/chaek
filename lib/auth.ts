@@ -1,6 +1,9 @@
 import { HttpError } from "@/lib/errors";
 import { isString } from "@/lib/typeGuards";
 import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
+import { accessTokenConfig } from "./authTokens";
+
+export { accessTokenConfig, refreshTokenConfig } from "./authTokens";
 
 export const GOOGLE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs"),
@@ -9,18 +12,6 @@ export const GOOGLE_ISSUERS = [
   "https://accounts.google.com",
   "accounts.google.com",
 ] as const;
-
-export const accessTokenConfig = {
-  name: "bookmaker_access_token",
-  duration: "15m",
-  maxAge: 15 * 60,
-};
-
-export const refreshTokenConfig = {
-  name: "bookmaker_refresh_token",
-  duration: { days: 30 },
-  maxAge: 30 * 24 * 60 * 60,
-};
 
 export async function verifyGoogleIdToken(
   idToken: string,

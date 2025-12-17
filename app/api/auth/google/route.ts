@@ -4,12 +4,13 @@ import { readJson } from "@/lib/request";
 import { isString } from "@/lib/typeGuards";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
+import { issueAccessJWT, verifyGoogleIdToken } from "@/lib/auth";
 import {
+  accessAuthCookieOptions,
   accessTokenConfig,
-  issueAccessJWT,
+  refreshAuthCookieOptions,
   refreshTokenConfig,
-  verifyGoogleIdToken,
-} from "@/lib/auth";
+} from "@/lib/authTokens";
 import { generateRandomToken, sha256Hex } from "@/utils";
 import { add, Duration } from "date-fns";
 import { NextResponse } from "next/server";
@@ -65,19 +66,11 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ ok: true }, { status: 200 });
 
     res.cookies.set(accessTokenConfig.name, jwt, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: accessTokenConfig.maxAge,
-      path: "/",
+      ...accessAuthCookieOptions,
     });
 
     res.cookies.set(refreshTokenConfig.name, refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: refreshTokenConfig.maxAge,
-      path: "/",
+      ...refreshAuthCookieOptions,
     });
 
     return res;
