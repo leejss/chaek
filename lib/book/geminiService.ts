@@ -1,12 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { GeminiModel } from "@/lib/book/types";
 
-const apiKey = process.env.API_KEY;
+import { env } from "@/lib/env";
 
-if (!apiKey) {
-  // Fail fast to avoid leaking requests without credentials.
-  console.warn("Gemini API_KEY is not set. Book generation will be disabled.");
-}
+const apiKey = env.API_KEY;
 
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 

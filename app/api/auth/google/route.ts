@@ -1,4 +1,3 @@
-import { requireEnv } from "@/lib/env";
 import { HttpError } from "@/lib/errors";
 import { readJson } from "@/lib/request";
 import { isString } from "@/lib/typeGuards";
@@ -14,6 +13,7 @@ import {
 import { generateRandomToken, sha256Hex } from "@/utils";
 import { add, Duration } from "date-fns";
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 
 export async function POST(req: Request) {
   try {
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       throw new HttpError(400, "Missing id_token");
     }
 
-    const googleClientId = requireEnv("GOOGLE_CLIENT_ID");
-    const ourJwtSecret = new TextEncoder().encode(requireEnv("OUR_JWT_SECRET"));
+    const googleClientId = env.GOOGLE_CLIENT_ID;
+    const ourJwtSecret = new TextEncoder().encode(env.OUR_JWT_SECRET);
 
     // Verify Google ID token
     const { sub: googleSub, email } = await verifyGoogleIdToken(
