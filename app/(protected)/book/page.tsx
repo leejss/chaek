@@ -1,24 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Plus, ChevronLeft } from "lucide-react";
-import { useBook } from "@/lib/book/bookContext";
+import { Plus, ChevronLeft, Library } from "lucide-react";
+import { useBookStore } from "@/lib/book/bookContext";
+import { Book } from "@/lib/book/types";
 import Button from "./_components/Button";
-import EmptyState from "./_components/EmptyState";
 
 export default function LibraryPage() {
   const router = useRouter();
-  const {
-    state: { books },
-    actions: { startNewBook, setActiveBook },
-  } = useBook();
+  const books = useBookStore((state) => state.books);
+  const { startNewBook, setActiveBook } = useBookStore(
+    (state) => state.actions,
+  );
 
   const handleStartNewBook = () => {
     startNewBook();
     router.push("/book/new");
   };
 
-  const handleBookClick = (book: any) => {
+  const handleBookClick = (book: Book) => {
     setActiveBook(book);
     if (book.status === "completed") {
       router.push(`/book/${book.id}`);
@@ -37,14 +37,29 @@ export default function LibraryPage() {
             Manage your generated literary works.
           </p>
         </div>
-        <Button onClick={handleStartNewBook}>
-          <Plus size={18} className="mr-2" />
-          Create New Book
-        </Button>
+        {books.length > 0 && (
+          <Button onClick={handleStartNewBook}>
+            <Plus size={18} className="mr-2" />
+            Create New Book
+          </Button>
+        )}
       </div>
 
       {books.length === 0 ? (
-        <EmptyState onCreate={handleStartNewBook} />
+        <div className="flex flex-col items-center justify-center h-96 text-center border-2 border-dashed border-stone-200 rounded-lg bg-stone-50/50">
+          <Library size={48} className="text-stone-300 mb-4" />
+          <h3 className="text-xl font-serif text-stone-700 mb-2">
+            No books created yet
+          </h3>
+          <p className="text-stone-500 mb-6 max-w-sm">
+            Your library is empty. Start your first masterpiece by converting
+            raw ideas into structured chapters.
+          </p>
+          <Button onClick={handleStartNewBook}>
+            <Plus size={18} className="mr-2" />
+            Create New Book
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {books.map((book) => (

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Sparkles, RefreshCw, FileText } from "lucide-react";
-import { useBook } from "@/lib/book/bookContext";
+import { useBookStore } from "@/lib/book/bookContext";
 import Button from "../_components/Button";
 import MarkdownRenderer from "../_components/MarkdownRenderer";
 import { GeminiModel } from "@/lib/book/types";
@@ -12,16 +12,16 @@ export default function CreateBookPage() {
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const currentBook = useBookStore((state) => state.currentBook);
+  const isProcessing = useBookStore((state) => state.isProcessing);
+  const streamingContent = useBookStore((state) => state.streamingContent);
   const {
-    state: { currentBook, isProcessing, streamingContent },
-    actions: {
-      updateDraft,
-      generateTOC,
-      regenerateTOC,
-      startBookGeneration,
-      setSelectedModel,
-    },
-  } = useBook();
+    updateDraft,
+    generateTOC,
+    regenerateTOC,
+    startBookGeneration,
+    setSelectedModel,
+  } = useBookStore((state) => state.actions);
 
   // Scroll to bottom during generation
   useEffect(() => {

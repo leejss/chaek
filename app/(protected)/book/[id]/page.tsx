@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ChevronLeft, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import { useBook } from "@/lib/book/bookContext";
+import { useBookStore } from "@/lib/book/bookContext";
 import Button from "../_components/Button";
 import MarkdownRenderer from "../_components/MarkdownRenderer";
 import { Book } from "@/lib/book/types";
@@ -12,9 +12,7 @@ import { Book } from "@/lib/book/types";
 export default function BookDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const {
-    actions: { getBookById },
-  } = useBook();
+  const { getBookById } = useBookStore((state) => state.actions);
   const [book, setBook] = useState<Book | undefined>(undefined);
 
   useEffect(() => {
