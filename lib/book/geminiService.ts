@@ -3,29 +3,18 @@ import { GeminiModel } from "@/lib/book/types";
 
 import { env } from "@/lib/env";
 
-const apiKey = env.API_KEY;
-
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
-
-const ensureClient = () => {
-  if (!ai) {
-    throw new Error(
-      "API key missing. Please set API_KEY in environment variables.",
-    );
-  }
-  return ai;
-};
+const apiKey = env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+const ai = new GoogleGenAI({ apiKey });
 
 export const generateTableOfContents = async (
   sourceText: string,
 ): Promise<string[]> => {
-  const client = ensureClient();
-  const response = await client.models.generateContent({
+  const response = await ai.models.generateContent({
     model: GeminiModel.FLASH,
     contents: `You are an expert book editor. Create a compelling Table of Contents (list of chapter titles) based on the following source text.
       
       SOURCE TEXT:
-      ${sourceText.substring(0, 20000)}... (truncated if too long)
+      ${sourceText}
       
       Return ONLY a JSON array of strings, where each string is a chapter title. Do not include "Chapter 1" prefixes unless necessary for context.`,
     config: {
@@ -54,7 +43,6 @@ export async function* streamBookGeneration(
   sourceText: string,
   model: GeminiModel,
 ): AsyncGenerator<string, void, unknown> {
-  const client = ensureClient();
   const prompt = `
     You are a professional author. Write a book based on the provided Table of Contents and Source Text.
     
@@ -62,7 +50,7 @@ export async function* streamBookGeneration(
     ${toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
     
     SOURCE MATERIAL:
-    ${sourceText.substring(0, 30000)}
+    ${sourceText.substring(0, 1000000)}
     
     INSTRUCTIONS:
     - Write in Markdown format.
@@ -73,7 +61,7 @@ export async function* streamBookGeneration(
     - Use an elegant, sophisticated tone.
     `;
 
-  const streamResponse = await client.models.generateContentStream({
+  const streamResponse = await ai.models.generateContentStream({
     model,
     contents: prompt,
   });
