@@ -22,7 +22,7 @@ export interface User {
 
 export enum GeminiModel {
   FLASH = "gemini-3-flash-preview",
-  PRO = "gemini-3-pro",
+  PRO = "gemini-3-pro-preview",
 }
 
 export type BookDraft = {

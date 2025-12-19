@@ -11,7 +11,7 @@ interface TOCReviewStepProps {
   isProcessing: boolean;
   onSetSelectedModel: (model: GeminiModel) => void;
   onRegenerateTOC: () => void;
-  onStartGeneration: () => void;
+  onStartGeneration: (model: GeminiModel) => void;
 }
 
 export default function TOCReviewStep({
@@ -58,8 +58,8 @@ export default function TOCReviewStep({
             value={selectedModel || GeminiModel.FLASH}
             onChange={(e) => onSetSelectedModel(e.target.value as GeminiModel)}
           >
-            <option value={GeminiModel.FLASH}>Gemini 2.5 Flash (Fast)</option>
-            <option value={GeminiModel.PRO}>Gemini 2.5 Pro (Quality)</option>
+            <option value={GeminiModel.FLASH}>Gemini 3 Flash (Fast)</option>
+            <option value={GeminiModel.PRO}>Gemini 3 Pro (Quality)</option>
           </select>
         </div>
 
@@ -73,7 +73,10 @@ export default function TOCReviewStep({
             <RefreshCw size={16} className="mr-2" />
             Regenerate TOC
           </Button>
-          <Button onClick={onStartGeneration} className="flex-2">
+          <Button
+            onClick={() => onStartGeneration(selectedModel)}
+            className="flex-2"
+          >
             <FileText size={16} className="mr-2" />
             Start Book Generation
           </Button>
@@ -82,4 +85,3 @@ export default function TOCReviewStep({
     </div>
   );
 }
-

@@ -50,7 +50,7 @@ export async function* streamBookGeneration(
     ${toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
     
     SOURCE MATERIAL:
-    ${sourceText.substring(0, 1000000)}
+    ${sourceText}
     
     INSTRUCTIONS:
     - Write in Markdown format.

@@ -89,7 +89,7 @@ export default function CreateBookPage() {
             isProcessing={isProcessing}
             onSetSelectedModel={setSelectedModel}
             onRegenerateTOC={regenerateTOC}
-            onStartGeneration={startBookGeneration}
+            onStartGeneration={(model) => startBookGeneration(model)}
           />
         )}
 

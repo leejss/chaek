@@ -14,6 +14,10 @@ import {
   GeminiModel,
 } from "@/lib/book/types";
 
+const isGeminiModel = (value: unknown): value is GeminiModel => {
+  return value === GeminiModel.FLASH || value === GeminiModel.PRO;
+};
+
 const emptyDraft: BookDraft = {
   status: "draft",
   sourceText: "",
@@ -133,8 +137,11 @@ export const useBookStore = create<
             return;
           }
 
+          // React event handler로 연결될 때 MouseEvent가 들어오는 경우를 방지
           const selectedModel =
-            model || currentBook.selectedModel || GeminiModel.FLASH;
+            (isGeminiModel(model) ? model : undefined) ||
+            currentBook.selectedModel ||
+            GeminiModel.FLASH;
 
           set(
             (state) => ({
