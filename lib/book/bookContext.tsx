@@ -2,10 +2,7 @@
 
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
-import {
-  generateTableOfContents,
-  streamBookGeneration,
-} from "@/lib/book/geminiService";
+import { generateTableOfContents, streamBookGeneration } from "@/lib/ai/gemini";
 import {
   Book,
   BookActions,
