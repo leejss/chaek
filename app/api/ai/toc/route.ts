@@ -1,35 +1,58 @@
-import { NextResponse } from "next/server";
-import { generateTableOfContents as generateGeminiTOC } from "@/lib/ai/gemini";
+import { z } from "zod";
 import { generateTableOfContents as generateClaudeTOC } from "@/lib/ai/claude";
-import { AIProvider } from "@/lib/book/types";
-import { readJson } from "@/utils";
+import { generateTableOfContents as generateGeminiTOC } from "@/lib/ai/gemini";
+import { getProviderByModel, isValidModel } from "@/lib/ai/config";
+import { AIProvider, ClaudeModel } from "@/lib/book/types";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { getProviderByModel } from "@/lib/ai/config";
+import { readJson } from "@/utils";
+import { NextResponse } from "next/server";
+
+const tocRequestSchema = z
+  .object({
+    sourceText: z.string().min(1, "Must be a non-empty string"),
+    provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
+    model: z
+      .string()
+      .min(1, "Must be a non-empty string")
+      .refine(isValidModel, {
+        message: "Unknown model",
+      }),
+  })
+  .refine(
+    (data) => {
+      const expectedProvider = getProviderByModel(data.model);
+      return expectedProvider === data.provider;
+    },
+    {
+      message: "Provider does not match model",
+      path: ["provider"],
+    },
+  );
+
+function parseAndValidateBody(body: unknown) {
+  const result = tocRequestSchema.safeParse(body);
+
+  if (!result.success) {
+    throw new HttpError(400, "Invalid request body");
+  }
+
+  return result.data;
+}
 
 export async function POST(req: Request) {
   try {
     const body = await readJson(req);
-    const { sourceText, provider, model } = body as {
-      sourceText: string;
-      provider: AIProvider;
-      model: string;
-    };
+    const { sourceText, provider, model } = parseAndValidateBody(body);
 
-    if (!sourceText) {
-      throw new HttpError(400, "sourceText is required");
-    }
+    console.log("TOC generation API request:", { sourceText, provider, model });
 
     let toc: string[];
-    const activeProvider =
-      provider || (model ? getProviderByModel(model) : undefined);
 
-    if (activeProvider === AIProvider.ANTHROPIC) {
-      toc = await generateClaudeTOC(sourceText);
+    if (provider === AIProvider.ANTHROPIC) {
+      toc = await generateClaudeTOC(sourceText, model as ClaudeModel);
     } else {
-      // 기본값은 Google Gemini
       toc = await generateGeminiTOC(sourceText);
     }
-
     return NextResponse.json({ toc });
   } catch (error) {
     console.error("TOC generation API error:", error);
@@ -42,8 +65,13 @@ export async function POST(req: Request) {
         : null;
 
     if (httpError) {
+      const details = (httpError as unknown as { details?: unknown }).details;
       return NextResponse.json(
-        { error: httpError.publicMessage, ok: false },
+        {
+          error: httpError.publicMessage,
+          ok: false,
+          ...(details ? { details } : {}),
+        },
         { status: httpError.status },
       );
     }

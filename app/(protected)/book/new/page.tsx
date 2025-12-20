@@ -89,6 +89,7 @@ export default function CreateBookPage() {
         {currentBook.status === "draft" && (
           <SourceInputStep
             sourceText={currentBook.sourceText || ""}
+            selectedModel={currentBook.selectedModel || GeminiModel.FLASH}
             isProcessing={isProcessing}
             onUpdateDraft={updateDraft}
             onGenerateTOC={generateTOC}

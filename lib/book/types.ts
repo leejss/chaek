@@ -28,8 +28,8 @@ export enum GeminiModel {
 }
 
 export enum ClaudeModel {
-  SONNET = "claude-4-5-sonnet-latest",
-  HAIKU = "claude-4-5-haiku-latest",
+  SONNET = "claude-sonnet-4-5-20250929",
+  HAIKU = "claude-haiku-4-5-20251001",
 }
 
 export enum AIProvider {

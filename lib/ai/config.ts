@@ -35,12 +35,12 @@ export const AI_CONFIG: ProviderConfig[] = [
     models: [
       {
         id: ClaudeModel.SONNET,
-        name: "Claude 3.5 Sonnet",
+        name: "Claude 4.5 Sonnet",
         description: "Balanced performance and quality",
       },
       {
         id: ClaudeModel.HAIKU,
-        name: "Claude 3.5 Haiku",
+        name: "Claude 4.5 Haiku",
         description: "Lightweight and fast",
       },
     ],

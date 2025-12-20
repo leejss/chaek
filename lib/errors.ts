@@ -10,16 +10,15 @@ export class HttpError extends Error {
   }
 }
 
-export class ConfigError extends Error {
-  public readonly missingEnv?: string;
+// export class ConfigError extends Error {
+//   public readonly missingEnv?: string;
 
-  constructor(params?: { missingEnv?: string }) {
-    // IMPORTANT: keep message generic so it never leaks sensitive details.
-    super("Server misconfigured");
-    this.name = "ConfigError";
-    this.missingEnv = params?.missingEnv;
-  }
-}
+//   constructor(params?: { missingEnv?: string }) {
+//     super("Server misconfigured");
+//     this.name = "ConfigError";
+//     this.missingEnv = params?.missingEnv;
+//   }
+// }
 
 export class InvalidJsonError extends Error {
   constructor() {
