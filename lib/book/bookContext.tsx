@@ -2,31 +2,33 @@
 
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
-import { generateTableOfContents, streamBookGeneration } from "@/lib/ai/gemini";
+import { fetchStreamChapter, fetchTOC } from "@/lib/ai/fetch";
 import {
   Book,
   BookActions,
   BookContextState,
   BookDraft,
+  ClaudeModel,
   GeminiModel,
 } from "@/lib/book/types";
-
-const isGeminiModel = (value: unknown): value is GeminiModel => {
-  return value === GeminiModel.FLASH || value === GeminiModel.PRO;
-};
+import { DEFAULT_MODEL, DEFAULT_PROVIDER, isValidModel } from "@/lib/ai/config";
 
 const emptyDraft: BookDraft = {
   status: "draft",
   sourceText: "",
   tableOfContents: [],
   content: "",
-  selectedModel: GeminiModel.FLASH,
+  selectedProvider: DEFAULT_PROVIDER,
+  selectedModel: DEFAULT_MODEL,
 };
 
 const initialState: BookContextState = {
   books: [],
   currentBook: emptyDraft,
   streamingContent: "",
+  currentChapterIndex: null,
+  currentChapterContent: "",
+  awaitingChapterDecision: false,
   isProcessing: false,
   error: null,
 };
@@ -36,12 +38,35 @@ export const useBookStore = create<
 >()(
   devtools(
     combine(initialState, (set, get) => {
+      let chapterDecisionResolver:
+        | ((decision: "confirm" | "cancel") => void)
+        | null = null;
+      let generationCancelled = false;
+
+      const waitForChapterDecision = () => {
+        return new Promise<"confirm" | "cancel">((resolve) => {
+          chapterDecisionResolver = resolve;
+        });
+      };
+
+      const resolveChapterDecision = (decision: "confirm" | "cancel") => {
+        if (chapterDecisionResolver) {
+          chapterDecisionResolver(decision);
+          chapterDecisionResolver = null;
+        }
+      };
+
       const actions: BookActions = {
         startNewBook: () => {
+          generationCancelled = false;
+          resolveChapterDecision("cancel");
           set(
             {
               currentBook: emptyDraft,
               streamingContent: "",
+              currentChapterIndex: null,
+              currentChapterContent: "",
+              awaitingChapterDecision: false,
               error: null,
             },
             false,
@@ -67,6 +92,9 @@ export const useBookStore = create<
                 sourceText: book.sourceText || "",
               } as BookDraft,
               streamingContent: book.content || "",
+              currentChapterIndex: null,
+              currentChapterContent: "",
+              awaitingChapterDecision: false,
             },
             false,
             "book/setActiveBook",
@@ -91,7 +119,12 @@ export const useBookStore = create<
           );
 
           try {
-            const toc = await generateTableOfContents(sourceText);
+            const { currentBook } = get();
+            const toc = await fetchTOC(
+              sourceText,
+              currentBook.selectedProvider,
+              currentBook.selectedModel,
+            );
             set(
               (state) => ({
                 currentBook: {
@@ -123,7 +156,7 @@ export const useBookStore = create<
           await actions.generateTOC(currentBook.sourceText || "");
         },
 
-        startBookGeneration: async (model) => {
+        startBookGeneration: async (provider, model) => {
           const { currentBook } = get();
           if (!currentBook.tableOfContents.length) {
             set(
@@ -134,20 +167,29 @@ export const useBookStore = create<
             return;
           }
 
+          const selectedProvider =
+            provider || currentBook.selectedProvider || DEFAULT_PROVIDER;
+
           // React event handler로 연결될 때 MouseEvent가 들어오는 경우를 방지
           const selectedModel =
-            (isGeminiModel(model) ? model : undefined) ||
+            (model && typeof model === "string" && isValidModel(model)
+              ? (model as GeminiModel | ClaudeModel)
+              : undefined) ||
             currentBook.selectedModel ||
-            GeminiModel.FLASH;
+            DEFAULT_MODEL;
 
           set(
             (state) => ({
               currentBook: {
                 ...state.currentBook,
                 status: "generating_book",
+                selectedProvider,
                 selectedModel,
               },
               streamingContent: "",
+              currentChapterIndex: 0,
+              currentChapterContent: "",
+              awaitingChapterDecision: false,
               error: null,
             }),
             false,
@@ -155,18 +197,100 @@ export const useBookStore = create<
           );
 
           try {
+            generationCancelled = false;
             let fullContent = "";
-            for await (const chunk of streamBookGeneration(
-              currentBook.tableOfContents,
-              currentBook.sourceText || "",
-              selectedModel,
-            )) {
-              fullContent += chunk;
+
+            for (let i = 0; i < currentBook.tableOfContents.length; i++) {
+              if (generationCancelled) break;
+
+              const chapterTitle = currentBook.tableOfContents[i];
+              let chapterContent = "";
+
               set(
-                { streamingContent: fullContent },
+                {
+                  currentChapterIndex: i,
+                  currentChapterContent: "",
+                  awaitingChapterDecision: false,
+                  error: null,
+                  currentBook: {
+                    ...get().currentBook,
+                    status: "generating_book",
+                  },
+                },
                 false,
-                "book/streaming_content",
+                "book/startChapterGeneration_start",
               );
+
+              for await (const chunk of fetchStreamChapter({
+                toc: currentBook.tableOfContents,
+                chapterTitle,
+                chapterNumber: i + 1,
+                sourceText: currentBook.sourceText || "",
+                provider: selectedProvider,
+                model: selectedModel,
+              })) {
+                if (generationCancelled) break;
+
+                chapterContent += chunk;
+                set(
+                  {
+                    currentChapterContent: chapterContent,
+                    streamingContent: fullContent + chapterContent,
+                  },
+                  false,
+                  "book/streaming_chapter_content",
+                );
+              }
+
+              if (generationCancelled) break;
+
+              set(
+                (state) => ({
+                  awaitingChapterDecision: true,
+                  currentBook: {
+                    ...state.currentBook,
+                    status: "chapter_review",
+                  },
+                }),
+                false,
+                "book/chapter_review_start",
+              );
+
+              const decision = await waitForChapterDecision();
+              if (decision === "cancel") {
+                generationCancelled = true;
+                break;
+              }
+
+              fullContent += chapterContent + "\n\n";
+              set(
+                {
+                  streamingContent: fullContent,
+                  awaitingChapterDecision: false,
+                  currentChapterContent: "",
+                  currentBook: {
+                    ...get().currentBook,
+                    status: "generating_book",
+                  },
+                },
+                false,
+                "book/chapter_confirmed",
+              );
+            }
+
+            if (generationCancelled) {
+              set(
+                (state) => ({
+                  error: "생성이 취소되었습니다.",
+                  awaitingChapterDecision: false,
+                  currentChapterIndex: null,
+                  currentChapterContent: "",
+                  currentBook: { ...state.currentBook, status: "toc_review" },
+                }),
+                false,
+                "book/generation_cancelled",
+              );
+              return;
             }
 
             const newBook: Book = {
@@ -187,6 +311,9 @@ export const useBookStore = create<
                   ...newBook,
                   sourceText: newBook.sourceText || "",
                 } as BookDraft,
+                currentChapterIndex: null,
+                currentChapterContent: "",
+                awaitingChapterDecision: false,
               }),
               false,
               "book/startBookGeneration_success",
@@ -196,6 +323,9 @@ export const useBookStore = create<
             set(
               (state) => ({
                 error: "본문 생성 중 오류가 발생했습니다.",
+                awaitingChapterDecision: false,
+                currentChapterIndex: null,
+                currentChapterContent: "",
                 currentBook: { ...state.currentBook, status: "toc_review" },
               }),
               false,
@@ -204,10 +334,33 @@ export const useBookStore = create<
           }
         },
 
-        setSelectedModel: (model) => {
+        confirmChapter: () => {
+          set({ awaitingChapterDecision: false }, false, "book/confirmChapter");
+          resolveChapterDecision("confirm");
+        },
+
+        cancelGeneration: () => {
+          generationCancelled = true;
+          set(
+            {
+              awaitingChapterDecision: false,
+              currentChapterIndex: null,
+              currentChapterContent: "",
+            },
+            false,
+            "book/cancelGeneration",
+          );
+          resolveChapterDecision("cancel");
+        },
+
+        setSelectedModel: (provider, model) => {
           set(
             (state) => ({
-              currentBook: { ...state.currentBook, selectedModel: model },
+              currentBook: {
+                ...state.currentBook,
+                selectedProvider: provider,
+                selectedModel: model,
+              },
             }),
             false,
             "book/setSelectedModel",

@@ -1,5 +1,5 @@
-import { HttpError } from "@/lib/errors";
-import { readJson } from "@/lib/request";
+import { HttpError, InvalidJsonError } from "@/lib/errors";
+import { readJson } from "@/utils";
 import { isString } from "@/lib/typeGuards";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
@@ -77,10 +77,17 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Google auth error:", error);
 
-    if (error instanceof HttpError) {
+    const httpError =
+      error instanceof InvalidJsonError
+        ? new HttpError(400, "Invalid JSON")
+        : error instanceof HttpError
+        ? error
+        : null;
+
+    if (httpError) {
       return NextResponse.json(
-        { error: error.publicMessage, ok: false },
-        { status: error.status },
+        { error: httpError.publicMessage, ok: false },
+        { status: httpError.status },
       );
     }
 

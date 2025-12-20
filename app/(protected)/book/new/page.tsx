@@ -7,25 +7,37 @@ import { useBookStore } from "@/lib/book/bookContext";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
-import { GeminiModel } from "@/lib/book/types";
+import { AIProvider, GeminiModel } from "@/lib/book/types";
 
 export default function CreateBookPage() {
   const router = useRouter();
   const currentBook = useBookStore((state) => state.currentBook);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const streamingContent = useBookStore((state) => state.streamingContent);
+  const currentChapterIndex = useBookStore(
+    (state) => state.currentChapterIndex,
+  );
+  const awaitingChapterDecision = useBookStore(
+    (state) => state.awaitingChapterDecision,
+  );
   const {
     updateDraft,
     generateTOC,
     regenerateTOC,
     startBookGeneration,
+    confirmChapter,
+    cancelGeneration,
     setSelectedModel,
   } = useBookStore((state) => state.actions);
 
   // Prevention of accidental navigation (Exit Prevention)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isProcessing || currentBook.status === "generating_book") {
+      if (
+        isProcessing ||
+        currentBook.status === "generating_book" ||
+        currentBook.status === "chapter_review"
+      ) {
         e.preventDefault();
         e.returnValue = ""; // Standard way to show confirmation dialog
       }
@@ -44,7 +56,9 @@ export default function CreateBookPage() {
 
   const handleReturnToList = () => {
     if (
-      (isProcessing || currentBook.status === "generating_book") &&
+      (isProcessing ||
+        currentBook.status === "generating_book" ||
+        currentBook.status === "chapter_review") &&
       !confirm("작업이 진행 중입니다. 정말 나가시겠습니까?")
     ) {
       return;
@@ -85,17 +99,39 @@ export default function CreateBookPage() {
         {currentBook.status === "toc_review" && (
           <TOCReviewStep
             tableOfContents={currentBook.tableOfContents || []}
+            selectedProvider={currentBook.selectedProvider || AIProvider.GOOGLE}
             selectedModel={currentBook.selectedModel || GeminiModel.FLASH}
             isProcessing={isProcessing}
             onSetSelectedModel={setSelectedModel}
             onRegenerateTOC={regenerateTOC}
-            onStartGeneration={(model) => startBookGeneration(model)}
+            onStartGeneration={(provider, model) =>
+              startBookGeneration(provider, model)
+            }
           />
         )}
 
         {/* STEP 3: GENERATION STREAMING */}
         {currentBook.status === "generating_book" && (
-          <GenerationStep streamingContent={streamingContent} />
+          <GenerationStep
+            streamingContent={streamingContent}
+            tableOfContents={currentBook.tableOfContents || []}
+            currentChapterIndex={currentChapterIndex}
+            awaitingChapterDecision={awaitingChapterDecision}
+            onConfirmChapter={confirmChapter}
+            onCancelGeneration={cancelGeneration}
+          />
+        )}
+
+        {/* STEP 3.5: CHAPTER REVIEW */}
+        {currentBook.status === "chapter_review" && (
+          <GenerationStep
+            streamingContent={streamingContent}
+            tableOfContents={currentBook.tableOfContents || []}
+            currentChapterIndex={currentChapterIndex}
+            awaitingChapterDecision={awaitingChapterDecision}
+            onConfirmChapter={confirmChapter}
+            onCancelGeneration={cancelGeneration}
+          />
         )}
       </div>
     </div>

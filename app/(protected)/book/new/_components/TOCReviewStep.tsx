@@ -3,19 +3,28 @@
 import React from "react";
 import { RefreshCw, FileText } from "lucide-react";
 import Button from "../../_components/Button";
-import { GeminiModel } from "@/lib/book/types";
+import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 
 interface TOCReviewStepProps {
   tableOfContents: string[];
-  selectedModel: GeminiModel;
+  selectedProvider: AIProvider;
+  selectedModel: GeminiModel | ClaudeModel;
   isProcessing: boolean;
-  onSetSelectedModel: (model: GeminiModel) => void;
+  onSetSelectedModel: (
+    provider: AIProvider,
+    model: GeminiModel | ClaudeModel,
+  ) => void;
   onRegenerateTOC: () => void;
-  onStartGeneration: (model: GeminiModel) => void;
+  onStartGeneration: (
+    provider: AIProvider,
+    model: GeminiModel | ClaudeModel,
+  ) => void;
 }
 
 export default function TOCReviewStep({
   tableOfContents,
+  selectedProvider,
   selectedModel,
   isProcessing,
   onSetSelectedModel,
@@ -55,11 +64,27 @@ export default function TOCReviewStep({
           </label>
           <select
             className="bg-white border border-stone-300 rounded px-3 py-1 text-sm focus:ring-brand-900"
-            value={selectedModel || GeminiModel.FLASH}
-            onChange={(e) => onSetSelectedModel(e.target.value as GeminiModel)}
+            value={selectedModel}
+            onChange={(e) => {
+              const modelId = e.target.value;
+              const providerId = getProviderByModel(modelId);
+              if (providerId) {
+                onSetSelectedModel(
+                  providerId,
+                  modelId as GeminiModel | ClaudeModel,
+                );
+              }
+            }}
           >
-            <option value={GeminiModel.FLASH}>Gemini 3 Flash (Fast)</option>
-            <option value={GeminiModel.PRO}>Gemini 3 Pro (Quality)</option>
+            {AI_CONFIG.map((provider) => (
+              <optgroup key={provider.id} label={provider.name}>
+                {provider.models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({model.description})
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </div>
 
@@ -74,7 +99,7 @@ export default function TOCReviewStep({
             Regenerate TOC
           </Button>
           <Button
-            onClick={() => onStartGeneration(selectedModel)}
+            onClick={() => onStartGeneration(selectedProvider, selectedModel)}
             className="flex-2"
           >
             <FileText size={16} className="mr-2" />

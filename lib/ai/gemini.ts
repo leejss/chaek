@@ -1,17 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 import { env } from "@/lib/env";
-
 import { GeminiModel } from "@/lib/book/types";
 import {
-  bookSystemInstruction,
-  bookUserContents,
+  bookChapterSystemInstruction,
+  bookChapterUserContents,
   tocResponseConfig,
   tocSystemInstruction,
   tocUserContents,
 } from "@/lib/ai/instructions";
 
 export const gemini = new GoogleGenAI({
-  apiKey: env.NEXT_PUBLIC_GEMINI_API_KEY,
+  apiKey: env.GEMINI_API_KEY,
 });
 
 export const generateTableOfContents = async (
@@ -36,17 +35,45 @@ export const generateTableOfContents = async (
   return parsed as string[];
 };
 
-export async function* streamBookGeneration(
-  toc: string[],
-  sourceText: string,
-  model: GeminiModel,
-): AsyncGenerator<string, void, unknown> {
+// export async function* streamBookGeneration(
+//   toc: string[],
+//   sourceText: string,
+//   model: GeminiModel,
+// ): AsyncGenerator<string, void, unknown> {
+//   const streamResponse = await gemini.models.generateContentStream({
+//     model,
+//     config: {
+//       systemInstruction: bookSystemInstruction(),
+//     },
+//     contents: bookUserContents(toc, sourceText),
+//   });
+
+//   for await (const chunk of streamResponse) {
+//     if (chunk.text) {
+//       yield chunk.text;
+//     }
+//   }
+// }
+
+export async function* streamBookChapterGeneration(params: {
+  toc: string[];
+  chapterTitle: string;
+  chapterNumber: number;
+  sourceText: string;
+  model: GeminiModel;
+}): AsyncGenerator<string, void, unknown> {
+  const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
+
   const streamResponse = await gemini.models.generateContentStream({
     model,
     config: {
-      systemInstruction: bookSystemInstruction(),
+      systemInstruction: bookChapterSystemInstruction(toc),
     },
-    contents: bookUserContents(toc, sourceText),
+    contents: bookChapterUserContents({
+      chapterTitle,
+      chapterNumber,
+      sourceText,
+    }),
   });
 
   for await (const chunk of streamResponse) {

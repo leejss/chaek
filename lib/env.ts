@@ -5,6 +5,8 @@ const serverSchema = z.object({
   // API_KEY: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().min(1),
   OUR_JWT_SECRET: z.string().min(1),
+  GEMINI_API_KEY: z.string().min(1),
+  ANTHROPIC_API_KEY: z.string().min(1),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -12,7 +14,6 @@ const serverSchema = z.object({
 
 const clientSchema = z.object({
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().min(1),
-  NEXT_PUBLIC_GEMINI_API_KEY: z.string().min(1),
 });
 
 type Env = z.infer<typeof serverSchema> & z.infer<typeof clientSchema>;
@@ -39,7 +40,6 @@ function getEnv(): Env {
   } else {
     const _env = clientSchema.safeParse({
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-      NEXT_PUBLIC_GEMINI_API_KEY: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
     });
     if (!_env.success) {
       console.error(

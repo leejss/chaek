@@ -1,8 +1,3 @@
-/**
- * Configuration error (env, secrets, required runtime settings).
- *
- * This is intentionally NOT an HTTP error. Map it to HTTP at the edge (routes).
- */
 export class HttpError extends Error {
   public readonly status: number;
   public readonly publicMessage: string;
@@ -23,5 +18,12 @@ export class ConfigError extends Error {
     super("Server misconfigured");
     this.name = "ConfigError";
     this.missingEnv = params?.missingEnv;
+  }
+}
+
+export class InvalidJsonError extends Error {
+  constructor() {
+    super("Invalid JSON format");
+    this.name = "InvalidJsonError";
   }
 }
