@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
-import { fetchStreamChapter, fetchTOC } from "@/lib/ai/fetch";
+import { fetchOutline, fetchStreamSection, fetchTOC } from "@/lib/ai/fetch";
 import {
   Book,
   BookActions,
@@ -10,6 +10,7 @@ import {
   BookDraft,
   ClaudeModel,
   GeminiModel,
+  Section,
 } from "@/lib/book/types";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, isValidModel } from "@/lib/ai/config";
 
@@ -25,12 +26,15 @@ const emptyDraft: BookDraft = {
 const initialState: BookContextState = {
   books: [],
   currentBook: emptyDraft,
+  chapters: [],
+  viewingChapterIndex: 0,
   streamingContent: "",
   currentChapterIndex: null,
   currentChapterContent: "",
   awaitingChapterDecision: false,
   isProcessing: false,
   error: null,
+  generationProgress: { phase: "idle" },
 };
 
 export const useBookStore = create<
@@ -63,6 +67,8 @@ export const useBookStore = create<
           set(
             {
               currentBook: emptyDraft,
+              chapters: [],
+              viewingChapterIndex: 0,
               streamingContent: "",
               currentChapterIndex: null,
               currentChapterContent: "",
@@ -170,7 +176,6 @@ export const useBookStore = create<
           const selectedProvider =
             provider || currentBook.selectedProvider || DEFAULT_PROVIDER;
 
-          // React event handler로 연결될 때 MouseEvent가 들어오는 경우를 방지
           const selectedModel =
             (model && typeof model === "string" && isValidModel(model)
               ? (model as GeminiModel | ClaudeModel)
@@ -182,15 +187,18 @@ export const useBookStore = create<
             (state) => ({
               currentBook: {
                 ...state.currentBook,
-                status: "generating_book",
+                status: "generating_outlines",
                 selectedProvider,
                 selectedModel,
               },
+              chapters: [],
+              viewingChapterIndex: 0,
               streamingContent: "",
               currentChapterIndex: 0,
               currentChapterContent: "",
               awaitingChapterDecision: false,
               error: null,
+              generationProgress: { phase: "idle" },
             }),
             false,
             "book/startBookGeneration_start",
@@ -204,7 +212,7 @@ export const useBookStore = create<
               if (generationCancelled) break;
 
               const chapterTitle = currentBook.tableOfContents[i];
-              let chapterContent = "";
+              const chapterNumber = i + 1;
 
               set(
                 {
@@ -214,32 +222,91 @@ export const useBookStore = create<
                   error: null,
                   currentBook: {
                     ...get().currentBook,
-                    status: "generating_book",
+                    status: "generating_outlines",
                   },
+                  generationProgress: { phase: "outline" },
                 },
                 false,
-                "book/startChapterGeneration_start",
+                "book/generating_outline",
               );
 
-              for await (const chunk of fetchStreamChapter({
+              const outline = await fetchOutline({
                 toc: currentBook.tableOfContents,
-                chapterTitle,
-                chapterNumber: i + 1,
+                chapterNumber,
                 sourceText: currentBook.sourceText || "",
                 provider: selectedProvider,
                 model: selectedModel,
-              })) {
+              });
+
+              if (generationCancelled) break;
+
+              set(
+                (state) => ({
+                  currentBook: {
+                    ...state.currentBook,
+                    status: "generating_sections",
+                  },
+                  generationProgress: {
+                    phase: "sections",
+                    currentSection: 0,
+                    totalSections: outline.sections.length,
+                    currentOutline: outline,
+                  },
+                }),
+                false,
+                "book/outline_generated",
+              );
+
+              let chapterContent = `## ${chapterTitle}\n\n`;
+              const completedSections: Section[] = [];
+
+              for (let j = 0; j < outline.sections.length; j++) {
                 if (generationCancelled) break;
 
-                chapterContent += chunk;
                 set(
-                  {
-                    currentChapterContent: chapterContent,
-                    streamingContent: fullContent + chapterContent,
-                  },
+                  (state) => ({
+                    generationProgress: {
+                      ...state.generationProgress,
+                      phase: "sections",
+                      currentSection: j + 1,
+                      totalSections: outline.sections.length,
+                    },
+                  }),
                   false,
-                  "book/streaming_chapter_content",
+                  "book/generating_section",
                 );
+
+                let sectionContent = "";
+                for await (const chunk of fetchStreamSection({
+                  chapterNumber,
+                  chapterTitle,
+                  chapterOutline: outline.sections,
+                  sectionIndex: j,
+                  previousSections: completedSections,
+                  toc: currentBook.tableOfContents,
+                  sourceText: currentBook.sourceText || "",
+                  provider: selectedProvider,
+                  model: selectedModel,
+                })) {
+                  if (generationCancelled) break;
+
+                  sectionContent += chunk;
+                  set(
+                    {
+                      currentChapterContent: chapterContent + sectionContent,
+                      streamingContent:
+                        fullContent + chapterContent + sectionContent,
+                    },
+                    false,
+                    "book/streaming_section_content",
+                  );
+                }
+
+                completedSections.push({
+                  ...outline.sections[j],
+                  content: sectionContent,
+                });
+                chapterContent += sectionContent + "\n\n";
               }
 
               if (generationCancelled) break;
@@ -251,6 +318,7 @@ export const useBookStore = create<
                     ...state.currentBook,
                     status: "chapter_review",
                   },
+                  generationProgress: { phase: "review" },
                 }),
                 false,
                 "book/chapter_review_start",
@@ -262,17 +330,28 @@ export const useBookStore = create<
                 break;
               }
 
-              fullContent += chapterContent + "\n\n";
+              fullContent += chapterContent;
               set(
-                {
+                (state) => ({
+                  chapters: [
+                    ...state.chapters,
+                    {
+                      chapterNumber,
+                      chapterTitle,
+                      content: chapterContent,
+                      isComplete: true,
+                    },
+                  ],
+                  viewingChapterIndex: state.chapters.length,
                   streamingContent: fullContent,
                   awaitingChapterDecision: false,
                   currentChapterContent: "",
                   currentBook: {
                     ...get().currentBook,
-                    status: "generating_book",
+                    status: "generating_outlines",
                   },
-                },
+                  generationProgress: { phase: "idle" },
+                }),
                 false,
                 "book/chapter_confirmed",
               );
@@ -286,6 +365,7 @@ export const useBookStore = create<
                   currentChapterIndex: null,
                   currentChapterContent: "",
                   currentBook: { ...state.currentBook, status: "toc_review" },
+                  generationProgress: { phase: "idle" },
                 }),
                 false,
                 "book/generation_cancelled",
@@ -314,6 +394,7 @@ export const useBookStore = create<
                 currentChapterIndex: null,
                 currentChapterContent: "",
                 awaitingChapterDecision: false,
+                generationProgress: { phase: "idle" },
               }),
               false,
               "book/startBookGeneration_success",
@@ -327,6 +408,7 @@ export const useBookStore = create<
                 currentChapterIndex: null,
                 currentChapterContent: "",
                 currentBook: { ...state.currentBook, status: "toc_review" },
+                generationProgress: { phase: "idle" },
               }),
               false,
               "book/startBookGeneration_error",
@@ -369,6 +451,40 @@ export const useBookStore = create<
 
         getBookById: (id) => {
           return get().books.find((b) => b.id === id);
+        },
+
+        goToChapter: (index) => {
+          const { chapters } = get();
+          if (index >= 0 && index < chapters.length) {
+            set({ viewingChapterIndex: index }, false, "book/goToChapter");
+          }
+        },
+
+        goToPrevChapter: () => {
+          const { viewingChapterIndex } = get();
+          if (viewingChapterIndex > 0) {
+            set(
+              { viewingChapterIndex: viewingChapterIndex - 1 },
+              false,
+              "book/goToPrevChapter",
+            );
+          }
+        },
+
+        goToNextChapter: () => {
+          const { viewingChapterIndex, chapters, currentChapterIndex } = get();
+          const maxIndex =
+            currentChapterIndex !== null
+              ? chapters.length
+              : chapters.length - 1;
+
+          if (viewingChapterIndex < maxIndex) {
+            set(
+              { viewingChapterIndex: viewingChapterIndex + 1 },
+              false,
+              "book/goToNextChapter",
+            );
+          }
         },
       };
 

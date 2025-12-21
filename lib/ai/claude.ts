@@ -1,11 +1,16 @@
 import {
   bookChapterSystemInstruction,
   bookChapterUserContents,
+  chapterOutlineSystemInstruction,
+  chapterOutlineUserContents,
+  chapterRefinementSystemInstruction,
+  chapterRefinementUserContents,
+  sectionContentSystemInstruction,
+  sectionContentUserContents,
   tocSystemInstruction,
   tocUserContents,
 } from "@/lib/ai/instructions";
-import { ClaudeModel } from "@/lib/book/types";
-import { appendDebugFile } from "@/lib/dev";
+import { ChapterOutline, ClaudeModel, Section } from "@/lib/book/types";
 import { env } from "@/lib/env";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
@@ -96,16 +101,14 @@ export async function* streamBookChapterGeneration(params: {
   toc: string[];
   chapterTitle: string;
   chapterNumber: number;
-  sourceText: string;
   model: ClaudeModel;
 }): AsyncGenerator<string, void, unknown> {
-  const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
+  const { toc, chapterTitle, chapterNumber, model } = params;
 
   const systemInstruction = bookChapterSystemInstruction(toc);
   const userContent = bookChapterUserContents({
     chapterTitle,
     chapterNumber,
-    sourceText,
   });
 
   console.log("System instruction:", systemInstruction);
@@ -130,8 +133,164 @@ export async function* streamBookChapterGeneration(params: {
       chunk.delta.type === "text_delta"
     ) {
       const text = chunk.delta.text;
-      // await appendDebugFile(debugPath, text).catch(console.error);
       yield text;
+    }
+  }
+}
+
+const OUTLINE_TOOL_NAME = "return_chapter_outline";
+
+const chapterOutlineSchema = z.object({
+  chapterNumber: z.number(),
+  chapterTitle: z.string(),
+  sections: z.array(
+    z.object({
+      title: z.string(),
+      summary: z.string(),
+    }),
+  ),
+});
+
+export const generateChapterOutline = async (params: {
+  toc: string[];
+  chapterTitle: string;
+  chapterNumber: number;
+  sourceText: string;
+  model: ClaudeModel;
+}): Promise<ChapterOutline> => {
+  const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
+
+  const systemInstruction = chapterOutlineSystemInstruction(toc, sourceText);
+  const userContent = chapterOutlineUserContents({
+    chapterTitle,
+    chapterNumber,
+  });
+
+  const response = await anthropic.messages.create({
+    model,
+    max_tokens: 2048,
+    system: systemInstruction,
+    messages: [{ role: "user", content: userContent }],
+    tools: [
+      {
+        name: OUTLINE_TOOL_NAME,
+        description: "Return the chapter outline as a structured JSON object.",
+        input_schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            chapterNumber: { type: "number" },
+            chapterTitle: { type: "string" },
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  summary: { type: "string" },
+                },
+                required: ["title", "summary"],
+              },
+            },
+          },
+          required: ["chapterNumber", "chapterTitle", "sections"],
+        },
+      },
+    ],
+    tool_choice: { type: "tool", name: OUTLINE_TOOL_NAME },
+  });
+
+  const toolInput = findToolUseInput(response.content, OUTLINE_TOOL_NAME);
+  const parsed = chapterOutlineSchema.safeParse(toolInput);
+  if (!parsed.success) {
+    console.error("Invalid outline tool input:", parsed.error);
+    throw new Error("Invalid chapter outline format");
+  }
+  return parsed.data;
+};
+
+export async function* streamSectionContent(params: {
+  chapterNumber: number;
+  chapterTitle: string;
+  chapterOutline: Section[];
+  sectionIndex: number;
+  previousSections: Section[];
+  model: ClaudeModel;
+}): AsyncGenerator<string, void, unknown> {
+  const {
+    chapterNumber,
+    chapterTitle,
+    chapterOutline,
+    sectionIndex,
+    previousSections,
+    model,
+  } = params;
+
+  const currentSection = chapterOutline[sectionIndex];
+  if (!currentSection) {
+    throw new Error(`Section at index ${sectionIndex} not found`);
+  }
+
+  const systemInstruction = sectionContentSystemInstruction({
+    chapterNumber,
+    chapterTitle,
+    chapterOutline,
+    previousSections,
+  });
+
+  const userContent = sectionContentUserContents({
+    sectionTitle: currentSection.title,
+    sectionSummary: currentSection.summary,
+  });
+
+  const stream = await anthropic.messages.create({
+    model,
+    max_tokens: 2048,
+    system: systemInstruction,
+    messages: [{ role: "user", content: userContent }],
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    if (
+      chunk.type === "content_block_delta" &&
+      chunk.delta.type === "text_delta"
+    ) {
+      yield chunk.delta.text;
+    }
+  }
+}
+
+export async function* streamChapterRefinement(params: {
+  toc: string[];
+  chapterNumber: number;
+  chapterTitle: string;
+  assembledContent: string;
+  model: ClaudeModel;
+}): AsyncGenerator<string, void, unknown> {
+  const { toc, chapterNumber, chapterTitle, assembledContent, model } = params;
+
+  const systemInstruction = chapterRefinementSystemInstruction(toc);
+  const userContent = chapterRefinementUserContents({
+    chapterNumber,
+    chapterTitle,
+    assembledContent,
+  });
+
+  const stream = await anthropic.messages.create({
+    model,
+    max_tokens: 8192,
+    system: systemInstruction,
+    messages: [{ role: "user", content: userContent }],
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    if (
+      chunk.type === "content_block_delta" &&
+      chunk.delta.type === "text_delta"
+    ) {
+      yield chunk.delta.text;
     }
   }
 }

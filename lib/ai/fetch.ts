@@ -1,4 +1,10 @@
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+import {
+  AIProvider,
+  ChapterOutline,
+  ClaudeModel,
+  GeminiModel,
+  Section,
+} from "@/lib/book/types";
 
 export async function fetchTOC(
   sourceText: string,
@@ -37,6 +43,58 @@ export async function* fetchStreamChapter(params: {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || "Failed to generate chapter");
+  }
+
+  if (!response.body) throw new Error("No response body");
+
+  const decoder = new TextDecoder();
+  for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+    yield decoder.decode(chunk, { stream: true });
+  }
+}
+
+export async function fetchOutline(params: {
+  toc: string[];
+  chapterNumber: number;
+  sourceText: string;
+  provider: AIProvider;
+  model: GeminiModel | ClaudeModel;
+}): Promise<ChapterOutline> {
+  const response = await fetch("/api/ai/outline", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to generate outline");
+  }
+
+  const data = await response.json();
+  return data.outline as ChapterOutline;
+}
+
+export async function* fetchStreamSection(params: {
+  chapterNumber: number;
+  chapterTitle: string;
+  chapterOutline: Section[];
+  sectionIndex: number;
+  previousSections: Section[];
+  toc: string[];
+  sourceText: string;
+  provider: AIProvider;
+  model: GeminiModel | ClaudeModel;
+}) {
+  const response = await fetch("/api/ai/section", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to generate section");
   }
 
   if (!response.body) throw new Error("No response body");

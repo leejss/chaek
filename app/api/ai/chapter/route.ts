@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   try {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
-    const { toc, chapterTitle, chapterNumber, sourceText, provider, model } =
+    const { toc, chapterTitle, chapterNumber, provider, model } =
       parseAndValidateBody(jsonResult.data);
 
     const encoder = new TextEncoder();
@@ -84,7 +84,6 @@ export async function POST(req: Request) {
               toc,
               chapterTitle,
               chapterNumber,
-              sourceText,
               model: model as ClaudeModel,
             });
           } else {
@@ -92,7 +91,6 @@ export async function POST(req: Request) {
               toc,
               chapterTitle,
               chapterNumber,
-              sourceText,
               model: model as GeminiModel,
             });
           }
