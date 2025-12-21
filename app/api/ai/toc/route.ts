@@ -39,47 +39,50 @@ function parseAndValidateBody(body: unknown) {
   return result.data;
 }
 
+function normalizeToHttpError(error: unknown): HttpError | null {
+  if (error instanceof InvalidJsonError) {
+    return new HttpError(400, "Invalid JSON");
+  }
+  if (error instanceof HttpError) {
+    return error;
+  }
+  return null;
+}
+
+function httpErrorToResponse(httpError: HttpError) {
+  return NextResponse.json(
+    {
+      error: httpError.publicMessage,
+      ok: false,
+    },
+    { status: httpError.status },
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const body = await readJson(req);
     const { sourceText, provider, model } = parseAndValidateBody(body);
 
-    console.log("TOC generation API request:", { sourceText, provider, model });
-
-    let toc: string[];
-
     if (provider === AIProvider.ANTHROPIC) {
-      toc = await generateClaudeTOC(sourceText, model as ClaudeModel);
-    } else {
-      toc = await generateGeminiTOC(sourceText);
+      const toc = await generateClaudeTOC(sourceText, model as ClaudeModel);
+      return NextResponse.json({ toc });
     }
-    return NextResponse.json({ toc });
+    if (provider === AIProvider.GOOGLE) {
+      const toc = await generateGeminiTOC(sourceText);
+      return NextResponse.json({ toc });
+    }
+
+    throw new HttpError(400, "Invalid provider");
   } catch (error) {
     console.error("TOC generation API error:", error);
 
-    const httpError =
-      error instanceof InvalidJsonError
-        ? new HttpError(400, "Invalid JSON")
-        : error instanceof HttpError
-        ? error
-        : null;
-
-    if (httpError) {
-      const details = (httpError as unknown as { details?: unknown }).details;
-      return NextResponse.json(
-        {
-          error: httpError.publicMessage,
-          ok: false,
-          ...(details ? { details } : {}),
-        },
-        { status: httpError.status },
-      );
-    }
+    const httpError = normalizeToHttpError(error);
+    if (httpError) return httpErrorToResponse(httpError);
 
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Failed to generate TOC",
+        error: error instanceof Error ? error.message : "Internal server error",
         ok: false,
       },
       { status: 500 },
