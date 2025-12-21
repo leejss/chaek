@@ -3,30 +3,81 @@ import { streamBookChapterGeneration as streamClaudeChapter } from "@/lib/ai/cla
 import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { readJson } from "@/utils";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { getProviderByModel } from "@/lib/ai/config";
+import { getProviderByModel, isValidModel } from "@/lib/ai/config";
+import { z } from "zod";
+import { NextResponse } from "next/server";
+
+const chapterRequestSchema = z
+  .object({
+    toc: z.array(z.string().min(1, "Must be a non-empty string")).min(1),
+    chapterTitle: z.string().min(1, "Must be a non-empty string"),
+    chapterNumber: z.number().int().min(1),
+    sourceText: z.string().min(1, "Must be a non-empty string"),
+    provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
+    model: z
+      .string()
+      .min(1, "Must be a non-empty string")
+      .refine(isValidModel, {
+        message: "Unknown model",
+      }),
+  })
+  .refine(
+    (data) => {
+      const expectedProvider = getProviderByModel(data.model);
+      return expectedProvider === data.provider;
+    },
+    {
+      message: "Provider does not match model",
+      path: ["provider"],
+    },
+  );
+
+function parseAndValidateBody(body: unknown) {
+  const result = chapterRequestSchema.safeParse(body);
+
+  if (!result.success) {
+    throw new HttpError(400, "Invalid request body");
+  }
+
+  return result.data;
+}
+
+function normalizeToHttpError(error: unknown): HttpError | null {
+  if (error == null) {
+    return new HttpError(500, "Internal server error");
+  }
+  if (error instanceof InvalidJsonError) {
+    return new HttpError(400, "Invalid JSON");
+  }
+  if (error instanceof HttpError) {
+    return error;
+  }
+  return null;
+}
+
+function httpErrorToResponse(httpError: HttpError) {
+  return NextResponse.json(
+    {
+      error: httpError.publicMessage,
+      ok: false,
+    },
+    { status: httpError.status },
+  );
+}
 
 export async function POST(req: Request) {
   try {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
-    const params = jsonResult.data;
     const { toc, chapterTitle, chapterNumber, sourceText, provider, model } =
-      params as {
-        toc: string[];
-        chapterTitle: string;
-        chapterNumber: number;
-        sourceText: string;
-        provider: AIProvider;
-        model: GeminiModel | ClaudeModel;
-      };
+      parseAndValidateBody(jsonResult.data);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let generator;
-          const activeProvider =
-            provider || (model ? getProviderByModel(model) : undefined);
+          const activeProvider = provider;
 
           if (activeProvider === AIProvider.ANTHROPIC) {
             generator = streamClaudeChapter({
@@ -51,7 +102,9 @@ export async function POST(req: Request) {
           }
           controller.close();
         } catch (error) {
-          controller.error(error);
+          const safeError = error ?? new Error("Unknown stream error");
+          console.error("Chapter generation stream error:", safeError);
+          controller.error(safeError);
         }
       },
     });
@@ -64,34 +117,21 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.error("Chapter generation API error:", error);
+    const safeError = error ?? new Error("Unknown error");
+    console.error("Chapter generation API error:", safeError);
 
-    const httpError =
-      error instanceof InvalidJsonError
-        ? new HttpError(400, "Invalid JSON")
-        : error instanceof HttpError
-        ? error
-        : null;
+    const httpError = normalizeToHttpError(safeError);
+    if (httpError) return httpErrorToResponse(httpError);
 
-    if (httpError) {
-      return new Response(
-        JSON.stringify({ error: httpError.publicMessage, ok: false }),
-        {
-          status: httpError.status,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-        ok: false,
-      }),
+    return NextResponse.json(
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+        error:
+          safeError instanceof Error
+            ? safeError.message
+            : "Internal server error",
+        ok: false,
       },
+      { status: 500 },
     );
   }
 }

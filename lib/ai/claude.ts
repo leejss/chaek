@@ -100,20 +100,25 @@ export async function* streamBookChapterGeneration(params: {
   model: ClaudeModel;
 }): AsyncGenerator<string, void, unknown> {
   const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
-  const debugPath = `claude/chapter-${chapterNumber}-${Date.now()}.txt`;
+
+  const systemInstruction = bookChapterSystemInstruction(toc);
+  const userContent = bookChapterUserContents({
+    chapterTitle,
+    chapterNumber,
+    sourceText,
+  });
+
+  console.log("System instruction:", systemInstruction);
+  console.log("User content:", userContent);
 
   const stream = await anthropic.messages.create({
     model: model,
     max_tokens: 4096,
-    system: bookChapterSystemInstruction(toc),
+    system: systemInstruction,
     messages: [
       {
         role: "user",
-        content: bookChapterUserContents({
-          chapterTitle,
-          chapterNumber,
-          sourceText,
-        }),
+        content: userContent,
       },
     ],
     stream: true,
@@ -125,7 +130,7 @@ export async function* streamBookChapterGeneration(params: {
       chunk.delta.type === "text_delta"
     ) {
       const text = chunk.delta.text;
-      await appendDebugFile(debugPath, text).catch(console.error);
+      // await appendDebugFile(debugPath, text).catch(console.error);
       yield text;
     }
   }
