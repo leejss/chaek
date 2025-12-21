@@ -61,8 +61,12 @@ function httpErrorToResponse(httpError: HttpError) {
 
 export async function POST(req: Request) {
   try {
-    const body = await readJson(req);
-    const { sourceText, provider, model } = parseAndValidateBody(body);
+    const jsonResult = await readJson(req);
+    if (!jsonResult.ok) throw jsonResult.error;
+
+    const { sourceText, provider, model } = parseAndValidateBody(
+      jsonResult.data,
+    );
 
     if (provider === AIProvider.ANTHROPIC) {
       const toc = await generateClaudeTOC(sourceText, model as ClaudeModel);

@@ -17,7 +17,9 @@ import { env } from "@/lib/env";
 
 export async function POST(req: Request) {
   try {
-    const body = await readJson(req);
+    const jsonResult = await readJson(req);
+    if (!jsonResult.ok) throw jsonResult.error;
+    const body = jsonResult.data;
 
     const idToken = (body as { id_token?: unknown })?.id_token;
     if (!isString(idToken) || idToken.length === 0) {

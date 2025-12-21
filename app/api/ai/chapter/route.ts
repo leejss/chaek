@@ -7,7 +7,9 @@ import { getProviderByModel } from "@/lib/ai/config";
 
 export async function POST(req: Request) {
   try {
-    const params = await readJson(req);
+    const jsonResult = await readJson(req);
+    if (!jsonResult.ok) throw jsonResult.error;
+    const params = jsonResult.data;
     const { toc, chapterTitle, chapterNumber, sourceText, provider, model } =
       params as {
         toc: string[];

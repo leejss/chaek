@@ -12,11 +12,16 @@ export async function sha256Hex(input: string): Promise<string> {
   return hasher.digest("hex");
 }
 
-export async function readJson(req: Request): Promise<unknown> {
+export type ReadJsonResult =
+  | { ok: true; data: unknown }
+  | { ok: false; error: InvalidJsonError };
+
+export async function readJson(req: Request): Promise<ReadJsonResult> {
   try {
-    return await req.json();
+    const data = await req.json();
+    return { ok: true, data };
   } catch (error) {
     console.error("[InvalidJsonError] Invalid JSON body:", error);
-    throw new InvalidJsonError();
+    return { ok: false, error: new InvalidJsonError() };
   }
 }
