@@ -1,17 +1,45 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { env } from "@/lib/env";
-import { ClaudeModel } from "@/lib/book/types";
-import { appendDebugFile } from "@/lib/dev";
 import {
   bookChapterSystemInstruction,
   bookChapterUserContents,
   tocSystemInstruction,
   tocUserContents,
 } from "@/lib/ai/instructions";
+import { ClaudeModel } from "@/lib/book/types";
+import { appendDebugFile } from "@/lib/dev";
+import { env } from "@/lib/env";
+import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 
 export const anthropic = new Anthropic({
   apiKey: env.ANTHROPIC_API_KEY,
 });
+
+const TOC_TOOL_NAME = "return_toc";
+
+type ToolUseBlock = {
+  type: "tool_use";
+  name: string;
+  input?: unknown;
+};
+
+const isToolUseBlock = (block: unknown): block is ToolUseBlock => {
+  if (!block || typeof block !== "object") return false;
+  const b = block as { type?: unknown; name?: unknown; input?: unknown };
+  return b.type === "tool_use" && typeof b.name === "string";
+};
+
+const findToolUseInput = (content: unknown, toolName: string): unknown => {
+  if (!Array.isArray(content)) {
+    throw new Error("Unexpected response content from Claude");
+  }
+  const toolUse = content.find(
+    (block) => isToolUseBlock(block) && block.name === toolName,
+  );
+  if (!isToolUseBlock(toolUse) || toolUse.input == null) {
+    throw new Error("Claude did not return TOC tool output");
+  }
+  return toolUse.input;
+};
 
 export const generateTableOfContents = async (
   sourceText: string,
@@ -20,9 +48,8 @@ export const generateTableOfContents = async (
   const systemInstruction = tocSystemInstruction();
   const userContent = tocUserContents(sourceText);
 
-  console.log({
-    systemInstruction,
-    userContent,
+  const tocToolInputSchema = z.object({
+    toc: z.array(z.string()),
   });
 
   const response = await anthropic.messages.create({
@@ -35,38 +62,34 @@ export const generateTableOfContents = async (
         content: userContent,
       },
     ],
+    tools: [
+      {
+        name: TOC_TOOL_NAME,
+        description:
+          "Return the table of contents as a JSON object with a 'toc' string array.",
+        input_schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            toc: {
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+          required: ["toc"],
+        },
+      },
+    ],
+    tool_choice: { type: "tool", name: TOC_TOOL_NAME },
   });
 
-  console.log(response.content);
-
-  const content = response.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected content type from Claude");
+  const toolInput = findToolUseInput(response.content, TOC_TOOL_NAME);
+  const parsed = tocToolInputSchema.safeParse(toolInput);
+  if (!parsed.success) {
+    console.error("Invalid TOC tool input:", parsed.error);
+    throw new Error("Invalid TOC format");
   }
-
-  let jsonStr = content.text;
-  const tocDebugPath = `claude/toc-${Date.now()}.txt`;
-  await appendDebugFile(
-    tocDebugPath,
-    ["---REQUEST---\n", sourceText, "\n---RESPONSE---\n", jsonStr].join(""),
-  ).catch(console.error);
-  if (!jsonStr) throw new Error("No content generated");
-
-  jsonStr = jsonStr
-    .replace(/^```(?:json)?\n?/, "")
-    .replace(/\n?```$/, "")
-    .trim();
-
-  try {
-    const parsed = JSON.parse(jsonStr);
-    if (!Array.isArray(parsed) || parsed.some((v) => typeof v !== "string")) {
-      throw new Error("Invalid TOC format");
-    }
-    return parsed as string[];
-  } catch (error) {
-    console.error("Failed to parse TOC JSON:", jsonStr, error);
-    throw new Error("Failed to parse TOC JSON");
-  }
+  return parsed.data.toc;
 };
 
 export async function* streamBookChapterGeneration(params: {
@@ -78,19 +101,6 @@ export async function* streamBookChapterGeneration(params: {
 }): AsyncGenerator<string, void, unknown> {
   const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
   const debugPath = `claude/chapter-${chapterNumber}-${Date.now()}.txt`;
-
-  await appendDebugFile(
-    debugPath,
-    [
-      "---REQUEST---\n",
-      JSON.stringify(
-        { toc, chapterTitle, chapterNumber, sourceText, model },
-        null,
-        2,
-      ),
-      "\n---RESPONSE---\n",
-    ].join(""),
-  ).catch(console.error);
 
   const stream = await anthropic.messages.create({
     model: model,
