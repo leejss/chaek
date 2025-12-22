@@ -26,16 +26,6 @@ export interface Book {
   outlines?: ChapterOutline[];
   chapters?: GeneratedChapter[];
   content: string;
-  status:
-    | "settings"
-    | "draft"
-    | "generating_toc"
-    | "toc_review"
-    | "generating_outlines"
-    | "generating_sections"
-    | "generating_book"
-    | "chapter_review"
-    | "completed";
   selectedProvider?: AIProvider;
   selectedModel?: GeminiModel | ClaudeModel;
 }
@@ -61,6 +51,17 @@ export enum AIProvider {
   ANTHROPIC = "anthropic",
 }
 
+export type FlowStatus =
+  | "settings"
+  | "draft"
+  | "generating_toc"
+  | "toc_review"
+  | "generating_outlines"
+  | "generating_sections"
+  | "generating_book"
+  | "chapter_review"
+  | "completed";
+
 export type BookDraft = {
   id?: string;
   title?: string;
@@ -68,7 +69,6 @@ export type BookDraft = {
   sourceText: string;
   tableOfContents: string[];
   content: string;
-  status: Book["status"];
   selectedProvider?: AIProvider;
   selectedModel?: GeminiModel | ClaudeModel;
 };
@@ -97,6 +97,7 @@ export type ChapterContent = {
 export type BookContextState = {
   books: Book[];
   currentBook: BookDraft;
+  flowStatus: FlowStatus;
   chapters: ChapterContent[];
   viewingChapterIndex: number;
   streamingContent: string;
@@ -115,8 +116,8 @@ export type BookActions = {
   generateTOC: (sourceText: string) => Promise<void>;
   regenerateTOC: () => Promise<void>;
   startBookGeneration: (
-    provider?: AIProvider,
-    model?: GeminiModel | ClaudeModel,
+    provider: AIProvider,
+    model: GeminiModel | ClaudeModel,
   ) => Promise<void>;
   confirmChapter: () => void;
   cancelGeneration: () => void;

@@ -16,7 +16,6 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER, isValidModel } from "@/lib/ai/config";
 import { useSettingsStore } from "./settingsStore";
 
 const emptyDraft: BookDraft = {
-  status: "settings",
   sourceText: "",
   tableOfContents: [],
   content: "",
@@ -27,6 +26,7 @@ const emptyDraft: BookDraft = {
 const initialState: BookContextState = {
   books: [],
   currentBook: emptyDraft,
+  flowStatus: "settings",
   chapters: [],
   viewingChapterIndex: 0,
   streamingContent: "",
@@ -66,6 +66,7 @@ export const useBookStore = create(
           set(
             {
               currentBook: emptyDraft,
+              flowStatus: "settings",
               chapters: [],
               viewingChapterIndex: 0,
               streamingContent: "",
@@ -113,10 +114,10 @@ export const useBookStore = create(
             (state) => ({
               isProcessing: true,
               error: null,
+              flowStatus: "generating_toc",
               currentBook: {
                 ...state.currentBook,
                 sourceText,
-                status: "generating_toc",
               },
             }),
             false,
@@ -134,10 +135,10 @@ export const useBookStore = create(
             );
             set(
               (state) => ({
+                flowStatus: "toc_review",
                 currentBook: {
                   ...state.currentBook,
                   tableOfContents: toc,
-                  status: "toc_review",
                 },
               }),
               false,
@@ -146,10 +147,10 @@ export const useBookStore = create(
           } catch (err) {
             console.error("TOC generation failed:", err);
             set(
-              (state) => ({
+              {
                 error: "TOC 생성에 실패했습니다. 다시 시도해 주세요.",
-                currentBook: { ...state.currentBook, status: "draft" },
-              }),
+                flowStatus: "draft",
+              },
               false,
               "book/generateTOC_error",
             );
@@ -165,6 +166,7 @@ export const useBookStore = create(
 
         startBookGeneration: async (provider, model) => {
           const { currentBook } = get();
+
           if (!currentBook.tableOfContents.length) {
             set(
               { error: "차례가 없습니다. 먼저 TOC를 생성하세요." },
@@ -174,23 +176,13 @@ export const useBookStore = create(
             return;
           }
 
-          const selectedProvider =
-            provider || currentBook.selectedProvider || DEFAULT_PROVIDER;
-
-          const selectedModel =
-            (model && typeof model === "string" && isValidModel(model)
-              ? (model as GeminiModel | ClaudeModel)
-              : undefined) ||
-            currentBook.selectedModel ||
-            DEFAULT_MODEL;
-
           set(
             (state) => ({
+              flowStatus: "generating_outlines",
               currentBook: {
                 ...state.currentBook,
-                status: "generating_outlines",
-                selectedProvider,
-                selectedModel,
+                selectedProvider: provider,
+                selectedModel: model,
               },
               chapters: [],
               viewingChapterIndex: 0,
@@ -221,10 +213,7 @@ export const useBookStore = create(
                   currentChapterContent: "",
                   awaitingChapterDecision: false,
                   error: null,
-                  currentBook: {
-                    ...get().currentBook,
-                    status: "generating_outlines",
-                  },
+                  flowStatus: "generating_outlines",
                   generationProgress: { phase: "outline" },
                 },
                 false,
@@ -236,26 +225,23 @@ export const useBookStore = create(
                 toc: currentBook.tableOfContents,
                 chapterNumber,
                 sourceText: currentBook.sourceText || "",
-                provider: selectedProvider,
-                model: selectedModel,
+                provider: provider,
+                model: model,
                 settings,
               });
 
               if (generationCancelled) break;
 
               set(
-                (state) => ({
-                  currentBook: {
-                    ...state.currentBook,
-                    status: "generating_sections",
-                  },
+                {
+                  flowStatus: "generating_sections",
                   generationProgress: {
                     phase: "sections",
                     currentSection: 0,
                     totalSections: outline.sections.length,
                     currentOutline: outline,
                   },
-                }),
+                },
                 false,
                 "book/outline_generated",
               );
@@ -288,8 +274,8 @@ export const useBookStore = create(
                   previousSections: completedSections,
                   toc: currentBook.tableOfContents,
                   sourceText: currentBook.sourceText || "",
-                  provider: selectedProvider,
-                  model: selectedModel,
+                  provider: provider,
+                  model: model,
                   settings,
                 })) {
                   if (generationCancelled) break;
@@ -316,14 +302,11 @@ export const useBookStore = create(
               if (generationCancelled) break;
 
               set(
-                (state) => ({
+                {
                   awaitingChapterDecision: true,
-                  currentBook: {
-                    ...state.currentBook,
-                    status: "chapter_review",
-                  },
+                  flowStatus: "chapter_review",
                   generationProgress: { phase: "review" },
-                }),
+                },
                 false,
                 "book/chapter_review_start",
               );
@@ -350,10 +333,7 @@ export const useBookStore = create(
                   streamingContent: fullContent,
                   awaitingChapterDecision: false,
                   currentChapterContent: "",
-                  currentBook: {
-                    ...get().currentBook,
-                    status: "generating_outlines",
-                  },
+                  flowStatus: "generating_outlines",
                   generationProgress: { phase: "idle" },
                 }),
                 false,
@@ -363,14 +343,14 @@ export const useBookStore = create(
 
             if (generationCancelled) {
               set(
-                (state) => ({
+                {
                   error: "생성이 취소되었습니다.",
                   awaitingChapterDecision: false,
                   currentChapterIndex: null,
                   currentChapterContent: "",
-                  currentBook: { ...state.currentBook, status: "toc_review" },
+                  flowStatus: "toc_review",
                   generationProgress: { phase: "idle" },
-                }),
+                },
                 false,
                 "book/generation_cancelled",
               );
@@ -384,8 +364,7 @@ export const useBookStore = create(
               sourceText: currentBook.sourceText,
               tableOfContents: currentBook.tableOfContents,
               content: fullContent,
-              status: "completed",
-              selectedModel,
+              selectedModel: model,
             };
 
             set(
@@ -395,6 +374,7 @@ export const useBookStore = create(
                   ...newBook,
                   sourceText: newBook.sourceText || "",
                 } as BookDraft,
+                flowStatus: "completed",
                 currentChapterIndex: null,
                 currentChapterContent: "",
                 awaitingChapterDecision: false,
@@ -406,14 +386,14 @@ export const useBookStore = create(
           } catch (err) {
             console.error("Book generation failed:", err);
             set(
-              (state) => ({
+              {
                 error: "본문 생성 중 오류가 발생했습니다.",
                 awaitingChapterDecision: false,
                 currentChapterIndex: null,
                 currentChapterContent: "",
-                currentBook: { ...state.currentBook, status: "toc_review" },
+                flowStatus: "toc_review",
                 generationProgress: { phase: "idle" },
-              }),
+              },
               false,
               "book/startBookGeneration_error",
             );

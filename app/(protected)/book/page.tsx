@@ -20,11 +20,7 @@ export default function LibraryPage() {
 
   const handleBookClick = (book: Book) => {
     setActiveBook(book);
-    if (book.status === "completed") {
-      router.push(`/book/${book.id}`);
-    } else {
-      router.push("/book/new");
-    }
+    router.push(`/book/${book.id}`);
   };
 
   return (
@@ -74,7 +70,7 @@ export default function LibraryPage() {
               </div>
               <div className="flex justify-between items-center mt-auto pt-4 border-t border-stone-100">
                 <span className="text-xs font-medium text-brand-700 bg-brand-50 px-2 py-1 rounded">
-                  {book.status === "completed" ? "Completed" : "Draft"}
+                  Completed
                 </span>
                 {/* Visual indicator arrow */}
                 <span className="text-stone-400 group-hover:text-brand-900 transition-colors">

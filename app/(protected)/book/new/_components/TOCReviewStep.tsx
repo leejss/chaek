@@ -1,10 +1,10 @@
 "use client";
 
-import { RefreshCw, FileText } from "lucide-react";
-import Button from "../../_components/Button";
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { useBookStore } from "@/lib/book/bookContext";
+import { ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { FileText, RefreshCw } from "lucide-react";
+import Button from "../../_components/Button";
 
 export default function TOCReviewStep() {
   const currentBook = useBookStore((state) => state.currentBook);

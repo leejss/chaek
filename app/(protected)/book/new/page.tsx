@@ -12,13 +12,14 @@ import GenerationStep from "./_components/GenerationStep";
 export default function CreateBookPage() {
   const router = useRouter();
   const currentBook = useBookStore((state) => state.currentBook);
+  const flowStatus = useBookStore((state) => state.flowStatus);
   const isProcessing = useBookStore((state) => state.isProcessing);
 
   const isGenerating =
-    currentBook.status === "generating_outlines" ||
-    currentBook.status === "generating_sections" ||
-    currentBook.status === "generating_book" ||
-    currentBook.status === "chapter_review";
+    flowStatus === "generating_outlines" ||
+    flowStatus === "generating_sections" ||
+    flowStatus === "generating_book" ||
+    flowStatus === "chapter_review";
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -34,10 +35,10 @@ export default function CreateBookPage() {
 
   // Redirect on completion
   useEffect(() => {
-    if (currentBook.status === "completed" && currentBook.id) {
+    if (flowStatus === "completed" && currentBook.id) {
       router.push(`/book/${currentBook.id}`);
     }
-  }, [currentBook.status, currentBook.id, router]);
+  }, [flowStatus, currentBook.id, router]);
 
   const handleReturnToList = () => {
     if (
@@ -62,20 +63,20 @@ export default function CreateBookPage() {
         </button>
 
         <div className="px-3 py-1 bg-stone-200 text-stone-600 text-xs font-bold rounded uppercase tracking-wider">
-          {currentBook.status?.replace("_", " ")}
+          {flowStatus?.replace("_", " ")}
         </div>
       </div>
 
       {/* Content Area */}
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
         {/* STEP 0: SETTINGS */}
-        {currentBook.status === "settings" && <SettingsStep />}
+        {flowStatus === "settings" && <SettingsStep />}
 
         {/* STEP 1: SOURCE INPUT */}
-        {currentBook.status === "draft" && <SourceInputStep />}
+        {flowStatus === "draft" && <SourceInputStep />}
 
         {/* STEP 2: TOC REVIEW */}
-        {currentBook.status === "toc_review" && <TOCReviewStep />}
+        {flowStatus === "toc_review" && <TOCReviewStep />}
 
         {/* STEP 3: GENERATION STREAMING */}
         {isGenerating && <GenerationStep />}

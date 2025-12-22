@@ -1,9 +1,11 @@
 "use client";
 
-import { Settings, ArrowRight } from "lucide-react";
+import { Settings, ArrowRight, Cpu, Check } from "lucide-react";
 import Button from "../../_components/Button";
 import { Language, useSettingsStore } from "@/lib/book/settingsStore";
 import { useBookStore } from "@/lib/book/bookContext";
+import { ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 
 export default function SettingsStep() {
   const {
@@ -15,7 +17,23 @@ export default function SettingsStep() {
     setUserPreference,
   } = useSettingsStore();
 
+  const currentBook = useBookStore((state) => state.currentBook);
   const { updateDraft } = useBookStore((state) => state.actions);
+
+  const selectedModel = currentBook.selectedModel as
+    | GeminiModel
+    | ClaudeModel
+    | undefined;
+
+  const handleModelChange = (modelId: string) => {
+    const providerId = getProviderByModel(modelId);
+    if (providerId) {
+      updateDraft({
+        selectedProvider: providerId,
+        selectedModel: modelId as GeminiModel | ClaudeModel,
+      });
+    }
+  };
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
@@ -31,7 +49,7 @@ export default function SettingsStep() {
   };
 
   const handleContinue = () => {
-    updateDraft({ status: "draft" });
+    useBookStore.setState({ flowStatus: "draft" });
   };
 
   return (
@@ -50,6 +68,61 @@ export default function SettingsStep() {
 
       <div className="bg-white border border-stone-200 rounded-sm p-8 space-y-8 shadow-sm">
         <div className="space-y-6">
+          {/* AI Model Configuration */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Cpu size={18} className="text-brand-700" />
+              <h3 className="text-sm font-bold text-stone-700 uppercase tracking-wider">
+                AI Writer Model
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {AI_CONFIG.map((provider) => (
+                <div key={provider.id} className="space-y-2">
+                  <label className="text-xs font-semibold text-stone-400 px-1 uppercase">
+                    {provider.name}
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    {provider.models.map((model) => {
+                      const isSelected = selectedModel === model.id;
+                      return (
+                        <button
+                          key={model.id}
+                          onClick={() => handleModelChange(model.id)}
+                          className={`
+                            flex items-center justify-between p-3 rounded-sm border transition-all text-left
+                            ${
+                              isSelected
+                                ? "bg-brand-50 border-brand-600 ring-1 ring-brand-600 shadow-sm"
+                                : "bg-white border-stone-200 hover:border-stone-400"
+                            }
+                          `}
+                        >
+                          <div className="flex flex-col">
+                            <span
+                              className={`text-sm font-bold ${
+                                isSelected ? "text-brand-900" : "text-stone-700"
+                              }`}
+                            >
+                              {model.name}
+                            </span>
+                            <span className="text-[10px] text-stone-400 leading-tight mt-0.5">
+                              {model.description}
+                            </span>
+                          </div>
+                          {isSelected && (
+                            <Check size={16} className="text-brand-600" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="block text-sm font-medium text-stone-700">
               Output Language
