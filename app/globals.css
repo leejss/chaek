@@ -6,9 +6,8 @@
 }
 
 @theme {
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-libre-baskerville);
-  --font-bbh-sans-hegarty: var(--font-bbh-sans-hegarty);
+  --font-sans: var(--font-noto-sans);
+  --font-serif: var(--font-noto-sans);
   --font-mono: monospace;
 }
 

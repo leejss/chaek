@@ -6,9 +6,6 @@ const serverSchema = z.object({
   OUR_JWT_SECRET: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
   ANTHROPIC_API_KEY: z.string().min(1),
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
 });
 
 const clientSchema = z.object({

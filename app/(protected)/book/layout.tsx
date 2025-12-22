@@ -4,7 +4,7 @@ import { Settings } from "lucide-react";
 import LogoutButton from "./_components/LogoutButton";
 
 export const metadata: Metadata = {
-  title: "BookMaker",
+  title: "book.build",
   description: "AI-assisted book creation studio",
 };
 
@@ -18,8 +18,8 @@ export default function BookLayout({
       <header className="bg-white border-b border-stone-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/book" className="flex items-center gap-2">
-            <span className="font-serif font-bold text-xl tracking-tight text-brand-900">
-              BookMaker
+            <span className="font-bold text-xl tracking-tight text-brand-900">
+              book.build
             </span>
           </Link>
           <div className="flex items-center gap-4">
