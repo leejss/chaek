@@ -1,31 +1,26 @@
 "use client";
 
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
+import { fetchOutline, fetchStreamSection, fetchTOC } from "@/lib/ai/fetch";
+import { BookActions, BookContextState, Section } from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
-import { fetchOutline, fetchStreamSection, fetchTOC } from "@/lib/ai/fetch";
-import {
-  Book,
-  BookActions,
-  BookContextState,
-  BookDraft,
-  ClaudeModel,
-  GeminiModel,
-  Section,
-} from "@/lib/book/types";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER, isValidModel } from "@/lib/ai/config";
 import { useSettingsStore } from "./settingsStore";
 
-const emptyDraft: BookDraft = {
+const initialState: BookContextState = {
   sourceText: "",
   tableOfContents: [],
   content: "",
-  selectedProvider: DEFAULT_PROVIDER,
-  selectedModel: DEFAULT_MODEL,
-};
-
-const initialState: BookContextState = {
-  books: [],
-  currentBook: emptyDraft,
+  aiConfiguration: {
+    toc: {
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+    },
+    content: {
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+    },
+  },
   flowStatus: "settings",
   chapters: [],
   viewingChapterIndex: 0,
@@ -65,7 +60,9 @@ export const useBookStore = create(
           resolveChapterDecision("cancel");
           set(
             {
-              currentBook: emptyDraft,
+              sourceText: "",
+              tableOfContents: [],
+              content: "",
               flowStatus: "settings",
               chapters: [],
               viewingChapterIndex: 0,
@@ -81,22 +78,15 @@ export const useBookStore = create(
         },
 
         updateDraft: (draft) => {
-          set(
-            (state) => ({
-              currentBook: { ...state.currentBook, ...draft },
-            }),
-            false,
-            "book/updateDraft",
-          );
+          set(draft, false, "book/updateDraft");
         },
 
         setActiveBook: (book) => {
           set(
             {
-              currentBook: {
-                ...book,
-                sourceText: book.sourceText || "",
-              } as BookDraft,
+              sourceText: book.sourceText || "",
+              tableOfContents: book.tableOfContents || [],
+              content: book.content || "",
               streamingContent: book.content || "",
               currentChapterIndex: null,
               currentChapterContent: "",
@@ -111,36 +101,30 @@ export const useBookStore = create(
           if (!sourceText.trim()) return;
 
           set(
-            (state) => ({
+            {
               isProcessing: true,
               error: null,
               flowStatus: "generating_toc",
-              currentBook: {
-                ...state.currentBook,
-                sourceText,
-              },
-            }),
+              sourceText,
+            },
             false,
             "book/generateTOC_start",
           );
 
           try {
-            const { currentBook } = get();
+            const { aiConfiguration } = get();
             const settings = useSettingsStore.getState();
             const toc = await fetchTOC(
               sourceText,
-              currentBook.selectedProvider,
-              currentBook.selectedModel,
+              aiConfiguration.toc.provider,
+              aiConfiguration.toc.model,
               settings,
             );
             set(
-              (state) => ({
+              {
                 flowStatus: "toc_review",
-                currentBook: {
-                  ...state.currentBook,
-                  tableOfContents: toc,
-                },
-              }),
+                tableOfContents: toc,
+              },
               false,
               "book/generateTOC_success",
             );
@@ -160,14 +144,14 @@ export const useBookStore = create(
         },
 
         regenerateTOC: async () => {
-          const { currentBook } = get();
-          await actions.generateTOC(currentBook.sourceText || "");
+          const { sourceText } = get();
+          await actions.generateTOC(sourceText || "");
         },
 
         startBookGeneration: async (provider, model) => {
-          const { currentBook } = get();
+          const { tableOfContents, sourceText } = get();
 
-          if (!currentBook.tableOfContents.length) {
+          if (!tableOfContents.length) {
             set(
               { error: "차례가 없습니다. 먼저 TOC를 생성하세요." },
               false,
@@ -179,10 +163,12 @@ export const useBookStore = create(
           set(
             (state) => ({
               flowStatus: "generating_outlines",
-              currentBook: {
-                ...state.currentBook,
-                selectedProvider: provider,
-                selectedModel: model,
+              aiConfiguration: {
+                ...state.aiConfiguration,
+                content: {
+                  provider,
+                  model,
+                },
               },
               chapters: [],
               viewingChapterIndex: 0,
@@ -201,10 +187,10 @@ export const useBookStore = create(
             generationCancelled = false;
             let fullContent = "";
 
-            for (let i = 0; i < currentBook.tableOfContents.length; i++) {
+            for (let i = 0; i < tableOfContents.length; i++) {
               if (generationCancelled) break;
 
-              const chapterTitle = currentBook.tableOfContents[i];
+              const chapterTitle = tableOfContents[i];
               const chapterNumber = i + 1;
 
               set(
@@ -222,9 +208,9 @@ export const useBookStore = create(
 
               const settings = useSettingsStore.getState();
               const outline = await fetchOutline({
-                toc: currentBook.tableOfContents,
+                toc: tableOfContents,
                 chapterNumber,
-                sourceText: currentBook.sourceText || "",
+                sourceText: sourceText || "",
                 provider: provider,
                 model: model,
                 settings,
@@ -272,8 +258,8 @@ export const useBookStore = create(
                   chapterOutline: outline.sections,
                   sectionIndex: j,
                   previousSections: completedSections,
-                  toc: currentBook.tableOfContents,
-                  sourceText: currentBook.sourceText || "",
+                  toc: tableOfContents,
+                  sourceText: sourceText || "",
                   provider: provider,
                   model: model,
                   settings,
@@ -357,29 +343,15 @@ export const useBookStore = create(
               return;
             }
 
-            const newBook: Book = {
-              id: Date.now().toString(),
-              title: currentBook.tableOfContents[0] || "Untitled Book",
-              createdAt: new Date().toISOString(),
-              sourceText: currentBook.sourceText,
-              tableOfContents: currentBook.tableOfContents,
-              content: fullContent,
-              selectedModel: model,
-            };
-
             set(
-              (state) => ({
-                books: [newBook, ...state.books],
-                currentBook: {
-                  ...newBook,
-                  sourceText: newBook.sourceText || "",
-                } as BookDraft,
+              {
+                content: fullContent,
                 flowStatus: "completed",
                 currentChapterIndex: null,
                 currentChapterContent: "",
                 awaitingChapterDecision: false,
                 generationProgress: { phase: "idle" },
-              }),
+              },
               false,
               "book/startBookGeneration_success",
             );
@@ -422,19 +394,17 @@ export const useBookStore = create(
         setSelectedModel: (provider, model) => {
           set(
             (state) => ({
-              currentBook: {
-                ...state.currentBook,
-                selectedProvider: provider,
-                selectedModel: model,
+              aiConfiguration: {
+                ...state.aiConfiguration,
+                content: {
+                  provider,
+                  model,
+                },
               },
             }),
             false,
             "book/setSelectedModel",
           );
-        },
-
-        getBookById: (id) => {
-          return get().books.find((b) => b.id === id);
         },
 
         goToChapter: (index) => {

@@ -17,10 +17,9 @@ export default function SettingsStep() {
     setUserPreference,
   } = useSettingsStore();
 
-  const currentBook = useBookStore((state) => state.currentBook);
-  const { updateDraft } = useBookStore((state) => state.actions);
+  const aiConfiguration = useBookStore((state) => state.aiConfiguration);
 
-  const selectedModel = currentBook.selectedModel as
+  const selectedModel = aiConfiguration.toc.model as
     | GeminiModel
     | ClaudeModel
     | undefined;
@@ -28,10 +27,15 @@ export default function SettingsStep() {
   const handleModelChange = (modelId: string) => {
     const providerId = getProviderByModel(modelId);
     if (providerId) {
-      updateDraft({
-        selectedProvider: providerId,
-        selectedModel: modelId as GeminiModel | ClaudeModel,
-      });
+      useBookStore.setState((state) => ({
+        aiConfiguration: {
+          ...state.aiConfiguration,
+          toc: {
+            provider: providerId,
+            model: modelId as GeminiModel | ClaudeModel,
+          },
+        },
+      }));
     }
   };
 

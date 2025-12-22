@@ -8,7 +8,8 @@ import Button from "./_components/Button";
 
 export default function LibraryPage() {
   const router = useRouter();
-  const books = useBookStore((state) => state.books);
+  // TODO: fetch books from API
+  const books: Book[] = [];
   const { startNewBook, setActiveBook } = useBookStore(
     (state) => state.actions,
   );

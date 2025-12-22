@@ -11,7 +11,6 @@ import GenerationStep from "./_components/GenerationStep";
 
 export default function CreateBookPage() {
   const router = useRouter();
-  const currentBook = useBookStore((state) => state.currentBook);
   const flowStatus = useBookStore((state) => state.flowStatus);
   const isProcessing = useBookStore((state) => state.isProcessing);
 
@@ -32,13 +31,6 @@ export default function CreateBookPage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isProcessing, isGenerating]);
-
-  // Redirect on completion
-  useEffect(() => {
-    if (flowStatus === "completed" && currentBook.id) {
-      router.push(`/book/${currentBook.id}`);
-    }
-  }, [flowStatus, currentBook.id, router]);
 
   const handleReturnToList = () => {
     if (
@@ -69,16 +61,9 @@ export default function CreateBookPage() {
 
       {/* Content Area */}
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
-        {/* STEP 0: SETTINGS */}
         {flowStatus === "settings" && <SettingsStep />}
-
-        {/* STEP 1: SOURCE INPUT */}
         {flowStatus === "draft" && <SourceInputStep />}
-
-        {/* STEP 2: TOC REVIEW */}
         {flowStatus === "toc_review" && <TOCReviewStep />}
-
-        {/* STEP 3: GENERATION STREAMING */}
         {isGenerating && <GenerationStep />}
       </div>
     </div>

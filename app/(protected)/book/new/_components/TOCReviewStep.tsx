@@ -7,16 +7,15 @@ import { FileText, RefreshCw } from "lucide-react";
 import Button from "../../_components/Button";
 
 export default function TOCReviewStep() {
-  const currentBook = useBookStore((state) => state.currentBook);
+  const tableOfContents = useBookStore((state) => state.tableOfContents);
+  const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const { setSelectedModel, regenerateTOC, startBookGeneration } = useBookStore(
     (state) => state.actions,
   );
-
-  const tableOfContents = currentBook.tableOfContents || [];
-  const selectedProvider = currentBook.selectedProvider || AI_CONFIG[0].id;
+  const selectedProvider = aiConfiguration.content.provider || AI_CONFIG[0].id;
   const selectedModel =
-    currentBook.selectedModel ||
+    aiConfiguration.content.model ||
     (AI_CONFIG[0].models[0].id as GeminiModel | ClaudeModel);
 
   return (

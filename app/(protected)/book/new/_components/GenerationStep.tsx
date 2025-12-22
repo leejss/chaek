@@ -4,7 +4,7 @@ import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
-import { ChapterContent, GenerationProgress } from "@/lib/book/types";
+import { GenerationProgress } from "@/lib/book/types";
 import { useBookStore } from "@/lib/book/bookContext";
 
 function getPhaseLabel(progress: GenerationProgress): string {
@@ -32,21 +32,18 @@ export default function GenerationStep() {
   const currentChapterContent = useBookStore(
     (state) => state.currentChapterContent,
   );
-  const currentBook = useBookStore((state) => state.currentBook);
+  const tableOfContents = useBookStore((state) => state.tableOfContents);
   const currentChapterIndex = useBookStore(
     (state) => state.currentChapterIndex,
-  );
-  const awaitingChapterDecision = useBookStore(
-    (state) => state.awaitingChapterDecision,
   );
   const generationProgress = useBookStore(
     (state) => state.generationProgress,
   ) || { phase: "idle" };
-
+  const awaitingChapterDecision = useBookStore(
+    (state) => state.awaitingChapterDecision,
+  );
   const { confirmChapter, cancelGeneration, goToPrevChapter, goToNextChapter } =
     useBookStore((state) => state.actions);
-
-  const tableOfContents = currentBook.tableOfContents;
 
   const phaseLabel = getPhaseLabel(generationProgress);
   const isReview = generationProgress.phase === "review";

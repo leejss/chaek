@@ -26,8 +26,6 @@ export interface Book {
   outlines?: ChapterOutline[];
   chapters?: GeneratedChapter[];
   content: string;
-  selectedProvider?: AIProvider;
-  selectedModel?: GeminiModel | ClaudeModel;
 }
 
 export interface User {
@@ -69,8 +67,17 @@ export type BookDraft = {
   sourceText: string;
   tableOfContents: string[];
   content: string;
-  selectedProvider?: AIProvider;
-  selectedModel?: GeminiModel | ClaudeModel;
+};
+
+export type AIConfiguration = {
+  toc: {
+    provider?: AIProvider;
+    model?: GeminiModel | ClaudeModel;
+  };
+  content: {
+    provider?: AIProvider;
+    model?: GeminiModel | ClaudeModel;
+  };
 };
 
 export type GenerationPhase =
@@ -95,8 +102,10 @@ export type ChapterContent = {
 };
 
 export type BookContextState = {
-  books: Book[];
-  currentBook: BookDraft;
+  sourceText: string;
+  tableOfContents: string[];
+  content: string;
+  aiConfiguration: AIConfiguration;
   flowStatus: FlowStatus;
   chapters: ChapterContent[];
   viewingChapterIndex: number;
@@ -111,8 +120,12 @@ export type BookContextState = {
 
 export type BookActions = {
   startNewBook: () => void;
-  updateDraft: (draft: Partial<BookDraft>) => void;
-  setActiveBook: (book: Book | BookDraft) => void;
+  updateDraft: (
+    draft: Partial<
+      Pick<BookContextState, "sourceText" | "tableOfContents" | "content">
+    >,
+  ) => void;
+  setActiveBook: (book: Book) => void;
   generateTOC: (sourceText: string) => Promise<void>;
   regenerateTOC: () => Promise<void>;
   startBookGeneration: (
@@ -125,7 +138,6 @@ export type BookActions = {
     provider: AIProvider,
     model: GeminiModel | ClaudeModel,
   ) => void;
-  getBookById: (id: string) => Book | undefined;
   goToChapter: (index: number) => void;
   goToPrevChapter: () => void;
   goToNextChapter: () => void;

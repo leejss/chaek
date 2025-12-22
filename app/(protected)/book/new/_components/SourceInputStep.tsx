@@ -5,11 +5,9 @@ import Button from "../../_components/Button";
 import { useBookStore } from "@/lib/book/bookContext";
 
 export default function SourceInputStep() {
-  const currentBook = useBookStore((state) => state.currentBook);
+  const sourceText = useBookStore((state) => state.sourceText);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const { updateDraft, generateTOC } = useBookStore((state) => state.actions);
-
-  const sourceText = currentBook.sourceText || "";
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
