@@ -1,36 +1,24 @@
 "use client";
 
-import React from "react";
 import { RefreshCw, FileText } from "lucide-react";
 import Button from "../../_components/Button";
 import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
+import { useBookStore } from "@/lib/book/bookContext";
 
-interface TOCReviewStepProps {
-  tableOfContents: string[];
-  selectedProvider: AIProvider;
-  selectedModel: GeminiModel | ClaudeModel;
-  isProcessing: boolean;
-  onSetSelectedModel: (
-    provider: AIProvider,
-    model: GeminiModel | ClaudeModel,
-  ) => void;
-  onRegenerateTOC: () => void;
-  onStartGeneration: (
-    provider: AIProvider,
-    model: GeminiModel | ClaudeModel,
-  ) => void;
-}
+export default function TOCReviewStep() {
+  const currentBook = useBookStore((state) => state.currentBook);
+  const isProcessing = useBookStore((state) => state.isProcessing);
+  const { setSelectedModel, regenerateTOC, startBookGeneration } = useBookStore(
+    (state) => state.actions,
+  );
 
-export default function TOCReviewStep({
-  tableOfContents,
-  selectedProvider,
-  selectedModel,
-  isProcessing,
-  onSetSelectedModel,
-  onRegenerateTOC,
-  onStartGeneration,
-}: TOCReviewStepProps) {
+  const tableOfContents = currentBook.tableOfContents || [];
+  const selectedProvider = currentBook.selectedProvider || AI_CONFIG[0].id;
+  const selectedModel =
+    currentBook.selectedModel ||
+    (AI_CONFIG[0].models[0].id as GeminiModel | ClaudeModel);
+
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       <div className="text-center mb-8">
@@ -69,7 +57,7 @@ export default function TOCReviewStep({
               const modelId = e.target.value;
               const providerId = getProviderByModel(modelId);
               if (providerId) {
-                onSetSelectedModel(
+                setSelectedModel(
                   providerId,
                   modelId as GeminiModel | ClaudeModel,
                 );
@@ -91,7 +79,7 @@ export default function TOCReviewStep({
         <div className="flex gap-4 pt-4">
           <Button
             variant="outline"
-            onClick={onRegenerateTOC}
+            onClick={regenerateTOC}
             isLoading={isProcessing}
             className="flex-1"
           >
@@ -99,7 +87,7 @@ export default function TOCReviewStep({
             Regenerate TOC
           </Button>
           <Button
-            onClick={() => onStartGeneration(selectedProvider, selectedModel)}
+            onClick={() => startBookGeneration(selectedProvider, selectedModel)}
             className="flex-2"
           >
             <FileText size={16} className="mr-2" />

@@ -4,26 +4,23 @@ import { Sparkles, Cpu, Check } from "lucide-react";
 import Button from "../../_components/Button";
 import { ClaudeModel, GeminiModel, BookDraft } from "@/lib/book/types";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
+import { useBookStore } from "@/lib/book/bookContext";
 
-interface SourceInputStepProps {
-  sourceText: string;
-  selectedModel: GeminiModel | ClaudeModel;
-  isProcessing: boolean;
-  onUpdateDraft: (data: Partial<BookDraft>) => void;
-  onGenerateTOC: (text: string) => void;
-}
+export default function SourceInputStep() {
+  const currentBook = useBookStore((state) => state.currentBook);
+  const isProcessing = useBookStore((state) => state.isProcessing);
+  const { updateDraft, generateTOC } = useBookStore((state) => state.actions);
 
-export default function SourceInputStep({
-  sourceText,
-  selectedModel,
-  isProcessing,
-  onUpdateDraft,
-  onGenerateTOC,
-}: SourceInputStepProps) {
+  const sourceText = currentBook.sourceText || "";
+  const selectedModel = currentBook.selectedModel as
+    | GeminiModel
+    | ClaudeModel
+    | undefined;
+
   const handleModelChange = (modelId: string) => {
     const providerId = getProviderByModel(modelId);
     if (providerId) {
-      onUpdateDraft({
+      updateDraft({
         selectedProvider: providerId,
         selectedModel: modelId as GeminiModel | ClaudeModel,
       });
@@ -102,7 +99,7 @@ export default function SourceInputStep({
           className="w-full h-96 p-6 bg-paper border border-stone-300 rounded-sm focus:ring-2 focus:ring-brand-900/20 focus:border-brand-900 transition-all font-serif text-lg leading-relaxed resize-none placeholder:text-stone-300 placeholder:italic shadow-inner"
           placeholder="Paste your source text here..."
           value={sourceText || ""}
-          onChange={(e) => onUpdateDraft({ sourceText: e.target.value })}
+          onChange={(e) => updateDraft({ sourceText: e.target.value })}
         />
         <div className="absolute bottom-4 right-4 text-xs text-stone-400 bg-white/80 px-2 py-1 rounded">
           {sourceText?.length || 0} chars
@@ -111,7 +108,7 @@ export default function SourceInputStep({
 
       <div className="flex justify-end pt-4">
         <Button
-          onClick={() => onGenerateTOC(sourceText || "")}
+          onClick={() => generateTOC(sourceText || "")}
           disabled={!sourceText}
           isLoading={isProcessing}
           className="w-full md:w-auto h-12 px-10 text-lg"

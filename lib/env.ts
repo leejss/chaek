@@ -6,21 +6,25 @@ const serverSchema = z.object({
   OUR_JWT_SECRET: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
   ANTHROPIC_API_KEY: z.string().min(1),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 });
 
 const clientSchema = z.object({
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().min(1),
 });
 
-type ServerEnv = z.infer<typeof serverSchema> & z.infer<typeof clientSchema>;
+type ServerEnv = z.infer<typeof serverSchema>;
 type ClientEnv = z.infer<typeof clientSchema>;
 
-const isServer = typeof window === "undefined";
+const isServer = () => typeof window === "undefined";
 
-function validateServerEnv(): ServerEnv {
-  if (!isServer) {
-    throw new Error("❌ [Runtime Error] 'serverEnv'는 서버 런타임에서만 접근 가능합니다.");
+const validateServerEnv = (): ServerEnv => {
+  if (!isServer()) {
+    throw new Error(
+      "❌ [Runtime Error] 'serverEnv'는 서버 런타임에서만 접근 가능합니다.",
+    );
   }
 
   const fullSchema = serverSchema.extend(clientSchema.shape);
@@ -35,7 +39,7 @@ function validateServerEnv(): ServerEnv {
   }
 
   return _env.data;
-}
+};
 
 function validateClientEnv(): ClientEnv {
   const _env = clientSchema.safeParse({
@@ -53,6 +57,5 @@ function validateClientEnv(): ClientEnv {
   return _env.data;
 }
 
-export const serverEnv = isServer ? validateServerEnv() : ({} as ServerEnv);
+export const serverEnv = isServer() ? validateServerEnv() : ({} as ServerEnv);
 export const clientEnv = validateClientEnv();
-

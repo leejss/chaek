@@ -37,9 +37,7 @@ const initialState: BookContextState = {
   generationProgress: { phase: "idle" },
 };
 
-export const useBookStore = create<
-  BookContextState & { actions: BookActions }
->()(
+export const useBookStore = create(
   devtools(
     combine(initialState, (set, get) => {
       let chapterDecisionResolver:

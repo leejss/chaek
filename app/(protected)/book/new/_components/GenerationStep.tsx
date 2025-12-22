@@ -5,20 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
 import { ChapterContent, GenerationProgress } from "@/lib/book/types";
-
-interface GenerationStepProps {
-  chapters: ChapterContent[];
-  viewingChapterIndex: number;
-  currentChapterContent: string;
-  tableOfContents?: string[];
-  currentChapterIndex?: number | null;
-  awaitingChapterDecision?: boolean;
-  onConfirmChapter?: () => void;
-  onCancelGeneration?: () => void;
-  onPrevChapter?: () => void;
-  onNextChapter?: () => void;
-  generationProgress?: GenerationProgress;
-}
+import { useBookStore } from "@/lib/book/bookContext";
 
 function getPhaseLabel(progress: GenerationProgress): string {
   switch (progress.phase) {
@@ -37,19 +24,30 @@ function getPhaseLabel(progress: GenerationProgress): string {
   }
 }
 
-export default function GenerationStep({
-  chapters,
-  viewingChapterIndex,
-  currentChapterContent,
-  tableOfContents,
-  currentChapterIndex,
-  awaitingChapterDecision,
-  onConfirmChapter,
-  onCancelGeneration,
-  onPrevChapter,
-  onNextChapter,
-  generationProgress = { phase: "idle" },
-}: GenerationStepProps) {
+export default function GenerationStep() {
+  const chapters = useBookStore((state) => state.chapters);
+  const viewingChapterIndex = useBookStore(
+    (state) => state.viewingChapterIndex,
+  );
+  const currentChapterContent = useBookStore(
+    (state) => state.currentChapterContent,
+  );
+  const currentBook = useBookStore((state) => state.currentBook);
+  const currentChapterIndex = useBookStore(
+    (state) => state.currentChapterIndex,
+  );
+  const awaitingChapterDecision = useBookStore(
+    (state) => state.awaitingChapterDecision,
+  );
+  const generationProgress = useBookStore(
+    (state) => state.generationProgress,
+  ) || { phase: "idle" };
+
+  const { confirmChapter, cancelGeneration, goToPrevChapter, goToNextChapter } =
+    useBookStore((state) => state.actions);
+
+  const tableOfContents = currentBook.tableOfContents;
+
   const phaseLabel = getPhaseLabel(generationProgress);
   const isReview = generationProgress.phase === "review";
 
@@ -91,7 +89,7 @@ export default function GenerationStep({
       {totalPages > 0 && (
         <div className="flex items-center justify-between mb-4 px-2">
           <button
-            onClick={onPrevChapter}
+            onClick={goToPrevChapter}
             disabled={!canGoPrev}
             className="flex items-center gap-1 px-3 py-2 text-sm text-stone-600 hover:text-brand-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
@@ -115,7 +113,7 @@ export default function GenerationStep({
           </div>
 
           <button
-            onClick={onNextChapter}
+            onClick={goToNextChapter}
             disabled={!canGoNext}
             className="flex items-center gap-1 px-3 py-2 text-sm text-stone-600 hover:text-brand-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
@@ -167,16 +165,16 @@ export default function GenerationStep({
             <div className="flex gap-3 mt-4">
               <Button
                 variant="outline"
-                onClick={onCancelGeneration}
+                onClick={cancelGeneration}
                 className="flex-1"
-                disabled={!onCancelGeneration}
+                disabled={!cancelGeneration}
               >
                 Cancel
               </Button>
               <Button
-                onClick={onConfirmChapter}
+                onClick={confirmChapter}
                 className="flex-1"
-                disabled={!awaitingChapterDecision || !onConfirmChapter}
+                disabled={!awaitingChapterDecision || !confirmChapter}
               >
                 Confirm Chapter
               </Button>

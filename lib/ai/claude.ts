@@ -111,9 +111,6 @@ export async function* streamBookChapterGeneration(params: {
     chapterNumber,
   });
 
-  console.log("System instruction:", systemInstruction);
-  console.log("User content:", userContent);
-
   const stream = await anthropic.messages.create({
     model: model,
     max_tokens: 4096,

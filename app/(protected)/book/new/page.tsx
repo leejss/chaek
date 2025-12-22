@@ -7,37 +7,11 @@ import { useBookStore } from "@/lib/book/bookContext";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
-import { AIProvider, GeminiModel } from "@/lib/book/types";
 
 export default function CreateBookPage() {
   const router = useRouter();
   const currentBook = useBookStore((state) => state.currentBook);
   const isProcessing = useBookStore((state) => state.isProcessing);
-  const chapters = useBookStore((state) => state.chapters);
-  const viewingChapterIndex = useBookStore(
-    (state) => state.viewingChapterIndex,
-  );
-  const currentChapterIndex = useBookStore(
-    (state) => state.currentChapterIndex,
-  );
-  const currentChapterContent = useBookStore(
-    (state) => state.currentChapterContent,
-  );
-  const awaitingChapterDecision = useBookStore(
-    (state) => state.awaitingChapterDecision,
-  );
-  const generationProgress = useBookStore((state) => state.generationProgress);
-  const {
-    updateDraft,
-    generateTOC,
-    regenerateTOC,
-    startBookGeneration,
-    confirmChapter,
-    cancelGeneration,
-    setSelectedModel,
-    goToPrevChapter,
-    goToNextChapter,
-  } = useBookStore((state) => state.actions);
 
   const isGenerating =
     currentBook.status === "generating_outlines" ||
@@ -95,47 +69,13 @@ export default function CreateBookPage() {
       {/* Content Area */}
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
         {/* STEP 1: SOURCE INPUT */}
-        {currentBook.status === "draft" && (
-          <SourceInputStep
-            sourceText={currentBook.sourceText || ""}
-            selectedModel={currentBook.selectedModel || GeminiModel.FLASH}
-            isProcessing={isProcessing}
-            onUpdateDraft={updateDraft}
-            onGenerateTOC={generateTOC}
-          />
-        )}
+        {currentBook.status === "draft" && <SourceInputStep />}
 
         {/* STEP 2: TOC REVIEW */}
-        {currentBook.status === "toc_review" && (
-          <TOCReviewStep
-            tableOfContents={currentBook.tableOfContents || []}
-            selectedProvider={currentBook.selectedProvider || AIProvider.GOOGLE}
-            selectedModel={currentBook.selectedModel || GeminiModel.FLASH}
-            isProcessing={isProcessing}
-            onSetSelectedModel={setSelectedModel}
-            onRegenerateTOC={regenerateTOC}
-            onStartGeneration={(provider, model) =>
-              startBookGeneration(provider, model)
-            }
-          />
-        )}
+        {currentBook.status === "toc_review" && <TOCReviewStep />}
 
         {/* STEP 3: GENERATION STREAMING */}
-        {isGenerating && (
-          <GenerationStep
-            chapters={chapters}
-            viewingChapterIndex={viewingChapterIndex}
-            currentChapterContent={currentChapterContent}
-            tableOfContents={currentBook.tableOfContents || []}
-            currentChapterIndex={currentChapterIndex}
-            awaitingChapterDecision={awaitingChapterDecision}
-            onConfirmChapter={confirmChapter}
-            onCancelGeneration={cancelGeneration}
-            onPrevChapter={goToPrevChapter}
-            onNextChapter={goToNextChapter}
-            generationProgress={generationProgress}
-          />
-        )}
+        {isGenerating && <GenerationStep />}
       </div>
     </div>
   );
