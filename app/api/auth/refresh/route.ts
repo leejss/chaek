@@ -12,7 +12,7 @@ import { generateRandomToken, sha256Hex } from "@/utils";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { add, Duration } from "date-fns";
-import { env } from "@/lib/env";
+import { serverEnv } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     // Create response and return it
     const res = NextResponse.json({ ok: true }, { status: 200 });
 
-    const ourJwtSecret = new TextEncoder().encode(env.OUR_JWT_SECRET);
+    const ourJwtSecret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
     const newAccessJwt = await issueAccessJWT({
       userId: userRow.id,
       email: userRow.email,

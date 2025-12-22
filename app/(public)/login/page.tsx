@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BookOpen } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { env } from "@/lib/env";
+import { clientEnv } from "@/lib/env";
 
 declare global {
   interface Window {
@@ -18,7 +18,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const clientId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientId = clientEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) return;
 
     const script = document.createElement("script");

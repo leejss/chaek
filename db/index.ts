@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/bun-sql";
 import { SQL } from "bun";
 
-import { env } from "@/lib/env";
+import { serverEnv } from "@/lib/env";
 
-const url = env.DATABASE_URL;
+const url = serverEnv.DATABASE_URL;
 
 const client = new SQL({
   url,

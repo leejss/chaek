@@ -11,12 +11,12 @@ import {
   tocUserContents,
 } from "@/lib/ai/instructions";
 import { ChapterOutline, ClaudeModel, Section } from "@/lib/book/types";
-import { env } from "@/lib/env";
+import { serverEnv } from "@/lib/env";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 export const anthropic = new Anthropic({
-  apiKey: env.ANTHROPIC_API_KEY,
+  apiKey: serverEnv.ANTHROPIC_API_KEY,
 });
 
 const TOC_TOOL_NAME = "return_toc";

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { env } from "@/lib/env";
+import { serverEnv } from "@/lib/env";
 import { ChapterOutline, GeminiModel, Section } from "@/lib/book/types";
 import {
   bookChapterSystemInstruction,
@@ -17,7 +17,7 @@ import {
 import { z } from "zod";
 
 export const gemini = new GoogleGenAI({
-  apiKey: env.GEMINI_API_KEY,
+  apiKey: serverEnv.GEMINI_API_KEY,
 });
 
 export const generateTableOfContents = async (

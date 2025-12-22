@@ -1,4 +1,4 @@
-import { env } from "./env";
+import { serverEnv } from "./env";
 
 export const accessTokenConfig = {
   name: "bookmaker_access_token",
@@ -14,7 +14,7 @@ export const refreshTokenConfig = {
 
 export const commonAuthCookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
+  secure: serverEnv.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
 };
