@@ -27,6 +27,7 @@ export interface Book {
   chapters?: GeneratedChapter[];
   content: string;
   status:
+    | "settings"
     | "draft"
     | "generating_toc"
     | "toc_review"

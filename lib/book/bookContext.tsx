@@ -16,7 +16,7 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER, isValidModel } from "@/lib/ai/config";
 import { useSettingsStore } from "./settingsStore";
 
 const emptyDraft: BookDraft = {
-  status: "draft",
+  status: "settings",
   sourceText: "",
   tableOfContents: [],
   content: "",

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Settings } from "lucide-react";
 import LogoutButton from "./_components/LogoutButton";
 
 export const metadata: Metadata = {
@@ -24,13 +23,6 @@ export default function BookLayout({
           </Link>
           <div className="flex items-center gap-4">
             <LogoutButton />
-            <Link
-              href="/settings"
-              className="p-2 text-stone-500 hover:text-brand-900 hover:bg-brand-50 rounded-sm transition-colors"
-              aria-label="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </Link>
           </div>
         </div>
       </header>

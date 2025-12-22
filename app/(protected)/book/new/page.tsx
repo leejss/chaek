@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useBookStore } from "@/lib/book/bookContext";
+import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
@@ -19,7 +20,6 @@ export default function CreateBookPage() {
     currentBook.status === "generating_book" ||
     currentBook.status === "chapter_review";
 
-  // Prevention of accidental navigation (Exit Prevention)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isProcessing || isGenerating) {
@@ -68,6 +68,9 @@ export default function CreateBookPage() {
 
       {/* Content Area */}
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
+        {/* STEP 0: SETTINGS */}
+        {currentBook.status === "settings" && <SettingsStep />}
+
         {/* STEP 1: SOURCE INPUT */}
         {currentBook.status === "draft" && <SourceInputStep />}
 
