@@ -5,16 +5,25 @@ import {
   GeminiModel,
   Section,
 } from "@/lib/book/types";
+import { BookSettings } from "@/lib/book/settings";
 
 export async function fetchTOC(
   sourceText: string,
   provider?: AIProvider,
   model?: GeminiModel | ClaudeModel,
+  settings?: BookSettings,
 ) {
   const response = await fetch("/api/ai/toc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sourceText, provider, model }),
+    body: JSON.stringify({
+      sourceText,
+      provider,
+      model,
+      language: settings?.language,
+      chapterCount: settings?.chapterCount,
+      userPreference: settings?.userPreference,
+    }),
   });
 
   if (!response.ok) {
@@ -33,11 +42,17 @@ export async function* fetchStreamChapter(params: {
   sourceText: string;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
+  settings?: BookSettings;
 }) {
+  const { settings, ...rest } = params;
   const response = await fetch("/api/ai/chapter", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      ...rest,
+      language: settings?.language,
+      userPreference: settings?.userPreference,
+    }),
   });
 
   if (!response.ok) {
@@ -59,11 +74,17 @@ export async function fetchOutline(params: {
   sourceText: string;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
+  settings?: BookSettings;
 }): Promise<ChapterOutline> {
+  const { settings, ...rest } = params;
   const response = await fetch("/api/ai/outline", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      ...rest,
+      language: settings?.language,
+      userPreference: settings?.userPreference,
+    }),
   });
 
   if (!response.ok) {
@@ -85,11 +106,17 @@ export async function* fetchStreamSection(params: {
   sourceText: string;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
+  settings?: BookSettings;
 }) {
+  const { settings, ...rest } = params;
   const response = await fetch("/api/ai/section", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      ...rest,
+      language: settings?.language,
+      userPreference: settings?.userPreference,
+    }),
   });
 
   if (!response.ok) {

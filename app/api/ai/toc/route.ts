@@ -17,6 +17,11 @@ const tocRequestSchema = z
       .refine(isValidModel, {
         message: "Unknown model",
       }),
+    language: z.string().default("Korean"),
+    chapterCount: z
+      .union([z.number().int().min(3).max(10), z.literal("Auto")])
+      .default("Auto"),
+    userPreference: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -64,16 +69,29 @@ export async function POST(req: Request) {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
 
-    const { sourceText, provider, model } = parseAndValidateBody(
-      jsonResult.data,
-    );
+    const {
+      sourceText,
+      provider,
+      model,
+      language,
+      chapterCount,
+      userPreference,
+    } = parseAndValidateBody(jsonResult.data);
 
     if (provider === AIProvider.ANTHROPIC) {
-      const toc = await generateClaudeTOC(sourceText, model as ClaudeModel);
+      const toc = await generateClaudeTOC(sourceText, model as ClaudeModel, {
+        language,
+        chapterCount,
+        userPreference,
+      });
       return NextResponse.json({ toc });
     }
     if (provider === AIProvider.GOOGLE) {
-      const toc = await generateGeminiTOC(sourceText);
+      const toc = await generateGeminiTOC(sourceText, {
+        language,
+        chapterCount,
+        userPreference,
+      });
       return NextResponse.json({ toc });
     }
 

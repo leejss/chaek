@@ -22,11 +22,26 @@ export const gemini = new GoogleGenAI({
 
 export const generateTableOfContents = async (
   sourceText: string,
+  settings: {
+    language: string;
+    chapterCount: number | "Auto";
+    userPreference?: string;
+  },
 ): Promise<string[]> => {
+  const minChapters =
+    settings.chapterCount === "Auto" ? 4 : settings.chapterCount;
+  const maxChapters =
+    settings.chapterCount === "Auto" ? 10 : settings.chapterCount;
+
   const response = await gemini.models.generateContent({
     model: GeminiModel.FLASH,
     config: {
-      systemInstruction: tocSystemInstruction(),
+      systemInstruction: tocSystemInstruction(
+        settings.language,
+        minChapters,
+        maxChapters,
+        settings.userPreference,
+      ),
       ...tocResponseConfig,
     },
     contents: tocUserContents(sourceText),
@@ -67,13 +82,20 @@ export async function* streamBookChapterGeneration(params: {
   chapterTitle: string;
   chapterNumber: number;
   model: GeminiModel;
+  language: string;
+  userPreference?: string;
 }): AsyncGenerator<string, void, unknown> {
-  const { toc, chapterTitle, chapterNumber, model } = params;
+  const { toc, chapterTitle, chapterNumber, model, language, userPreference } =
+    params;
 
   const streamResponse = await gemini.models.generateContentStream({
     model,
     config: {
-      systemInstruction: bookChapterSystemInstruction(toc),
+      systemInstruction: bookChapterSystemInstruction(
+        toc,
+        language,
+        userPreference,
+      ),
     },
     contents: bookChapterUserContents({
       chapterTitle,
@@ -128,10 +150,25 @@ export const generateChapterOutline = async (params: {
   chapterNumber: number;
   sourceText: string;
   model: GeminiModel;
+  language: string;
+  userPreference?: string;
 }): Promise<ChapterOutline> => {
-  const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
+  const {
+    toc,
+    chapterTitle,
+    chapterNumber,
+    sourceText,
+    model,
+    language,
+    userPreference,
+  } = params;
 
-  const systemInstruction = chapterOutlineSystemInstruction(toc, sourceText);
+  const systemInstruction = chapterOutlineSystemInstruction(
+    toc,
+    sourceText,
+    language,
+    userPreference,
+  );
   const userContent = chapterOutlineUserContents({
     chapterTitle,
     chapterNumber,
@@ -164,6 +201,8 @@ export async function* streamSectionContent(params: {
   sectionIndex: number;
   previousSections: Section[];
   model: GeminiModel;
+  language: string;
+  userPreference?: string;
 }): AsyncGenerator<string, void, unknown> {
   const {
     chapterNumber,
@@ -172,8 +211,9 @@ export async function* streamSectionContent(params: {
     sectionIndex,
     previousSections,
     model,
+    language,
+    userPreference,
   } = params;
-
   const currentSection = chapterOutline[sectionIndex];
   if (!currentSection) {
     throw new Error(`Section at index ${sectionIndex} not found`);
@@ -184,6 +224,8 @@ export async function* streamSectionContent(params: {
     chapterTitle,
     chapterOutline,
     previousSections,
+    language,
+    userPreference,
   });
 
   const userContent = sectionContentUserContents({
@@ -210,10 +252,24 @@ export async function* streamChapterRefinement(params: {
   chapterTitle: string;
   assembledContent: string;
   model: GeminiModel;
+  language: string;
+  userPreference?: string;
 }): AsyncGenerator<string, void, unknown> {
-  const { toc, chapterNumber, chapterTitle, assembledContent, model } = params;
+  const {
+    toc,
+    chapterNumber,
+    chapterTitle,
+    assembledContent,
+    model,
+    language,
+    userPreference,
+  } = params;
 
-  const systemInstruction = chapterRefinementSystemInstruction(toc);
+  const systemInstruction = chapterRefinementSystemInstruction(
+    toc,
+    language,
+    userPreference,
+  );
   const userContent = chapterRefinementUserContents({
     chapterNumber,
     chapterTitle,

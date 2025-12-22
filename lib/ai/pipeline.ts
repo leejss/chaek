@@ -22,6 +22,8 @@ export type PipelineConfig = {
   model: GeminiModel | ClaudeModel;
   toc: string[];
   sourceText: string;
+  language: string;
+  userPreference?: string;
 };
 
 export type ChapterGenerationProgress = {
@@ -51,6 +53,8 @@ export async function generateOutline(
       chapterNumber,
       sourceText,
       model: model as ClaudeModel,
+      language: config.language,
+      userPreference: config.userPreference,
     });
   }
 
@@ -60,6 +64,8 @@ export async function generateOutline(
     chapterNumber,
     sourceText,
     model: model as GeminiModel,
+    language: config.language,
+    userPreference: config.userPreference,
   });
 }
 
@@ -89,6 +95,8 @@ export async function* streamSection(
       sectionIndex,
       previousSections,
       model: model as ClaudeModel,
+      language: config.language,
+      userPreference: config.userPreference,
     });
   } else {
     yield* streamGeminiSection({
@@ -98,6 +106,8 @@ export async function* streamSection(
       sectionIndex,
       previousSections,
       model: model as GeminiModel,
+      language: config.language,
+      userPreference: config.userPreference,
     });
   }
 }
@@ -117,6 +127,8 @@ export async function* streamRefinement(
       chapterTitle,
       assembledContent,
       model: model as ClaudeModel,
+      language: config.language,
+      userPreference: config.userPreference,
     });
   } else {
     yield* streamGeminiRefinement({
@@ -125,6 +137,8 @@ export async function* streamRefinement(
       chapterTitle,
       assembledContent,
       model: model as GeminiModel,
+      language: config.language,
+      userPreference: config.userPreference,
     });
   }
 }

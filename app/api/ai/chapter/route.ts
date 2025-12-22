@@ -20,6 +20,8 @@ const chapterRequestSchema = z
       .refine(isValidModel, {
         message: "Unknown model",
       }),
+    language: z.string().default("Korean"),
+    userPreference: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -69,8 +71,15 @@ export async function POST(req: Request) {
   try {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
-    const { toc, chapterTitle, chapterNumber, provider, model } =
-      parseAndValidateBody(jsonResult.data);
+    const {
+      toc,
+      chapterTitle,
+      chapterNumber,
+      provider,
+      model,
+      language,
+      userPreference,
+    } = parseAndValidateBody(jsonResult.data);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -85,6 +94,8 @@ export async function POST(req: Request) {
               chapterTitle,
               chapterNumber,
               model: model as ClaudeModel,
+              language,
+              userPreference,
             });
           } else {
             generator = streamGeminiChapter({
@@ -92,6 +103,8 @@ export async function POST(req: Request) {
               chapterTitle,
               chapterNumber,
               model: model as GeminiModel,
+              language,
+              userPreference,
             });
           }
 

@@ -49,8 +49,23 @@ const findToolUseInput = (content: unknown, toolName: string): unknown => {
 export const generateTableOfContents = async (
   sourceText: string,
   model: ClaudeModel,
+  settings: {
+    language: string;
+    chapterCount: number | "Auto";
+    userPreference?: string;
+  },
 ): Promise<string[]> => {
-  const systemInstruction = tocSystemInstruction();
+  const minChapters =
+    settings.chapterCount === "Auto" ? 4 : settings.chapterCount;
+  const maxChapters =
+    settings.chapterCount === "Auto" ? 10 : settings.chapterCount;
+
+  const systemInstruction = tocSystemInstruction(
+    settings.language,
+    minChapters,
+    maxChapters,
+    settings.userPreference,
+  );
   const userContent = tocUserContents(sourceText);
 
   const tocToolInputSchema = z.object({
@@ -102,10 +117,17 @@ export async function* streamBookChapterGeneration(params: {
   chapterTitle: string;
   chapterNumber: number;
   model: ClaudeModel;
+  language: string;
+  userPreference?: string;
 }): AsyncGenerator<string, void, unknown> {
-  const { toc, chapterTitle, chapterNumber, model } = params;
+  const { toc, chapterTitle, chapterNumber, model, language, userPreference } =
+    params;
 
-  const systemInstruction = bookChapterSystemInstruction(toc);
+  const systemInstruction = bookChapterSystemInstruction(
+    toc,
+    language,
+    userPreference,
+  );
   const userContent = bookChapterUserContents({
     chapterTitle,
     chapterNumber,
@@ -154,10 +176,25 @@ export const generateChapterOutline = async (params: {
   chapterNumber: number;
   sourceText: string;
   model: ClaudeModel;
+  language: string;
+  userPreference?: string;
 }): Promise<ChapterOutline> => {
-  const { toc, chapterTitle, chapterNumber, sourceText, model } = params;
+  const {
+    toc,
+    chapterTitle,
+    chapterNumber,
+    sourceText,
+    model,
+    language,
+    userPreference,
+  } = params;
 
-  const systemInstruction = chapterOutlineSystemInstruction(toc, sourceText);
+  const systemInstruction = chapterOutlineSystemInstruction(
+    toc,
+    sourceText,
+    language,
+    userPreference,
+  );
   const userContent = chapterOutlineUserContents({
     chapterTitle,
     chapterNumber,
@@ -213,6 +250,8 @@ export async function* streamSectionContent(params: {
   sectionIndex: number;
   previousSections: Section[];
   model: ClaudeModel;
+  language: string;
+  userPreference?: string;
 }): AsyncGenerator<string, void, unknown> {
   const {
     chapterNumber,
@@ -221,6 +260,8 @@ export async function* streamSectionContent(params: {
     sectionIndex,
     previousSections,
     model,
+    language,
+    userPreference,
   } = params;
 
   const currentSection = chapterOutline[sectionIndex];
@@ -233,6 +274,8 @@ export async function* streamSectionContent(params: {
     chapterTitle,
     chapterOutline,
     previousSections,
+    language,
+    userPreference,
   });
 
   const userContent = sectionContentUserContents({
@@ -264,10 +307,24 @@ export async function* streamChapterRefinement(params: {
   chapterTitle: string;
   assembledContent: string;
   model: ClaudeModel;
+  language: string;
+  userPreference?: string;
 }): AsyncGenerator<string, void, unknown> {
-  const { toc, chapterNumber, chapterTitle, assembledContent, model } = params;
+  const {
+    toc,
+    chapterNumber,
+    chapterTitle,
+    assembledContent,
+    model,
+    language,
+    userPreference,
+  } = params;
 
-  const systemInstruction = chapterRefinementSystemInstruction(toc);
+  const systemInstruction = chapterRefinementSystemInstruction(
+    toc,
+    language,
+    userPreference,
+  );
   const userContent = chapterRefinementUserContents({
     chapterNumber,
     chapterTitle,

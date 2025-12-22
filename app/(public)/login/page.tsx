@@ -82,9 +82,6 @@ export default function LoginPage() {
     <div className="min-h-screen bg-paper flex items-center justify-center p-4">
       <div className="w-full flex flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 bg-brand-900 text-white flex items-center justify-center rounded-sm shadow-sm">
-            <BookOpen size={24} />
-          </div>
           <h1 className="text-2xl md:text-5xl font-bold text-brand-900 tracking-wide">
             book.build
           </h1>

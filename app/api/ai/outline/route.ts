@@ -13,6 +13,8 @@ const outlineRequestSchema = z
     sourceText: z.string().min(1),
     provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
     model: z.string().min(1).refine(isValidModel, { message: "Unknown model" }),
+    language: z.string().default("Korean"),
+    userPreference: z.string().optional(),
   })
   .refine((data) => getProviderByModel(data.model) === data.provider, {
     message: "Provider does not match model",
@@ -40,8 +42,15 @@ export async function POST(req: Request) {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
 
-    const { toc, chapterNumber, sourceText, provider, model } =
-      parseAndValidateBody(jsonResult.data);
+    const {
+      toc,
+      chapterNumber,
+      sourceText,
+      provider,
+      model,
+      language,
+      userPreference,
+    } = parseAndValidateBody(jsonResult.data);
 
     const outline = await generateOutline(
       {
@@ -49,6 +58,8 @@ export async function POST(req: Request) {
         model: model as GeminiModel | ClaudeModel,
         toc,
         sourceText,
+        language,
+        userPreference,
       },
       chapterNumber,
     );

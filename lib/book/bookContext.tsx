@@ -13,6 +13,7 @@ import {
   Section,
 } from "@/lib/book/types";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, isValidModel } from "@/lib/ai/config";
+import { useSettingsStore } from "./settingsStore";
 
 const emptyDraft: BookDraft = {
   status: "draft",
@@ -124,10 +125,12 @@ export const useBookStore = create(
 
           try {
             const { currentBook } = get();
+            const settings = useSettingsStore.getState();
             const toc = await fetchTOC(
               sourceText,
               currentBook.selectedProvider,
               currentBook.selectedModel,
+              settings,
             );
             set(
               (state) => ({
@@ -228,12 +231,14 @@ export const useBookStore = create(
                 "book/generating_outline",
               );
 
+              const settings = useSettingsStore.getState();
               const outline = await fetchOutline({
                 toc: currentBook.tableOfContents,
                 chapterNumber,
                 sourceText: currentBook.sourceText || "",
                 provider: selectedProvider,
                 model: selectedModel,
+                settings,
               });
 
               if (generationCancelled) break;
@@ -285,6 +290,7 @@ export const useBookStore = create(
                   sourceText: currentBook.sourceText || "",
                   provider: selectedProvider,
                   model: selectedModel,
+                  settings,
                 })) {
                   if (generationCancelled) break;
 

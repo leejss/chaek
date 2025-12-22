@@ -23,20 +23,13 @@ export default function LibraryPage() {
     if (book.status === "completed") {
       router.push(`/book/${book.id}`);
     } else {
-      // If it's a draft, go back to creation wizard
       router.push("/book/new");
     }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between border-b border-stone-200 pb-4">
-        <div>
-          <h2 className="text-3xl font-serif text-ink-900">Library</h2>
-          <p className="text-stone-500 mt-1">
-            Manage your generated literary works.
-          </p>
-        </div>
+      <div className="flex items-center justify-between">
         {books.length > 0 && (
           <Button onClick={handleStartNewBook}>
             <Plus size={18} className="mr-2" />
