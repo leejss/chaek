@@ -8,6 +8,7 @@ import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
+import TOCGeneratingStep from "./_components/TOCGeneratingStep";
 
 export default function CreateBookPage() {
   const router = useRouter();
@@ -109,6 +110,7 @@ export default function CreateBookPage() {
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
         {flowStatus === "settings" && <SettingsStep />}
         {flowStatus === "draft" && <SourceInputStep />}
+        {flowStatus === "generating_toc" && <TOCGeneratingStep />}
         {flowStatus === "toc_review" && <TOCReviewStep />}
         {isGenerating && <GenerationStep />}
       </div>

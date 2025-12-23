@@ -7,5 +7,7 @@ export default async function Home() {
   const value = cookieStore.get(accessTokenConfig.name)?.value;
   const hasAccessToken = typeof value === "string" && value.trim().length > 0;
 
+  console.log("hasAccessToken", hasAccessToken);
+
   redirect(hasAccessToken ? "/book" : "/login");
 }
