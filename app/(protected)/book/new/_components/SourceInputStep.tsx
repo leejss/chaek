@@ -1,8 +1,8 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import Button from "../../_components/Button";
 import { useBookStore } from "@/lib/book/bookContext";
+import Button from "../../_components/Button";
 
 export default function SourceInputStep() {
   const sourceText = useBookStore((state) => state.sourceText);

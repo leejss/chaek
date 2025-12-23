@@ -34,6 +34,7 @@ export const useSettingsStore = create<SettingsStore>()(
     {
       name: "book-settings-storage",
       partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { actions, ...rest } = state;
         return rest;
       },

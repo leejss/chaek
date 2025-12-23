@@ -47,8 +47,8 @@ export const AI_CONFIG: ProviderConfig[] = [
   },
 ];
 
-export const DEFAULT_PROVIDER = AIProvider.GOOGLE;
-export const DEFAULT_MODEL = GeminiModel.FLASH;
+export const DEFAULT_PROVIDER = AIProvider.ANTHROPIC;
+export const DEFAULT_MODEL = ClaudeModel.HAIKU;
 
 export function getProviderByModel(modelId: string): AIProvider | undefined {
   for (const provider of AI_CONFIG) {

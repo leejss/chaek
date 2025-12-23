@@ -1,11 +1,9 @@
 "use client";
 
-import { Settings, ArrowRight, Cpu, Check } from "lucide-react";
-import Button from "../../_components/Button";
-import { Language, useSettingsStore } from "@/lib/book/settingsStore";
 import { useBookStore } from "@/lib/book/bookContext";
-import { ClaudeModel, GeminiModel } from "@/lib/book/types";
-import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
+import { Language, useSettingsStore } from "@/lib/book/settingsStore";
+import { ArrowRight, Cpu, Settings } from "lucide-react";
+import Button from "../../_components/Button";
 
 export default function SettingsStep() {
   const language = useSettingsStore((state) => state.language);
@@ -13,23 +11,23 @@ export default function SettingsStep() {
   const userPreference = useSettingsStore((state) => state.userPreference);
   const settingsActions = useSettingsStore((state) => state.actions);
 
-  const aiConfiguration = useBookStore((state) => state.aiConfiguration);
+  // const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const bookActions = useBookStore((state) => state.actions);
 
-  const selectedModel = aiConfiguration.toc.model as
-    | GeminiModel
-    | ClaudeModel
-    | undefined;
+  // const selectedModel = aiConfiguration.toc.model as
+  //   | GeminiModel
+  //   | ClaudeModel
+  //   | undefined;
 
-  const handleModelChange = (modelId: string) => {
-    const providerId = getProviderByModel(modelId);
-    if (providerId) {
-      bookActions.setTocAiConfiguraiton(
-        providerId,
-        modelId as GeminiModel | ClaudeModel,
-      );
-    }
-  };
+  // const handleModelChange = (modelId: string) => {
+  //   const providerId = getProviderByModel(modelId);
+  //   if (providerId) {
+  //     bookActions.setTocAiConfiguraiton(
+  //       providerId,
+  //       modelId as GeminiModel | ClaudeModel,
+  //     );
+  //   }
+  // };
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
@@ -62,7 +60,7 @@ export default function SettingsStep() {
         </p>
       </div>
 
-      <div className="bg-white border border-stone-200 rounded-sm p-8 space-y-8 shadow-sm">
+      <div className="bg-white p-8 space-y-8">
         <div className="space-y-6">
           {/* AI Model Configuration */}
           <div className="space-y-4">
@@ -73,7 +71,7 @@ export default function SettingsStep() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {AI_CONFIG.map((provider) => (
                 <div key={provider.id} className="space-y-2">
                   <label className="text-xs font-semibold text-stone-400 px-1 uppercase">
@@ -116,7 +114,7 @@ export default function SettingsStep() {
                   </div>
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
 
           <div className="space-y-2">
@@ -143,7 +141,7 @@ export default function SettingsStep() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-stone-700">
-                Default Chapter Count
+                Chapter Count
               </label>
               <div className="flex items-center gap-2">
                 <input

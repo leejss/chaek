@@ -1,7 +1,6 @@
 "use client";
-
-import React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Download, Check } from "lucide-react";
+import { useState } from "react";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
 import { GenerationProgress } from "@/lib/book/types";
@@ -45,6 +44,8 @@ export default function GenerationStep() {
   const { confirmChapter, cancelGeneration, goToPrevChapter, goToNextChapter } =
     useBookStore((state) => state.actions);
 
+  const [isCopied, setIsCopied] = useState(false);
+
   const phaseLabel = getPhaseLabel(generationProgress);
   const isReview = generationProgress.phase === "review";
 
@@ -68,8 +69,45 @@ export default function GenerationStep() {
   const totalPages =
     currentChapterIndex !== null ? chapters.length + 1 : chapters.length;
 
+  const handleCopy = async () => {
+    if (!displayContent) return;
+    try {
+      await navigator.clipboard.writeText(displayContent);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy", err);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!displayContent) return;
+
+    let title = "chapter";
+    if (
+      isViewingCurrentChapter &&
+      tableOfContents &&
+      typeof currentChapterIndex === "number"
+    ) {
+      title = tableOfContents[currentChapterIndex];
+    } else if (viewingChapter) {
+      title = viewingChapter.chapterTitle;
+    }
+
+    const filename = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.md`;
+    const blob = new Blob([displayContent], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto pb-32">
       {/* Header with status */}
       {isViewingCurrentChapter && (
         <div className="sticky top-0 bg-white/95 backdrop-blur py-2 border-b border-brand-100 mb-4 z-10 flex items-center justify-center gap-2 text-brand-700">
@@ -158,24 +196,6 @@ export default function GenerationStep() {
                 </div>
               </div>
             )}
-
-            <div className="flex gap-3 mt-4">
-              <Button
-                variant="outline"
-                onClick={cancelGeneration}
-                className="flex-1"
-                disabled={!cancelGeneration}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={confirmChapter}
-                className="flex-1"
-                disabled={!awaitingChapterDecision || !confirmChapter}
-              >
-                Confirm Chapter
-              </Button>
-            </div>
           </div>
         )}
 
@@ -196,10 +216,53 @@ export default function GenerationStep() {
         </div>
       )}
 
+      {/* Content Actions Toolbar */}
+      <div className="flex justify-end gap-2 mb-2 px-2">
+        <Button
+          variant="ghost"
+          onClick={handleCopy}
+          className="px-3 py-1.5 h-auto text-xs gap-2"
+        >
+          {isCopied ? <Check size={14} /> : <Copy size={14} />}
+          {isCopied ? "Copied" : "Copy MD"}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={handleDownload}
+          className="px-3 py-1.5 h-auto text-xs gap-2"
+        >
+          <Download size={14} />
+          Export MD
+        </Button>
+      </div>
+
       {/* Content */}
       <div className="bg-white min-h-[500px]">
         <MarkdownRenderer content={displayContent} />
       </div>
+
+      {/* Fixed Bottom Action Bar */}
+      {isViewingCurrentChapter && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-stone-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 safe-area-bottom">
+          <div className="max-w-3xl mx-auto flex gap-3">
+            <Button
+              variant="outline"
+              onClick={cancelGeneration}
+              className="flex-1"
+              disabled={!cancelGeneration}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmChapter}
+              className="flex-1"
+              disabled={!awaitingChapterDecision || !confirmChapter}
+            >
+              Confirm Chapter
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
