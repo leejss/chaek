@@ -1,10 +1,5 @@
-import { streamSection } from "@/lib/ai/pipeline";
-import {
-  AIProvider,
-  ClaudeModel,
-  GeminiModel,
-  Section,
-} from "@/lib/book/types";
+import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { AIProvider, Section } from "@/lib/book/types";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
@@ -26,6 +21,7 @@ const sectionRequestSchema = z
     previousSections: z.array(sectionSchema),
     toc: z.array(z.string().min(1)).min(1),
     sourceText: z.string().min(1),
+    bookPlan: z.any().optional(), // Add plan
     provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
     model: z.string().min(1).refine(isValidModel, { message: "Unknown model" }),
     language: z.string().default("Korean"),
@@ -67,37 +63,31 @@ export async function POST(req: Request) {
       chapterOutline,
       sectionIndex,
       previousSections,
-      toc,
-      sourceText,
+      bookPlan,
       provider,
       model,
       language,
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    const outline = {
-      chapterNumber,
-      chapterTitle,
-      sections: chapterOutline as Section[],
-    };
-
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const generator = streamSection(
-            {
+          const generator = await orchestrator.streamSectionDraft({
+            chapterNumber,
+            chapterTitle,
+            chapterOutline: chapterOutline as Section[],
+            sectionIndex,
+            previousSections: previousSections as Section[],
+            bookPlan,
+            settings: {
               provider,
-              model: model as GeminiModel | ClaudeModel,
-              toc,
-              sourceText,
+              model,
               language,
               userPreference,
             },
-            outline,
-            sectionIndex,
-            previousSections as Section[],
-          );
+          });
 
           for await (const chunk of generator) {
             controller.enqueue(encoder.encode(chunk));

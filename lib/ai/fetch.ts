@@ -35,21 +35,21 @@ export async function fetchTOC(
   return data.toc as string[];
 }
 
-export async function* fetchStreamChapter(params: {
-  toc: string[];
-  chapterTitle: string;
-  chapterNumber: number;
-  sourceText: string;
-  provider: AIProvider;
-  model: GeminiModel | ClaudeModel;
-  settings?: BookSettings;
-}) {
-  const { settings, ...rest } = params;
-  const response = await fetch("/api/ai/chapter", {
+export async function fetchPlan(
+  sourceText: string,
+  toc: string[],
+  provider?: AIProvider,
+  model?: GeminiModel | ClaudeModel,
+  settings?: BookSettings,
+) {
+  const response = await fetch("/api/ai/plan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      ...rest,
+      sourceText,
+      toc,
+      provider,
+      model,
       language: settings?.language,
       userPreference: settings?.userPreference,
     }),
@@ -57,21 +57,18 @@ export async function* fetchStreamChapter(params: {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || "Failed to generate chapter");
+    throw new Error(error.error || "Failed to generate Plan");
   }
 
-  if (!response.body) throw new Error("No response body");
-
-  const decoder = new TextDecoder();
-  for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
-    yield decoder.decode(chunk, { stream: true });
-  }
+  const data = await response.json();
+  return data.plan;
 }
 
 export async function fetchOutline(params: {
   toc: string[];
   chapterNumber: number;
   sourceText: string;
+  bookPlan?: any;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
   settings?: BookSettings;
@@ -104,6 +101,7 @@ export async function* fetchStreamSection(params: {
   previousSections: Section[];
   toc: string[];
   sourceText: string;
+  bookPlan?: any;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
   settings?: BookSettings;

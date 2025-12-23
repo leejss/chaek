@@ -1,0 +1,87 @@
+import { PromptSpec } from "../core/types";
+
+export type DraftInput = {
+  chapterNumber: number;
+  chapterTitle: string;
+  chapterOutline: Array<{ title: string; summary: string }>;
+  sectionIndex: number;
+  previousSections: Array<{ title: string; summary: string }>; // Or summaries details?
+  language: string;
+  userPreference?: string;
+  plan?: any;
+};
+
+const CHAPTER_ROLE = `
+You are a professional non-fiction author and meticulous editor.
+You write clear, engaging, and well-structured instructional prose.
+You keep terminology consistent across chapters and maintain a cohesive narrative voice.
+`.trim();
+
+export const draftV1: PromptSpec<DraftInput, void> = {
+  id: "book.chapter.draft",
+  version: "v1",
+  kind: "text", // Stream text
+  buildMessages: (input) => {
+    const currentSection = input.chapterOutline[input.sectionIndex];
+    if (!currentSection) throw new Error("Section not found");
+
+    const outlineText = input.chapterOutline
+      .map((s, i) => `${i + 1}. ${s.title}: ${s.summary}`)
+      .join("\n");
+
+    const previousText =
+      input.previousSections.length > 0
+        ? input.previousSections
+            .map((s) => `- ${s.title}: ${s.summary}`)
+            .join("\n")
+        : "(This is the first section)";
+
+    return [
+      {
+        role: "system",
+        content: `${CHAPTER_ROLE}
+
+INSTRUCTIONS:
+1. Write ONLY the specified section content in Markdown.
+2. Use '### ' for section headings.
+3. Write comprehensive, engaging, and educational content.
+4. Maintain consistency with the chapter context and overall book tone.
+5. Include relevant examples, explanations, and details.
+6. Do NOT include content from other sections.
+7. Target 300-600 words per section.
+8. The output MUST be in ${input.language}.
+
+${
+  input.plan
+    ? `BOOK PLAN CONTEXT:
+Writing Style: ${input.plan.writingStyle}
+Key Themes: ${input.plan.keyThemes.join(", ")}
+Target Audience: ${input.plan.targetAudience}
+`
+    : ""
+}
+
+CHAPTER CONTEXT:
+Chapter ${input.chapterNumber}: ${input.chapterTitle}
+
+CHAPTER OUTLINE:
+${outlineText}
+
+PREVIOUS SECTIONS SUMMARY:
+${previousText}
+
+${
+  input.userPreference
+    ? `ADDITIONAL USER PREFERENCES:\n${input.userPreference}`
+    : ""
+}
+`.trim(),
+      },
+      {
+        role: "user",
+        content: `Write the content for section "${currentSection.title}":
+${currentSection.summary}`,
+      },
+    ];
+  },
+};

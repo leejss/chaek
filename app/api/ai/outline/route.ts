@@ -1,5 +1,5 @@
-import { generateOutline } from "@/lib/ai/pipeline";
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { AIProvider } from "@/lib/book/types";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
@@ -11,6 +11,7 @@ const outlineRequestSchema = z
     toc: z.array(z.string().min(1)).min(1),
     chapterNumber: z.number().int().min(1),
     sourceText: z.string().min(1),
+    bookPlan: z.any().optional(), // Add plan to context
     provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
     model: z.string().min(1).refine(isValidModel, { message: "Unknown model" }),
     language: z.string().default("Korean"),
@@ -46,23 +47,33 @@ export async function POST(req: Request) {
       toc,
       chapterNumber,
       sourceText,
+      bookPlan,
       provider,
       model,
       language,
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    const outline = await generateOutline(
-      {
+    // Need chapterTitle. Existing code didn't extract it from TOC?
+    // Wait, existing code passed `toc` and `chapterNumber` to `generateOutline`.
+    // `generateOutline` inside pipeline.ts logic: "const chapterTitle = toc[chapterNumber - 1];"
+    // So I need to do that here.
+    const chapterTitle = toc[chapterNumber - 1];
+    if (!chapterTitle) throw new Error("Chapter title not found in TOC");
+
+    const outline = await orchestrator.generateChapterOutline({
+      toc,
+      chapterTitle,
+      chapterNumber,
+      sourceText,
+      bookPlan,
+      settings: {
         provider,
-        model: model as GeminiModel | ClaudeModel,
-        toc,
-        sourceText,
+        model,
         language,
         userPreference,
       },
-      chapterNumber,
-    );
+    });
 
     return NextResponse.json({ ok: true, outline });
   } catch (error) {

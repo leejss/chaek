@@ -54,6 +54,8 @@ export type FlowStatus =
   | "draft"
   | "generating_toc"
   | "toc_review"
+  | "generating_plan"
+  | "plan_review"
   | "generating_outlines"
   | "generating_sections"
   | "generating_book"
@@ -82,6 +84,7 @@ export type AIConfiguration = {
 
 export type GenerationPhase =
   | "idle"
+  | "plan"
   | "outline"
   | "sections"
   | "refinement"
@@ -104,6 +107,7 @@ export type ChapterContent = {
 export type BookContextState = {
   sourceText: string;
   tableOfContents: string[];
+  bookPlan?: any;
   content: string;
   aiConfiguration: AIConfiguration;
   flowStatus: FlowStatus;
@@ -141,4 +145,5 @@ export type BookActions = {
   goToChapter: (index: number) => void;
   goToPrevChapter: () => void;
   goToNextChapter: () => void;
+  getBookById: (id: string) => Book | undefined;
 };

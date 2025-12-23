@@ -6,9 +6,10 @@ import { readJson } from "@/utils";
 import { NextResponse } from "next/server";
 import { isValidModel, getProviderByModel } from "@/lib/ai/config";
 
-const tocRequestSchema = z
+const planRequestSchema = z
   .object({
     sourceText: z.string().min(1, "Must be a non-empty string"),
+    toc: z.array(z.string().min(1, "Must be a non-empty string")).min(1),
     provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
     model: z
       .string()
@@ -17,9 +18,6 @@ const tocRequestSchema = z
         message: "Unknown model",
       }),
     language: z.string().default("Korean"),
-    chapterCount: z
-      .union([z.number().int().min(3).max(10), z.literal("Auto")])
-      .default("Auto"),
     userPreference: z.string().optional(),
   })
   .refine(
@@ -34,12 +32,10 @@ const tocRequestSchema = z
   );
 
 function parseAndValidateBody(body: unknown) {
-  const result = tocRequestSchema.safeParse(body);
-
+  const result = planRequestSchema.safeParse(body);
   if (!result.success) {
     throw new HttpError(400, "Invalid request body");
   }
-
   return result.data;
 }
 
@@ -68,32 +64,19 @@ export async function POST(req: Request) {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
 
-    const {
-      sourceText,
-      provider,
-      model,
-      language,
-      chapterCount,
-      userPreference,
-    } = parseAndValidateBody(jsonResult.data);
+    const { sourceText, toc, provider, model, language, userPreference } =
+      parseAndValidateBody(jsonResult.data);
 
-    const toc = await orchestrator.generateTOC(sourceText, {
+    const plan = await orchestrator.generatePlan(sourceText, toc, {
       provider,
       model,
       language,
-      chapterCount,
       userPreference,
     });
 
-    // The spec returns object { chapters: string[] }. But existing API expects `toc: string[]`.
-    // My tocV1 spec returns `z.infer<typeof TocSchema>` which is `{ chapters: string[] }`.
-    // Existing API returns `{ toc: string[] }`.
-    // I should map `chapters` to `toc`.
-
-    return NextResponse.json({ toc: toc.chapters });
+    return NextResponse.json({ ok: true, plan });
   } catch (error) {
-    console.error("TOC generation API error:", error);
-
+    console.error("Plan generation API error:", error);
     const httpError = normalizeToHttpError(error);
     if (httpError) return httpErrorToResponse(httpError);
 

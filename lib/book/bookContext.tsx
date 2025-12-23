@@ -162,7 +162,7 @@ export const useBookStore = create(
 
           set(
             (state) => ({
-              flowStatus: "generating_outlines",
+              flowStatus: "generating_plan",
               aiConfiguration: {
                 ...state.aiConfiguration,
                 content: {
@@ -173,7 +173,7 @@ export const useBookStore = create(
               chapters: [],
               viewingChapterIndex: 0,
               streamingContent: "",
-              currentChapterIndex: 0,
+              currentChapterIndex: null,
               currentChapterContent: "",
               awaitingChapterDecision: false,
               error: null,
@@ -185,6 +185,36 @@ export const useBookStore = create(
 
           try {
             generationCancelled = false;
+
+            // 1. Generate Plan
+            const settings = useSettingsStore.getState();
+            // TODO: If we want to show progress for plan generation, we can set generationProgress phase to 'plan'
+            set(
+              {
+                flowStatus: "generating_plan",
+                generationProgress: { phase: "plan" },
+              },
+              false,
+              "book/generating_plan",
+            );
+
+            // Use imports dynamically or assuming fetchPlan is imported
+            // Note: fetchPlan is imported from "@/lib/ai/fetch" in context header
+            const { fetchPlan } = await import("@/lib/ai/fetch");
+            const bookPlan = await fetchPlan(
+              sourceText || "",
+              tableOfContents,
+              provider,
+              model,
+              settings,
+            );
+
+            if (generationCancelled) {
+              // handle cancellation
+            }
+
+            set({ bookPlan }, false, "book/plan_generated");
+
             let fullContent = "";
 
             for (let i = 0; i < tableOfContents.length; i++) {
@@ -206,11 +236,12 @@ export const useBookStore = create(
                 "book/generating_outline",
               );
 
-              const settings = useSettingsStore.getState();
+              // fetchOutline matches signature update
               const outline = await fetchOutline({
                 toc: tableOfContents,
                 chapterNumber,
                 sourceText: sourceText || "",
+                bookPlan,
                 provider: provider,
                 model: model,
                 settings,
@@ -260,6 +291,7 @@ export const useBookStore = create(
                   previousSections: completedSections,
                   toc: tableOfContents,
                   sourceText: sourceText || "",
+                  bookPlan,
                   provider: provider,
                   model: model,
                   settings,
@@ -439,6 +471,11 @@ export const useBookStore = create(
               "book/goToNextChapter",
             );
           }
+        },
+
+        getBookById: (id) => {
+          // Stub: return undefined for now as global library is not yet implemented in store
+          return undefined;
         },
       };
 
