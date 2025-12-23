@@ -6,6 +6,7 @@ import {
   Section,
 } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
+import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
 
 export async function fetchTOC(
   sourceText: string,
@@ -41,7 +42,7 @@ export async function fetchPlan(
   provider?: AIProvider,
   model?: GeminiModel | ClaudeModel,
   settings?: BookSettings,
-) {
+): Promise<PlanOutput> {
   const response = await fetch("/api/ai/plan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -61,14 +62,14 @@ export async function fetchPlan(
   }
 
   const data = await response.json();
-  return data.plan;
+  return PlanSchema.parse(data.plan);
 }
 
 export async function fetchOutline(params: {
   toc: string[];
   chapterNumber: number;
   sourceText: string;
-  bookPlan?: any;
+  bookPlan?: PlanOutput;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
   settings?: BookSettings;
@@ -101,7 +102,7 @@ export async function* fetchStreamSection(params: {
   previousSections: Section[];
   toc: string[];
   sourceText: string;
-  bookPlan?: any;
+  bookPlan?: PlanOutput;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
   settings?: BookSettings;

@@ -1,27 +1,27 @@
-import { registry } from "./registry";
-import { tocV1 } from "../specs/toc";
-import { planV1, PlanOutput } from "../specs/plan";
-import { outlineV1 } from "../specs/outline";
-import { draftV1 } from "../specs/draft";
-import { summaryV1 } from "../specs/summary";
+import { ChapterCount } from "@/lib/book/settings";
 import {
-  BookContextState,
   AIProvider,
-  GeminiModel,
+  BookContextState,
   ClaudeModel,
+  GeminiModel,
 } from "@/lib/book/types";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createAnthropic } from "@ai-sdk/anthropic";
 import { serverEnv } from "@/lib/env";
-import { Language, ChapterCount } from "@/lib/book/settings";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { draftV1 } from "../specs/draft";
+import { outlineV1 } from "../specs/outline";
+import { PlanOutput, planV1 } from "../specs/plan";
+import { summaryV1 } from "../specs/summary";
+import { tocV1 } from "../specs/toc";
+import { registry } from "./registry";
 
 /**
  * AI 생성을 위한 설정 타입
  */
 export interface GenerationSettings {
   provider?: AIProvider;
-  model?: GeminiModel | ClaudeModel;
-  language?: Language;
+  model?: string;
+  language?: string;
   chapterCount?: ChapterCount;
   userPreference?: string;
 }

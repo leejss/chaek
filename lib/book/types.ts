@@ -107,6 +107,7 @@ export type ChapterContent = {
 };
 
 export type BookContextState = {
+  title: string;
   sourceText: string;
   tableOfContents: string[];
   bookPlan?: PlanOutput;
@@ -128,7 +129,7 @@ export type BookActions = {
   startNewBook: () => void;
   updateDraft: (
     draft: Partial<
-      Pick<BookContextState, "sourceText" | "tableOfContents" | "content">
+      Pick<BookContextState, "title" | "sourceText" | "tableOfContents" | "content">
     >,
   ) => void;
   setActiveBook: (book: Book) => void;
