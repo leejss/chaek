@@ -70,7 +70,6 @@ export default function SettingsStep() {
                 AI Writer Model
               </h3>
             </div>
-
             {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {AI_CONFIG.map((provider) => (
                 <div key={provider.id} className="space-y-2">
@@ -116,7 +115,6 @@ export default function SettingsStep() {
               ))}
             </div> */}
           </div>
-
           <div className="space-y-2">
             <label className="block text-sm font-medium text-stone-700">
               Output Language
@@ -155,7 +153,7 @@ export default function SettingsStep() {
                   htmlFor="auto-chapters"
                   className="text-sm text-stone-600"
                 >
-                  Auto (AI Decides)
+                  Auto
                 </label>
               </div>
             </div>

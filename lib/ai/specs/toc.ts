@@ -42,9 +42,13 @@ export const tocV1: PromptSpec<TocInput, TocOutput> = {
 
 INSTRUCTIONS:
 1. Analyze the SOURCE TEXT to understand its core concepts, key ideas, and information structure.
-2. Create ${input.minChapters}-${
-        input.maxChapters
+2. Create ${
+        {
+          true: `exactly ${input.minChapters}`,
+          false: `${input.minChapters}-${input.maxChapters}`,
+        }[String(input.minChapters === input.maxChapters) as "true" | "false"]
       } chapter titles that form a coherent learning path for readers unfamiliar with the topic.
+   - The output MUST contain exactly the same number of items as requested.
 3. Organize chapters in a logical progression:
    - Start with foundational concepts and definitions (Overview, Introduction, Basics)
    - Progress to core mechanisms and how things work (How it works, Core concepts, Architecture)
