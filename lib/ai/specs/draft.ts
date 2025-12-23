@@ -20,7 +20,7 @@ You keep terminology consistent across chapters and maintain a cohesive narrativ
 export const draftV1: PromptSpec<DraftInput, void> = {
   id: "book.chapter.draft",
   version: "v1",
-  kind: "text", // Stream text
+  kind: "stream", // Streaming text
   buildMessages: (input) => {
     const currentSection = input.chapterOutline[input.sectionIndex];
     if (!currentSection) throw new Error("Section not found");

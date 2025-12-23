@@ -13,15 +13,25 @@ import {
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { serverEnv } from "@/lib/env";
+import { Language, ChapterCount } from "@/lib/book/settings";
 
-// Register specs (side-effect)
+/**
+ * AI 생성을 위한 설정 타입
+ */
+export interface GenerationSettings {
+  provider?: AIProvider;
+  model?: GeminiModel | ClaudeModel;
+  language?: Language;
+  chapterCount?: ChapterCount;
+  userPreference?: string;
+}
+
 registry.register(tocV1);
 registry.register(planV1);
 registry.register(outlineV1);
 registry.register(draftV1);
 registry.register(summaryV1);
 
-// Initialize providers
 const google = createGoogleGenerativeAI({ apiKey: serverEnv.GEMINI_API_KEY });
 const anthropic = createAnthropic({ apiKey: serverEnv.ANTHROPIC_API_KEY });
 
@@ -30,10 +40,15 @@ export class Orchestrator {
     provider: AIProvider | undefined,
     modelName: string | undefined,
   ) {
-    if (provider === AIProvider.ANTHROPIC || modelName?.includes("claude")) {
+    if (provider === AIProvider.ANTHROPIC) {
       return anthropic(modelName || ClaudeModel.HAIKU);
     }
-    return google(modelName || GeminiModel.FLASH);
+
+    if (provider === AIProvider.GOOGLE) {
+      return google(modelName || GeminiModel.FLASH);
+    }
+
+    throw new Error(`Unknown provider: ${provider}`);
   }
 
   async runNext(context: BookContextState) {
@@ -117,8 +132,7 @@ export class Orchestrator {
     // or assume the caller sets the state to "ready for X" and we execute X.
   }
 
-  // Explicit runners for specific steps to be used by API routes
-  async generateTOC(sourceText: string, settings: any) {
+  async generateTOC(sourceText: string, settings: GenerationSettings) {
     const model = this.getModel(settings.provider, settings.model);
     return registry.runSpec(
       tocV1.id,
@@ -126,17 +140,24 @@ export class Orchestrator {
       {
         sourceText,
         language: settings.language || "Korean",
+
+        // Auto는 모델이 직접 챕터 수를 정하게 하는 것입니다.
         minChapters:
-          settings.chapterCount === "Auto" ? 5 : settings.chapterCount,
+          settings.chapterCount === "Auto" ? 5 : settings.chapterCount || 5,
         maxChapters:
-          settings.chapterCount === "Auto" ? 10 : settings.chapterCount,
-        userPreference: settings.userPreference,
+          settings.chapterCount === "Auto" ? 10 : settings.chapterCount || 10,
+        userPreference: settings.userPreference || "",
       },
       model,
+      "object",
     );
   }
 
-  async generatePlan(sourceText: string, toc: string[], settings: any) {
+  async generatePlan(
+    sourceText: string,
+    toc: string[],
+    settings: GenerationSettings,
+  ) {
     const model = this.getModel(settings.provider, settings.model);
     return registry.runSpec(
       planV1.id,
@@ -147,6 +168,7 @@ export class Orchestrator {
         language: settings.language || "Korean",
       },
       model,
+      "object",
     );
   }
 
@@ -155,8 +177,12 @@ export class Orchestrator {
     chapterTitle: string;
     chapterNumber: number;
     sourceText: string;
-    bookPlan: any;
-    settings: any;
+    bookPlan: {
+      targetAudience: string;
+      keyThemes: string[];
+      chapterGuidelines: Array<{ chapterIndex: number; guidelines: string }>;
+    };
+    settings: GenerationSettings;
   }) {
     const model = this.getModel(
       params.settings.provider,
@@ -175,17 +201,22 @@ export class Orchestrator {
         userPreference: params.settings.userPreference,
       },
       model,
+      "object",
     );
   }
 
   async streamSectionDraft(params: {
     chapterNumber: number;
     chapterTitle: string;
-    chapterOutline: any[];
+    chapterOutline: Array<{ title: string; summary: string }>;
     sectionIndex: number;
-    previousSections: any[];
-    bookPlan: any;
-    settings: any;
+    previousSections: Array<{ title: string; summary: string }>;
+    bookPlan: {
+      writingStyle: string;
+      keyThemes: string[];
+      targetAudience: string;
+    };
+    settings: GenerationSettings;
   }) {
     const model = this.getModel(
       params.settings.provider,
@@ -205,13 +236,14 @@ export class Orchestrator {
         userPreference: params.settings.userPreference,
       },
       model,
+      "stream",
     );
   }
 
   async generateChapterSummary(
     chapterId: string,
     finalText: string,
-    settings: any,
+    settings: GenerationSettings,
   ) {
     const model = this.getModel(settings.provider, settings.model);
     return registry.runSpec(
@@ -222,6 +254,7 @@ export class Orchestrator {
         finalText,
       },
       model,
+      "object",
     );
   }
 }

@@ -70,41 +70,28 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const generator = await orchestrator.streamSectionDraft({
-            chapterNumber,
-            chapterTitle,
-            chapterOutline: chapterOutline as Section[],
-            sectionIndex,
-            previousSections: previousSections as Section[],
-            bookPlan,
-            settings: {
-              provider,
-              model,
-              language,
-              userPreference,
-            },
-          });
-
-          for await (const chunk of generator) {
-            controller.enqueue(encoder.encode(chunk));
-          }
-          controller.close();
-        } catch (error) {
-          console.error("Section generation stream error:", error);
-          controller.error(error ?? new Error("Unknown stream error"));
-        }
+    // streamText 결과를 받아옵니다
+    const result = await orchestrator.streamSectionDraft({
+      chapterNumber,
+      chapterTitle,
+      chapterOutline: chapterOutline as Section[],
+      sectionIndex,
+      previousSections: previousSections as Section[],
+      bookPlan,
+      settings: {
+        provider,
+        model,
+        language,
+        userPreference,
       },
     });
 
-    return new Response(stream, {
+    // Vercel AI SDK의 toTextStreamResponse()를 사용하여 HTTP Response로 변환
+    // 또는 result.textStream을 직접 사용할 수도 있습니다
+    return result.toTextStreamResponse({
       headers: {
-        "Content-Type": "text/event-stream",
+        "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
-        Connection: "keep-alive",
       },
     });
   } catch (error) {

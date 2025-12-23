@@ -1,30 +1,57 @@
 import { z } from "zod";
-// Using any for model to avoid import issues with specific AI SDK versions
-// import { LanguageModelV1, CoreMessage } from "ai";
+import { LanguageModel, ModelMessage } from "ai";
 
-export type PromptKind = "object" | "text" | "chat";
+export type PromptKind = "object" | "text" | "stream";
 
-// Define compatible CoreMessage type
-export type CoreMessage = {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string | Array<any>;
-};
-
-export interface PromptSpec<Input = any, Output = any> {
+/**
+ * PromptSpec for structured object output (kind: "object")
+ * Output 타입이 명시되고 schema가 required입니다.
+ * generateText를 사용하여 구조화된 객체를 생성합니다.
+ */
+export interface ObjectPromptSpec<Input, Output> {
   id: string;
   version: string;
-  kind: PromptKind;
+  kind: "object";
   description?: string;
-
-  // Optional schema for structured output
-  schema?: z.ZodType<Output>;
-
-  // Function to build messages from input
-  buildMessages: (input: Input) => CoreMessage[];
-
-  // Optional: default model if none provided at runtime
-  defaultModel?: any;
+  schema: z.ZodType<Output>;
+  buildMessages: (input: Input) => ModelMessage[];
+  defaultModel?: LanguageModel;
 }
+
+/**
+ * PromptSpec for non-streaming text output (kind: "text")
+ * generateText를 사용하여 일반 텍스트를 생성합니다 (스트리밍 아님).
+ */
+export interface TextPromptSpec<Input> {
+  id: string;
+  version: string;
+  kind: "text";
+  description?: string;
+  buildMessages: (input: Input) => ModelMessage[];
+  defaultModel?: LanguageModel;
+}
+
+/**
+ * PromptSpec for streaming text output (kind: "stream")
+ * streamText를 사용하여 텍스트를 스트리밍 방식으로 생성합니다.
+ */
+export interface StreamPromptSpec<Input> {
+  id: string;
+  version: string;
+  kind: "stream";
+  description?: string;
+  buildMessages: (input: Input) => ModelMessage[];
+  defaultModel?: LanguageModel;
+}
+
+/**
+ * Discriminated union of all PromptSpec types
+ * kind 필드를 통해 타입이 자동으로 추론됩니다.
+ */
+export type PromptSpec<Input = unknown, Output = unknown> =
+  | ObjectPromptSpec<Input, Output>
+  | TextPromptSpec<Input>
+  | StreamPromptSpec<Input>;
 
 export interface PromptRegistry {
   register<I, O>(spec: PromptSpec<I, O>): void;

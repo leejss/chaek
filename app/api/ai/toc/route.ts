@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { orchestrator } from "@/lib/ai/core/orchestrator";
-import { AIProvider } from "@/lib/book/types";
+import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
 import { NextResponse } from "next/server";
 import { isValidModel, getProviderByModel } from "@/lib/ai/config";
+import { Language } from "@/lib/book/settings";
+import { TocSchema } from "@/lib/ai/specs/toc";
 
 const tocRequestSchema = z
   .object({
@@ -77,13 +79,14 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    const toc = await orchestrator.generateTOC(sourceText, {
+    // Type assertion: validation이 이미 완료되었으므로 안전합니다.
+    const toc = (await orchestrator.generateTOC(sourceText, {
       provider,
-      model,
-      language,
+      model: model as GeminiModel | ClaudeModel,
+      language: language as Language,
       chapterCount,
       userPreference,
-    });
+    })) as z.infer<typeof TocSchema>;
 
     // The spec returns object { chapters: string[] }. But existing API expects `toc: string[]`.
     // My tocV1 spec returns `z.infer<typeof TocSchema>` which is `{ chapters: string[] }`.
