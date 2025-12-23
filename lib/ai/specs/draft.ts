@@ -1,4 +1,5 @@
 import { PromptSpec } from "../core/types";
+import { PlanOutput } from "./plan";
 
 export type DraftInput = {
   chapterNumber: number;
@@ -8,8 +9,17 @@ export type DraftInput = {
   previousSections: Array<{ title: string; summary: string }>; // Or summaries details?
   language: string;
   userPreference?: string;
-  plan?: any;
+  plan?: PlanOutput;
 };
+
+declare module "../core/types" {
+  interface PromptRegistryMap {
+    "book.chapter.draft@v1": {
+      input: DraftInput;
+      output: void; // stream doesn't use output type
+    };
+  }
+}
 
 const CHAPTER_ROLE = `
 You are a professional non-fiction author and meticulous editor.

@@ -20,10 +20,18 @@ export type SummaryInput = {
   finalText: string;
 };
 
-export const summaryV1: PromptSpec<
-  SummaryInput,
-  z.infer<typeof ChapterSummarySchema>
-> = {
+export type ChapterSummaryOutput = z.infer<typeof ChapterSummarySchema>;
+
+declare module "../core/types" {
+  interface PromptRegistryMap {
+    "book.chapter.summary@v1": {
+      input: SummaryInput;
+      output: ChapterSummaryOutput;
+    };
+  }
+}
+
+export const summaryV1: PromptSpec<SummaryInput, ChapterSummaryOutput> = {
   id: "book.chapter.summary",
   version: "v1",
   kind: "object",

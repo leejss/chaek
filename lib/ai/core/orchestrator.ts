@@ -1,6 +1,6 @@
 import { registry } from "./registry";
 import { tocV1 } from "../specs/toc";
-import { planV1 } from "../specs/plan";
+import { planV1, PlanOutput } from "../specs/plan";
 import { outlineV1 } from "../specs/outline";
 import { draftV1 } from "../specs/draft";
 import { summaryV1 } from "../specs/summary";
@@ -52,16 +52,8 @@ export class Orchestrator {
   }
 
   async runNext(context: BookContextState) {
-    const {
-      flowStatus,
-      aiConfiguration,
-      sourceText,
-      tableOfContents,
-      bookPlan,
-      chapters,
-      viewingChapterIndex,
-      generationProgress,
-    } = context;
+    const { flowStatus, aiConfiguration, sourceText, tableOfContents } =
+      context;
 
     // Determine which spec to run based on status
     if (flowStatus === "generating_toc") {
@@ -71,8 +63,7 @@ export class Orchestrator {
       );
       // We assume minimal settings for now, can be expanded
       return registry.runSpec(
-        tocV1.id,
-        tocV1.version,
+        "book.toc@v1",
         {
           sourceText,
           language: "Korean", // Default or from settings
@@ -81,6 +72,7 @@ export class Orchestrator {
           userPreference: "",
         },
         model,
+        "object",
       );
     }
 
@@ -90,39 +82,18 @@ export class Orchestrator {
         aiConfiguration.content.model,
       );
       return registry.runSpec(
-        planV1.id,
-        planV1.version,
+        "book.plan@v1",
         {
           sourceText,
           toc: tableOfContents,
           language: "Korean",
         },
         model,
+        "object",
       );
     }
 
     if (flowStatus === "generating_outlines") {
-      // Need to know which chapter we are outlining.
-      // This state needs to be tracked. Assuming implicit sequential generation or context provides `currentChapterIndex` logic if external.
-      // But `runNext` implies we decide.
-      // If we are in `generating_outlines`, we check `chapters` state.
-      // This logic mimics the loop we'll have in the API.
-
-      // Actually, the API route probably iterates.
-      // Let's assume `runNext` is called with specific intent or we return a "job" to run.
-      // But the user said: "Orchestrator receives context and decides spec to call."
-      // So validation logic goes here.
-
-      const nextChapterIndex = chapters.findIndex(
-        (c) =>
-          !c.content &&
-          (!context.generationProgress.currentOutline ||
-            context.generationProgress.currentOutline.chapterNumber !==
-              c.chapterNumber),
-      );
-      // Logic for finding next un-outlined chapter is tricky without more state.
-      // Simplified: The caller probably knows what specific action is needed or we use `generationProgress`.
-
       throw new Error(
         "Orchestrator: generating_outlines handling requires more granular control or is handled by specialized route logic utilizing registry directly.",
       );
@@ -135,12 +106,10 @@ export class Orchestrator {
   async generateTOC(sourceText: string, settings: GenerationSettings) {
     const model = this.getModel(settings.provider, settings.model);
     return registry.runSpec(
-      tocV1.id,
-      tocV1.version,
+      "book.toc@v1",
       {
         sourceText,
         language: settings.language || "Korean",
-
         // Auto는 모델이 직접 챕터 수를 정하게 하는 것입니다.
         minChapters:
           settings.chapterCount === "Auto" ? 5 : settings.chapterCount || 5,
@@ -160,8 +129,7 @@ export class Orchestrator {
   ) {
     const model = this.getModel(settings.provider, settings.model);
     return registry.runSpec(
-      planV1.id,
-      planV1.version,
+      "book.plan@v1",
       {
         sourceText,
         toc,
@@ -177,11 +145,7 @@ export class Orchestrator {
     chapterTitle: string;
     chapterNumber: number;
     sourceText: string;
-    bookPlan: {
-      targetAudience: string;
-      keyThemes: string[];
-      chapterGuidelines: Array<{ chapterIndex: number; guidelines: string }>;
-    };
+    bookPlan: PlanOutput;
     settings: GenerationSettings;
   }) {
     const model = this.getModel(
@@ -189,8 +153,7 @@ export class Orchestrator {
       params.settings.model,
     );
     return registry.runSpec(
-      outlineV1.id,
-      outlineV1.version,
+      "book.chapter.outline@v1",
       {
         toc: params.toc,
         chapterTitle: params.chapterTitle,
@@ -211,11 +174,7 @@ export class Orchestrator {
     chapterOutline: Array<{ title: string; summary: string }>;
     sectionIndex: number;
     previousSections: Array<{ title: string; summary: string }>;
-    bookPlan: {
-      writingStyle: string;
-      keyThemes: string[];
-      targetAudience: string;
-    };
+    bookPlan: PlanOutput;
     settings: GenerationSettings;
   }) {
     const model = this.getModel(
@@ -223,8 +182,7 @@ export class Orchestrator {
       params.settings.model,
     );
     return registry.runSpec(
-      draftV1.id,
-      draftV1.version,
+      "book.chapter.draft@v1",
       {
         chapterNumber: params.chapterNumber,
         chapterTitle: params.chapterTitle,
@@ -247,8 +205,7 @@ export class Orchestrator {
   ) {
     const model = this.getModel(settings.provider, settings.model);
     return registry.runSpec(
-      summaryV1.id,
-      summaryV1.version,
+      "book.chapter.summary@v1",
       {
         chapterId,
         finalText,

@@ -13,13 +13,24 @@ export type TocInput = {
   userPreference?: string;
 };
 
+export type TocOutput = z.infer<typeof TocSchema>;
+
+declare module "../core/types" {
+  interface PromptRegistryMap {
+    "book.toc@v1": {
+      input: TocInput;
+      output: TocOutput;
+    };
+  }
+}
+
 const TOC_ROLE = `
 You are an expert educational content strategist and book architect.
 You turn messy source material into a clear, teachable learning path.
 Your priorities are: logical progression, accurate scope, and reader-friendly chapter naming.
 `.trim();
 
-export const tocV1: PromptSpec<TocInput, z.infer<typeof TocSchema>> = {
+export const tocV1: PromptSpec<TocInput, TocOutput> = {
   id: "book.toc",
   version: "v1",
   kind: "object",

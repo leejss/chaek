@@ -1,15 +1,29 @@
 import { z } from "zod";
-import { LanguageModel, ModelMessage } from "ai";
+import { LanguageModel, ModelMessage, streamText } from "ai";
 
 export type PromptKind = "object" | "text" | "stream";
 
+export type StreamTextResult = ReturnType<typeof streamText>;
+
+export interface PromptDefinition {
+  input: unknown;
+  output: unknown;
+}
+
+/**
+ * 전역 프롬프트 레지스트리 맵 인터페이스입니다.
+ * 각 스펙 파일에서 Module Augmentation을 통해 확장합니다.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface PromptRegistryMap {}
+
+export type PromptId = keyof PromptRegistryMap;
+
 /**
  * PromptSpec for structured object output (kind: "object")
- * Output 타입이 명시되고 schema가 required입니다.
- * generateText를 사용하여 구조화된 객체를 생성합니다.
  */
 export interface ObjectPromptSpec<Input, Output> {
-  id: string;
+  id: string; // 구체적인 ID는 구현체에서 정의하지만, 타입 추론을 위해 string으로 유지
   version: string;
   kind: "object";
   description?: string;
@@ -20,7 +34,6 @@ export interface ObjectPromptSpec<Input, Output> {
 
 /**
  * PromptSpec for non-streaming text output (kind: "text")
- * generateText를 사용하여 일반 텍스트를 생성합니다 (스트리밍 아님).
  */
 export interface TextPromptSpec<Input> {
   id: string;
@@ -33,7 +46,6 @@ export interface TextPromptSpec<Input> {
 
 /**
  * PromptSpec for streaming text output (kind: "stream")
- * streamText를 사용하여 텍스트를 스트리밍 방식으로 생성합니다.
  */
 export interface StreamPromptSpec<Input> {
   id: string;
@@ -46,7 +58,6 @@ export interface StreamPromptSpec<Input> {
 
 /**
  * Discriminated union of all PromptSpec types
- * kind 필드를 통해 타입이 자동으로 추론됩니다.
  */
 export type PromptSpec<Input = unknown, Output = unknown> =
   | ObjectPromptSpec<Input, Output>

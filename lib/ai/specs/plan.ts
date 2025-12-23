@@ -27,13 +27,24 @@ export type PlanInput = {
   language: string;
 };
 
+export type PlanOutput = z.infer<typeof PlanSchema>;
+
+declare module "../core/types" {
+  interface PromptRegistryMap {
+    "book.plan@v1": {
+      input: PlanInput;
+      output: PlanOutput;
+    };
+  }
+}
+
 const PLAN_ROLE = `
 You are a senior book editor and strategist.
 Your goal is to create a comprehensive blueprint for a book based on a Table of Contents and Source Text.
 This blueprint will guide the detailed writing of each chapter to ensure consistency, depth, and audience alignment.
 `.trim();
 
-export const planV1: PromptSpec<PlanInput, z.infer<typeof PlanSchema>> = {
+export const planV1: PromptSpec<PlanInput, PlanOutput> = {
   id: "book.plan",
   version: "v1",
   kind: "object",

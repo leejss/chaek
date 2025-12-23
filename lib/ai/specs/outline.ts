@@ -1,5 +1,6 @@
 import { PromptSpec } from "../core/types";
 import { z } from "zod";
+import { PlanOutput } from "./plan";
 
 export const ChapterOutlineSchema = z.object({
   chapterNumber: z.number(),
@@ -12,15 +13,26 @@ export const ChapterOutlineSchema = z.object({
   ),
 });
 
+export type ChapterOutlineOutput = z.infer<typeof ChapterOutlineSchema>;
+
 export type OutlineInput = {
   toc: string[];
   chapterTitle: string;
   chapterNumber: number;
   sourceText: string;
-  plan?: any; // book.plan output
+  plan?: PlanOutput;
   language: string;
   userPreference?: string;
 };
+
+declare module "../core/types" {
+  interface PromptRegistryMap {
+    "book.chapter.outline@v1": {
+      input: OutlineInput;
+      output: ChapterOutlineOutput;
+    };
+  }
+}
 
 const OUTLINE_ROLE = `
 You are an expert book architect and content planner.
@@ -28,10 +40,7 @@ You create detailed, well-structured outlines that serve as blueprints for compr
 Your outlines ensure logical flow, complete coverage, and clear learning progression.
 `.trim();
 
-export const outlineV1: PromptSpec<
-  OutlineInput,
-  z.infer<typeof ChapterOutlineSchema>
-> = {
+export const outlineV1: PromptSpec<OutlineInput, ChapterOutlineOutput> = {
   id: "book.chapter.outline",
   version: "v1",
   kind: "object",
@@ -59,7 +68,7 @@ Target Audience: ${input.plan.targetAudience}
 Key Themes: ${input.plan.keyThemes.join(", ")}
 Chapter Guidelines: ${
         input.plan.chapterGuidelines.find(
-          (g: any) => g.chapterIndex === input.chapterNumber - 1,
+          (g) => g.chapterIndex === input.chapterNumber - 1,
         )?.guidelines || "N/A"
       }`
     : ""

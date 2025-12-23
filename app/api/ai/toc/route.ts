@@ -79,14 +79,13 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    // Type assertion: validation이 이미 완료되었으므로 안전합니다.
-    const toc = (await orchestrator.generateTOC(sourceText, {
+    const toc = await orchestrator.generateTOC(sourceText, {
       provider,
       model: model as GeminiModel | ClaudeModel,
       language: language as Language,
       chapterCount,
       userPreference,
-    })) as z.infer<typeof TocSchema>;
+    });
 
     // The spec returns object { chapters: string[] }. But existing API expects `toc: string[]`.
     // My tocV1 spec returns `z.infer<typeof TocSchema>` which is `{ chapters: string[] }`.
