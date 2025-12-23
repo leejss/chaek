@@ -423,6 +423,26 @@ export const useBookStore = create(
           resolveChapterDecision("cancel");
         },
 
+        setFlowStatus: (status) => {
+          set({ flowStatus: status }, false, "book/setFlowStatus");
+        },
+
+        setTocAiConfiguraiton: (provider, model) => {
+          set(
+            (state) => ({
+              aiConfiguration: {
+                ...state.aiConfiguration,
+                toc: {
+                  provider,
+                  model,
+                },
+              },
+            }),
+            false,
+            "book/setTocAiConfiguraiton",
+          );
+        },
+
         setSelectedModel: (provider, model) => {
           set(
             (state) => ({
@@ -473,7 +493,8 @@ export const useBookStore = create(
           }
         },
 
-        getBookById: (id) => {
+        getBookById: (_id) => {
+          void _id;
           // Stub: return undefined for now as global library is not yet implemented in store
           return undefined;
         },

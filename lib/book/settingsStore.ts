@@ -10,25 +10,33 @@ interface SettingsState {
   userPreference: string;
 }
 
-interface SettingsActions {
-  setLanguage: (lang: Language) => void;
-  setChapterCount: (count: ChapterCount) => void;
-  setUserPreference: (pref: string) => void;
+interface SettingsStore extends SettingsState {
+  actions: {
+    setLanguage: (lang: Language) => void;
+    setChapterCount: (count: ChapterCount) => void;
+    setUserPreference: (pref: string) => void;
+  };
 }
 
-export const useSettingsStore = create<SettingsState & SettingsActions>()(
+export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set) => ({
       language: "Korean", // Default as per context (Korean app)
       chapterCount: "Auto",
       userPreference: "",
 
-      setLanguage: (language) => set({ language }),
-      setChapterCount: (chapterCount) => set({ chapterCount }),
-      setUserPreference: (userPreference) => set({ userPreference }),
+      actions: {
+        setLanguage: (language) => set({ language }),
+        setChapterCount: (chapterCount) => set({ chapterCount }),
+        setUserPreference: (userPreference) => set({ userPreference }),
+      },
     }),
     {
       name: "book-settings-storage",
+      partialize: (state) => {
+        const { actions, ...rest } = state;
+        return rest;
+      },
     },
   ),
 );

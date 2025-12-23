@@ -24,7 +24,6 @@ export default function CreateBookPage() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isProcessing || isGenerating) {
         e.preventDefault();
-        e.returnValue = ""; // Standard way to show confirmation dialog
       }
     };
 

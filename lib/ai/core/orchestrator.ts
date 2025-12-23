@@ -61,7 +61,7 @@ export class Orchestrator {
         aiConfiguration.toc.provider,
         aiConfiguration.toc.model,
       );
-      // We assume minimal settings for now, can be expanded
+
       return registry.runSpec(
         "book.toc@v1",
         {

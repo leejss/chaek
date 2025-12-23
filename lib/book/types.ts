@@ -1,3 +1,5 @@
+import { PlanOutput } from "@/lib/ai/specs/plan";
+
 export interface Section {
   title: string;
   summary: string;
@@ -107,7 +109,7 @@ export type ChapterContent = {
 export type BookContextState = {
   sourceText: string;
   tableOfContents: string[];
-  bookPlan?: any;
+  bookPlan?: PlanOutput;
   content: string;
   aiConfiguration: AIConfiguration;
   flowStatus: FlowStatus;
@@ -138,6 +140,11 @@ export type BookActions = {
   ) => Promise<void>;
   confirmChapter: () => void;
   cancelGeneration: () => void;
+  setFlowStatus: (status: FlowStatus) => void;
+  setTocAiConfiguraiton: (
+    provider: AIProvider,
+    model: GeminiModel | ClaudeModel,
+  ) => void;
   setSelectedModel: (
     provider: AIProvider,
     model: GeminiModel | ClaudeModel,

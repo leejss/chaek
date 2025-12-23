@@ -8,16 +8,13 @@ import { ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 
 export default function SettingsStep() {
-  const {
-    language,
-    chapterCount,
-    userPreference,
-    setLanguage,
-    setChapterCount,
-    setUserPreference,
-  } = useSettingsStore();
+  const language = useSettingsStore((state) => state.language);
+  const chapterCount = useSettingsStore((state) => state.chapterCount);
+  const userPreference = useSettingsStore((state) => state.userPreference);
+  const settingsActions = useSettingsStore((state) => state.actions);
 
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
+  const bookActions = useBookStore((state) => state.actions);
 
   const selectedModel = aiConfiguration.toc.model as
     | GeminiModel
@@ -27,33 +24,28 @@ export default function SettingsStep() {
   const handleModelChange = (modelId: string) => {
     const providerId = getProviderByModel(modelId);
     if (providerId) {
-      useBookStore.setState((state) => ({
-        aiConfiguration: {
-          ...state.aiConfiguration,
-          toc: {
-            provider: providerId,
-            model: modelId as GeminiModel | ClaudeModel,
-          },
-        },
-      }));
+      bookActions.setTocAiConfiguraiton(
+        providerId,
+        modelId as GeminiModel | ClaudeModel,
+      );
     }
   };
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
-    setChapterCount(val as number);
+    settingsActions.setChapterCount(val as number);
   };
 
   const toggleAutoChapters = (checked: boolean) => {
     if (checked) {
-      setChapterCount("Auto");
+      settingsActions.setChapterCount("Auto");
     } else {
-      setChapterCount(5);
+      settingsActions.setChapterCount(5);
     }
   };
 
   const handleContinue = () => {
-    useBookStore.setState({ flowStatus: "draft" });
+    bookActions.setFlowStatus("draft");
   };
 
   return (
@@ -133,7 +125,9 @@ export default function SettingsStep() {
             </label>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as Language)}
+              onChange={(e) =>
+                settingsActions.setLanguage(e.target.value as Language)
+              }
               className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 border"
             >
               <option value="Korean">Korean (한국어)</option>
@@ -201,7 +195,9 @@ export default function SettingsStep() {
             </label>
             <textarea
               value={userPreference}
-              onChange={(e) => setUserPreference(e.target.value)}
+              onChange={(e) =>
+                settingsActions.setUserPreference(e.target.value)
+              }
               rows={4}
               className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 border"
               placeholder="E.g., Maintain a humorous tone, use simple analogies, focus on technical depth..."
