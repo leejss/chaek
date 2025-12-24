@@ -39,18 +39,32 @@ export const summaryV1: PromptSpec<SummaryInput, ChapterSummaryOutput> = {
   buildMessages: ({ chapterId, finalText }) => [
     {
       role: "system",
-      content: "Summarize for continuity control. Return JSON only.",
+      content: `
+<role>
+You are an expert editor specializing in content continuity and summarization.
+</role>
+
+<instructions>
+1. Summarize the provided <final_text> to help avoid repetition in later chapters.
+2. Capture unique points, decisions, and definitions.
+3. Avoid fluff and maintain conciseness.
+4. Return the result in the specified JSON format only.
+</instructions>
+`.trim(),
     },
     {
       role: "user",
-      content: [
-        `<chapterId>${chapterId}</chapterId>`,
-        "<task>Summarize this chapter to help avoid repetition in later chapters.</task>",
-        `<finalText>${finalText}</finalText>`,
-        "Rules:",
-        "- capture unique points, decisions, definitions",
-        "- avoid fluff",
-      ].join("\n"),
+      content: `
+<chapter_id>${chapterId}</chapter_id>
+
+<task>
+Summarize this chapter for continuity control.
+</task>
+
+<final_text>
+${finalText}
+</final_text>
+`.trim(),
     },
   ],
 };

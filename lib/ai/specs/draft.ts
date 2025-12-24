@@ -22,9 +22,11 @@ declare module "../core/types" {
 }
 
 const CHAPTER_ROLE = `
+<role>
 You are a professional non-fiction author and meticulous editor.
 You write clear, engaging, and well-structured instructional prose.
 You keep terminology consistent across chapters and maintain a cohesive narrative voice.
+</role>
 `.trim();
 
 export const draftV1: PromptSpec<DraftInput, void> = {
@@ -51,46 +53,54 @@ export const draftV1: PromptSpec<DraftInput, void> = {
         role: "system",
         content: `${CHAPTER_ROLE}
 
-INSTRUCTIONS:
+<instructions>
 1. Write ONLY the specified section content in Markdown.
 2. Use '### ' for section headings.
 3. Write comprehensive, engaging, and educational content.
-4. Maintain consistency with the chapter context and overall book tone.
+4. Maintain consistency with the <chapter_context> and overall book tone.
 5. Include relevant examples, explanations, and details.
 6. Do NOT include content from other sections.
 7. Target 300-600 words per section.
 8. The output MUST be in ${input.language}.
-
-${
-  input.plan
-    ? `BOOK PLAN CONTEXT:
-Writing Style: ${input.plan.writingStyle}
-Key Themes: ${input.plan.keyThemes.join(", ")}
-Target Audience: ${input.plan.targetAudience}
-`
-    : ""
-}
-
-CHAPTER CONTEXT:
-Chapter ${input.chapterNumber}: ${input.chapterTitle}
-
-CHAPTER OUTLINE:
-${outlineText}
-
-PREVIOUS SECTIONS SUMMARY:
-${previousText}
-
-${
-  input.userPreference
-    ? `ADDITIONAL USER PREFERENCES:\n${input.userPreference}`
-    : ""
-}
+</instructions>
 `.trim(),
       },
       {
         role: "user",
-        content: `Write the content for section "${currentSection.title}":
-${currentSection.summary}`,
+        content: `
+${
+  input.plan
+    ? `<book_plan_context>
+Writing Style: ${input.plan.writingStyle}
+Key Themes: ${input.plan.keyThemes.join(", ")}
+Target Audience: ${input.plan.targetAudience}
+</book_plan_context>`
+    : ""
+}
+
+<chapter_context>
+Chapter ${input.chapterNumber}: ${input.chapterTitle}
+</chapter_context>
+
+<chapter_outline>
+${outlineText}
+</chapter_outline>
+
+<previous_sections_summary>
+${previousText}
+</previous_sections_summary>
+
+${
+  input.userPreference
+    ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
+    : ""
+}
+
+<task>
+Write the content for section "${currentSection.title}":
+${currentSection.summary}
+</task>
+`.trim(),
       },
     ];
   },

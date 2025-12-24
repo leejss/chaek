@@ -35,9 +35,11 @@ declare module "../core/types" {
 }
 
 const OUTLINE_ROLE = `
+<role>
 You are an expert book architect and content planner.
 You create detailed, well-structured outlines that serve as blueprints for comprehensive chapters.
 Your outlines ensure logical flow, complete coverage, and clear learning progression.
+</role>
 `.trim();
 
 export const outlineV1: PromptSpec<OutlineInput, ChapterOutlineOutput> = {
@@ -50,48 +52,56 @@ export const outlineV1: PromptSpec<OutlineInput, ChapterOutlineOutput> = {
       role: "system",
       content: `${OUTLINE_ROLE}
 
-INSTRUCTIONS:
+<instructions>
 1. Create a detailed outline for the specified chapter.
 2. Break the chapter into 3-6 logical sections.
 3. Each section should have:
    - A clear, descriptive title (2-5 words)
    - A summary (1-2 sentences) explaining what will be covered
 4. Sections should flow logically and build upon each other.
-5. Ensure the outline aligns with the overall book structure (TOC).
+5. Ensure the outline aligns with the overall <table_of_contents>.
 6. Consider what came before and what comes after this chapter.
 7. The output MUST be in ${input.language}.
+</instructions>
+`.trim(),
+    },
+    {
+      role: "user",
+      content: `
+<table_of_contents>
+${input.toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+</table_of_contents>
+
+<source_text>
+${input.sourceText}
+</source_text>
 
 ${
   input.plan
-    ? `BOOK PLAN CONTEXT:
+    ? `<book_plan_context>
 Target Audience: ${input.plan.targetAudience}
 Key Themes: ${input.plan.keyThemes.join(", ")}
 Chapter Guidelines: ${
         input.plan.chapterGuidelines.find(
           (g) => g.chapterIndex === input.chapterNumber - 1,
         )?.guidelines || "N/A"
-      }`
+      }
+</book_plan_context>`
     : ""
 }
 
 ${
   input.userPreference
-    ? `ADDITIONAL USER PREFERENCES:\n${input.userPreference}`
+    ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
     : ""
 }
-`.trim(),
-    },
-    {
-      role: "user",
-      content: `TABLE OF CONTENTS:
-${input.toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
 
-SOURCE TEXT (for reference):
-${input.sourceText}
-
+<task>
 Create a detailed outline for CHAPTER ${input.chapterNumber}: ${
         input.chapterTitle
-      }`,
+      }
+</task>
+`.trim(),
     },
   ],
 };
