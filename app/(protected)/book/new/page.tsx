@@ -8,7 +8,8 @@ import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
-import TOCGeneratingStep from "./_components/TOCGeneratingStep";
+import AILoadingStep from "./_components/AILoadingStep";
+import StatusOverview from "./_components/StatusOverview";
 
 export default function CreateBookPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function CreateBookPage() {
   const actions = useBookStore((state) => state.actions);
 
   const isGenerating =
+    flowStatus === "generating_plan" ||
     flowStatus === "generating_outlines" ||
     flowStatus === "generating_sections" ||
     flowStatus === "generating_book" ||
@@ -110,10 +112,23 @@ export default function CreateBookPage() {
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
         {flowStatus === "settings" && <SettingsStep />}
         {flowStatus === "draft" && <SourceInputStep />}
-        {flowStatus === "generating_toc" && <TOCGeneratingStep />}
+        {flowStatus === "generating_toc" && (
+          <AILoadingStep
+            title="Generating Book Structure"
+            description="Analyzing your content and creating a table of contents..."
+          />
+        )}
+        {flowStatus === "generating_plan" && (
+          <AILoadingStep
+            title="Building Writing Plan"
+            description="Organizing chapters and preparing the detailed structure..."
+          />
+        )}
         {flowStatus === "toc_review" && <TOCReviewStep />}
-        {isGenerating && <GenerationStep />}
+        {isGenerating && flowStatus !== "generating_plan" && <GenerationStep />}
       </div>
+
+      <StatusOverview />
     </div>
   );
 }

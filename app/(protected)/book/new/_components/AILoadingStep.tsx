@@ -2,7 +2,12 @@
 
 import { Sparkles } from "lucide-react";
 
-export default function TOCGeneratingStep() {
+interface AILoadingStepProps {
+  title: string;
+  description: string;
+}
+
+export default function AILoadingStep({ title, description }: AILoadingStepProps) {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center space-y-4">
@@ -10,12 +15,13 @@ export default function TOCGeneratingStep() {
           <Sparkles className="animate-spin text-brand-900" size={32} />
         </div>
         <h3 className="text-xl font-serif text-brand-900">
-          Generating Book Structure
+          {title}
         </h3>
         <p className="text-stone-500 text-sm">
-          Analyzing your content and creating a table of contents...
+          {description}
         </p>
       </div>
     </div>
   );
 }
+
