@@ -75,12 +75,12 @@ export type BookDraft = {
 
 export type AIConfiguration = {
   toc: {
-    provider?: AIProvider;
-    model?: GeminiModel | ClaudeModel;
+    provider: AIProvider;
+    model: GeminiModel | ClaudeModel;
   };
   content: {
-    provider?: AIProvider;
-    model?: GeminiModel | ClaudeModel;
+    provider: AIProvider;
+    model: GeminiModel | ClaudeModel;
   };
 };
 
@@ -107,7 +107,6 @@ export type ChapterContent = {
 };
 
 export type BookContextState = {
-  title: string;
   sourceText: string;
   tableOfContents: string[];
   bookPlan?: PlanOutput;
@@ -129,7 +128,7 @@ export type BookActions = {
   startNewBook: () => void;
   updateDraft: (
     draft: Partial<
-      Pick<BookContextState, "title" | "sourceText" | "tableOfContents" | "content">
+      Pick<BookContextState, "sourceText" | "tableOfContents" | "content">
     >,
   ) => void;
   setActiveBook: (book: Book) => void;

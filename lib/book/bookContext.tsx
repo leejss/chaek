@@ -8,7 +8,6 @@ import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
 
 const initialState: BookContextState = {
-  title: "",
   sourceText: "",
   tableOfContents: [],
   content: "",
@@ -61,7 +60,6 @@ export const useBookStore = create(
           resolveChapterDecision("cancel");
           set(
             {
-              title: "",
               sourceText: "",
               tableOfContents: [],
               content: "",
@@ -86,7 +84,6 @@ export const useBookStore = create(
         setActiveBook: (book) => {
           set(
             {
-              title: book.title || "",
               sourceText: book.sourceText || "",
               tableOfContents: book.tableOfContents || [],
               content: book.content || "",

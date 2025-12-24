@@ -10,13 +10,12 @@ import {
   ChevronDown,
   Edit2,
   Check,
-  X,
   Plus,
   Trash2,
 } from "lucide-react";
+import Button from "../../_components/Button";
 
 export default function TOCReviewStep() {
-  const title = useBookStore((state) => state.title);
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
@@ -24,23 +23,18 @@ export default function TOCReviewStep() {
     useBookStore((state) => state.actions);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [tempTitle, setTempTitle] = useState("");
   const [tempTOC, setTempTOC] = useState<string[]>([]);
 
-  const selectedProvider = aiConfiguration.content.provider || AI_CONFIG[0].id;
-  const selectedModel =
-    aiConfiguration.content.model ||
-    (AI_CONFIG[0].models[0].id as GeminiModel | ClaudeModel);
+  const selectedProvider = aiConfiguration.content.provider;
+  const selectedModel = aiConfiguration.content.model;
 
   const handleEditStart = () => {
     setTempTOC([...tableOfContents]);
-    setTempTitle(title || "Untitled Book");
     setIsEditing(true);
   };
 
   const handleSave = () => {
     updateDraft({
-      title: tempTitle,
       tableOfContents: tempTOC.filter((t) => t.trim() !== ""),
     });
     setIsEditing(false);
@@ -65,135 +59,128 @@ export default function TOCReviewStep() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 font-serif text-black">
-      <div className="grid gap-16 lg:grid-cols-[1fr_280px]">
-        {/* Main Content - Academic Paper Style */}
-        <div className="min-h-[500px]">
-          <header className="mb-8">
-            <div className="border-t-2 border-black pt-6" />
-            <div className="text-center">
+    <div className="max-w-3xl mx-auto px-4 py-12 font-serif text-ink-900">
+      <div className="space-y-8">
+        {/* Header Section */}
+        <div className="text-center space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight text-brand-900">
+            Review Table of Contents
+          </h1>
+          <p className="text-sm text-stone-500 font-sans max-w-md mx-auto">
+            Review and refine the book structure. You can edit chapter titles or
+            regenerate the entire outline.
+          </p>
+        </div>
+
+        {/* Main Content Card */}
+        <div className="bg-white border border-stone-200 shadow-sm rounded-sm overflow-hidden">
+          <div className="p-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-brand-900/60 font-sans">
+              Chapters Outline
+            </h2>
+            <div className="flex items-center gap-2">
               {isEditing ? (
-                <input
-                  type="text"
-                  value={tempTitle}
-                  onChange={(e) => setTempTitle(e.target.value)}
-                  placeholder="Enter book title..."
-                  className="w-full text-3xl font-bold tracking-tight text-center text-black bg-stone-50 border-b border-stone-300 focus:outline-none focus:border-black py-1"
-                />
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={handleCancel}
+                    className="h-8 px-3 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleSave}
+                    className="h-8 px-4 text-xs gap-1.5"
+                  >
+                    <Check size={14} />
+                    Save Changes
+                  </Button>
+                </>
               ) : (
-                <h1 className="text-3xl font-bold tracking-tight text-black">
-                  {title || "Table of Contents"}
-                </h1>
-              )}
-              {!isEditing && title && (
-                <p className="mt-2 text-sm uppercase tracking-widest text-stone-500 font-sans">
-                  Table of Contents
-                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleEditStart}
+                  className="h-8 px-3 text-xs gap-1.5 bg-white"
+                >
+                  <Edit2 size={13} />
+                  Edit List
+                </Button>
               )}
             </div>
-            <div className="border-b-2 border-black mt-6" />
-          </header>
+          </div>
 
-          <div className="max-w-none">
+          <div className="p-8 md:p-10">
             {isEditing ? (
               <div className="space-y-4">
                 {tempTOC.map((chapter, idx) => (
                   <div key={idx} className="flex items-center gap-3 group">
-                    <span className="text-sm font-bold w-6 text-stone-400 font-sans">
-                      {idx + 1}.
+                    <span className="font-bold w-6 text-brand-900/20 font-sans">
+                      {idx + 1}
                     </span>
                     <input
                       type="text"
                       value={chapter}
                       onChange={(e) => updateChapter(idx, e.target.value)}
                       placeholder={`Chapter ${idx + 1} title...`}
-                      className="flex-1 text-lg leading-relaxed text-black bg-white border-b border-stone-200 focus:outline-none focus:border-black py-1"
+                      className="flex-1 text-lg leading-relaxed text-ink-900 bg-transparent border-b border-stone-100 focus:outline-none focus:border-brand-600 py-1 transition-colors"
                     />
                     <button
                       onClick={() => removeChapter(idx)}
-                      className="p-1 text-stone-400 hover:text-red-600 transition-colors"
+                      className="p-2 text-stone-300 hover:text-red-500 transition-colors"
                       title="Remove chapter"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))}
                 <button
                   onClick={addChapter}
-                  className="w-full py-4 mt-4 border border-dashed border-stone-300 flex items-center justify-center gap-2 text-stone-500 hover:text-black hover:border-black transition-all font-sans text-sm"
+                  className="w-full py-3 mt-4 border border-dashed border-stone-200 rounded-sm flex items-center justify-center gap-2 text-stone-400 hover:text-brand-600 hover:border-brand-600 hover:bg-brand-50/30 transition-all font-sans text-xs uppercase tracking-wider"
                 >
-                  <Plus size={16} />
-                  Add New Chapter
+                  <Plus size={14} />
+                  Add Chapter
                 </button>
               </div>
             ) : (
-              <>
+              <div className="space-y-6">
                 {tableOfContents?.length > 0 ? (
-                  <ol className="list-decimal pl-5 space-y-4 marker:font-bold marker:text-black">
+                  <div className="space-y-5">
                     {tableOfContents.map((chapter, idx) => (
-                      <li key={idx} className="pl-2">
-                        <span className="text-lg leading-relaxed text-black">
+                      <div
+                        key={idx}
+                        className="flex items-baseline gap-4 group"
+                      >
+                        <span className="font-bold text-brand-700/40 font-sans w-5">
+                          {idx + 1}
+                        </span>
+                        <span className="text-lg leading-relaxed text-ink-900">
                           {chapter}
                         </span>
-                      </li>
+                      </div>
                     ))}
-                  </ol>
+                  </div>
                 ) : (
-                  <div className="py-12 border border-dashed border-stone-300 text-center text-stone-600 italic">
-                    No content generated.
+                  <div className="py-12 text-center text-stone-400 italic font-sans text-sm">
+                    No chapters generated yet.
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Sidebar - Control Panel */}
-        <div className="space-y-8">
-          {/* Edit Mode Toggle */}
-          <section>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-stone-600 mb-3 font-sans">
-              Mode
-            </h3>
-            {isEditing ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={handleSave}
-                  className="inline-flex items-center justify-center gap-2 border border-black bg-black px-3 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
-                >
-                  <Check size={14} />
-                  Save
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="inline-flex items-center justify-center gap-2 border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-stone-50 transition-colors"
-                >
-                  <X size={14} />
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleEditStart}
-                className="w-full inline-flex items-center justify-center gap-2 border border-black bg-white px-3 py-2 text-sm font-medium text-black hover:bg-stone-50 transition-colors"
-              >
-                <Edit2 size={14} />
-                Edit
-              </button>
-            )}
-          </section>
-
-          {/* Model Selection & Actions */}
-          {!isEditing && (
-            <>
-              {/* Model Selection */}
-              <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-stone-600 mb-3 font-sans">
-                  Configuration
+        {/* Bottom Actions Section */}
+        {!isEditing && (
+          <div className="pt-4 space-y-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 bg-stone-50 border border-stone-200 rounded-sm">
+              <div className="space-y-1.5 text-center md:text-left">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-brand-900/60 font-sans">
+                  Intelligence Engine
                 </h3>
-                <div className="relative border border-stone-400 bg-white">
+                <div className="relative inline-block">
                   <select
-                    className="w-full appearance-none bg-transparent py-2 pl-3 pr-8 text-sm focus:outline-none rounded-none font-sans"
+                    className="appearance-none bg-transparent py-1 pl-0 pr-6 text-sm font-medium text-brand-900 focus:outline-none cursor-pointer hover:text-brand-600 transition-colors font-sans"
                     value={selectedModel}
                     onChange={(e) => {
                       const modelId = e.target.value;
@@ -216,52 +203,45 @@ export default function TOCReviewStep() {
                       </optgroup>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                    <ChevronDown size={14} className="text-stone-600" />
+                  <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-brand-900/40">
+                    <ChevronDown size={14} />
                   </div>
                 </div>
-              </section>
+              </div>
 
-              {/* Actions */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-stone-600 mb-3 font-sans">
-                  Actions
-                </h3>
-                <button
-                  type="button"
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Button
+                  variant="outline"
                   onClick={regenerateTOC}
                   disabled={isProcessing}
-                  className="w-full inline-flex items-center justify-start gap-2 border border-black bg-white px-3 py-2 text-sm font-medium text-black hover:bg-stone-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 md:flex-none gap-2 px-6 bg-white"
                 >
                   <RefreshCw
-                    size={14}
+                    size={16}
                     className={isProcessing ? "animate-spin" : ""}
                   />
                   Regenerate
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={() =>
                     startBookGeneration(selectedProvider, selectedModel)
                   }
                   disabled={isProcessing || tableOfContents.length === 0}
-                  className="w-full inline-flex items-center justify-start gap-2 border border-black bg-black px-3 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 md:flex-none gap-2 px-8 shadow-lg shadow-brand-900/10"
                 >
-                  <FileText size={14} />
-                  Generate Book
-                </button>
-              </section>
-            </>
-          )}
+                  <FileText size={16} />
+                  Start Writing
+                </Button>
+              </div>
+            </div>
 
-          {/* Note */}
-          <div className="text-xs text-stone-600 leading-relaxed border-t border-stone-200 pt-4 font-sans">
-            <span className="font-bold text-black italic">Note: </span>
-            {isEditing
-              ? "You are in edit mode. Make sure to save your changes before proceeding to generation."
-              : "Ensure the chapter outline meets the requirements before proceeding to the full generation phase."}
+            <p className="text-[11px] text-stone-400 text-center font-sans">
+              Click <strong>Start Writing</strong> to begin generating the full
+              content for each chapter.
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
