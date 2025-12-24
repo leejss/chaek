@@ -162,7 +162,7 @@ export const useBookStore = create(
 
           set(
             (state) => ({
-              flowStatus: "generating_plan",
+              flowStatus: "generating",
               aiConfiguration: {
                 ...state.aiConfiguration,
                 content: {
@@ -188,10 +188,9 @@ export const useBookStore = create(
 
             // 1. Generate Plan
             const settings = useSettingsStore.getState();
-            // TODO: If we want to show progress for plan generation, we can set generationProgress phase to 'plan'
             set(
               {
-                flowStatus: "generating_plan",
+                flowStatus: "generating",
                 generationProgress: { phase: "plan" },
               },
               false,
@@ -229,7 +228,7 @@ export const useBookStore = create(
                   currentChapterContent: "",
                   awaitingChapterDecision: false,
                   error: null,
-                  flowStatus: "generating_outlines",
+                  flowStatus: "generating",
                   generationProgress: { phase: "outline" },
                 },
                 false,
@@ -251,7 +250,7 @@ export const useBookStore = create(
 
               set(
                 {
-                  flowStatus: "generating_sections",
+                  flowStatus: "generating",
                   generationProgress: {
                     phase: "sections",
                     currentSection: 0,
@@ -322,7 +321,7 @@ export const useBookStore = create(
               set(
                 {
                   awaitingChapterDecision: true,
-                  flowStatus: "chapter_review",
+                  flowStatus: "generating",
                   generationProgress: { phase: "review" },
                 },
                 false,
@@ -351,7 +350,7 @@ export const useBookStore = create(
                   streamingContent: fullContent,
                   awaitingChapterDecision: false,
                   currentChapterContent: "",
-                  flowStatus: "generating_outlines",
+                  flowStatus: "generating",
                   generationProgress: { phase: "idle" },
                 }),
                 false,

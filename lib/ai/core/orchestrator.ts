@@ -52,7 +52,7 @@ export class Orchestrator {
   }
 
   async runNext(context: BookContextState) {
-    const { flowStatus, aiConfiguration, sourceText, tableOfContents } =
+    const { flowStatus, generationProgress, aiConfiguration, sourceText, tableOfContents } =
       context;
 
     // Determine which spec to run based on status
@@ -76,7 +76,7 @@ export class Orchestrator {
       );
     }
 
-    if (flowStatus === "generating_plan") {
+    if (flowStatus === "generating" && generationProgress.phase === "plan") {
       const model = this.getModel(
         aiConfiguration.content.provider,
         aiConfiguration.content.model,
@@ -93,9 +93,9 @@ export class Orchestrator {
       );
     }
 
-    if (flowStatus === "generating_outlines") {
+    if (flowStatus === "generating" && generationProgress.phase === "outline") {
       throw new Error(
-        "Orchestrator: generating_outlines handling requires more granular control or is handled by specialized route logic utilizing registry directly.",
+        "Orchestrator: outline handling requires more granular control or is handled by specialized route logic utilizing registry directly.",
       );
     }
 

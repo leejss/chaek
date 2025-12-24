@@ -8,6 +8,7 @@ import { useState } from "react";
 export default function StatusOverview() {
   const [isOpen, setIsOpen] = useState(false);
   const flowStatus = useBookStore((state) => state.flowStatus);
+  const generationProgress = useBookStore((state) => state.generationProgress);
   const sourceText = useBookStore((state) => state.sourceText);
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const bookPlan = useBookStore((state) => state.bookPlan);
@@ -177,7 +178,14 @@ export default function StatusOverview() {
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-stone-100 bg-stone-50 rounded-b-lg flex justify-between items-center">
-          <span className="text-xs text-stone-400">현재 단계: <span className="text-brand-600 font-bold uppercase">{flowStatus.replace("_", " ")}</span></span>
+          <span className="text-xs text-stone-400">
+            현재 단계:{" "}
+            <span className="text-brand-600 font-bold uppercase">
+              {flowStatus === "generating"
+                ? `GENERATING (${generationProgress.phase})`
+                : flowStatus.replace("_", " ")}
+            </span>
+          </span>
           <button
             onClick={() => setIsOpen(false)}
             className="text-xs font-bold text-stone-500 hover:text-stone-800 transition-colors uppercase tracking-widest"

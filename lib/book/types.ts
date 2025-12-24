@@ -56,12 +56,7 @@ export type FlowStatus =
   | "draft"
   | "generating_toc"
   | "toc_review"
-  | "generating_plan"
-  | "plan_review"
-  | "generating_outlines"
-  | "generating_sections"
-  | "generating_book"
-  | "chapter_review"
+  | "generating"
   | "completed";
 
 export type BookDraft = {

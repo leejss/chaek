@@ -17,12 +17,8 @@ export default function CreateBookPage() {
   const isProcessing = useBookStore((state) => state.isProcessing);
   const actions = useBookStore((state) => state.actions);
 
-  const isGenerating =
-    flowStatus === "generating_plan" ||
-    flowStatus === "generating_outlines" ||
-    flowStatus === "generating_sections" ||
-    flowStatus === "generating_book" ||
-    flowStatus === "chapter_review";
+  const isGenerating = flowStatus === "generating";
+  const generationProgress = useBookStore((state) => state.generationProgress);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -78,9 +74,6 @@ export default function CreateBookPage() {
       case "completed":
         actions.setFlowStatus("toc_review");
         break;
-      case "plan_review":
-        actions.setFlowStatus("toc_review");
-        break;
       default:
         // 정의되지 않은 상태나 예외 케이스 처리
         actions.setFlowStatus("settings");
@@ -118,14 +111,14 @@ export default function CreateBookPage() {
             description="Analyzing your content and creating a table of contents..."
           />
         )}
-        {flowStatus === "generating_plan" && (
+        {flowStatus === "generating" && generationProgress.phase === "plan" && (
           <AILoadingStep
             title="Building Writing Plan"
             description="Organizing chapters and preparing the detailed structure..."
           />
         )}
         {flowStatus === "toc_review" && <TOCReviewStep />}
-        {isGenerating && flowStatus !== "generating_plan" && <GenerationStep />}
+        {isGenerating && generationProgress.phase !== "plan" && <GenerationStep />}
       </div>
 
       <StatusOverview />
