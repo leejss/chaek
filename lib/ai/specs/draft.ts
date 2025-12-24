@@ -6,10 +6,10 @@ export type DraftInput = {
   chapterTitle: string;
   chapterOutline: Array<{ title: string; summary: string }>;
   sectionIndex: number;
-  previousSections: Array<{ title: string; summary: string }>; // Or summaries details?
+  previousSections: Array<{ title: string; summary: string }>;
   language: string;
   userPreference?: string;
-  plan?: PlanOutput;
+  plan: PlanOutput;
 };
 
 declare module "../core/types" {
@@ -32,7 +32,7 @@ You keep terminology consistent across chapters and maintain a cohesive narrativ
 export const draftV1: PromptSpec<DraftInput, void> = {
   id: "book.chapter.draft",
   version: "v1",
-  kind: "stream", // Streaming text
+  kind: "stream",
   buildMessages: (input) => {
     const currentSection = input.chapterOutline[input.sectionIndex];
     if (!currentSection) throw new Error("Section not found");
@@ -55,13 +55,17 @@ export const draftV1: PromptSpec<DraftInput, void> = {
 
 <instructions>
 1. Write ONLY the specified section content in Markdown.
-2. Use '### ' for section headings.
+2. **Heading Rule**:
+   - Start the section with '### ' followed by the section title.
+   - Use '#### ' for sub-headings within this section.
+   - **NEVER use '#' or '##' headings** as they are reserved for Book and Chapter titles.
 3. Write comprehensive, engaging, and educational content.
 4. Maintain consistency with the <chapter_context> and overall book tone.
 5. Include relevant examples, explanations, and details.
 6. Do NOT include content from other sections.
-7. Target 300-600 words per section.
-8. The output MUST be in ${input.language}.
+7. Do NOT include any introductory or concluding remarks like "Certainly" or "Here is the content".
+8. Target 300-600 words per section.
+9. The output MUST be in ${input.language}.
 </instructions>
 `.trim(),
       },

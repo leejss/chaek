@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    // streamText 결과를 받아옵니다
     const result = await orchestrator.streamSectionDraft({
       chapterNumber,
       chapterTitle,
@@ -86,8 +85,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Vercel AI SDK의 toTextStreamResponse()를 사용하여 HTTP Response로 변환
-    // 또는 result.textStream을 직접 사용할 수도 있습니다
     return result.toTextStreamResponse({
       headers: {
         "Content-Type": "text/plain; charset=utf-8",

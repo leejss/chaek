@@ -31,6 +31,24 @@
   --color-accent-500: #d97706; /* Muted Amber */
 }
 
+/* Shiki Syntax Highlighting Styles (Notion-like) */
+.shiki {
+  background-color: transparent !important;
+  padding: 1.5rem !important;
+  margin: 0 !important;
+  overflow-x: auto;
+}
+
+.shiki code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  color: inherit !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  font-family: var(--font-mono) !important;
+}
+
 /* Custom Scrollbar from copy/index.html */
 ::-webkit-scrollbar {
   width: 8px;

@@ -1,7 +1,12 @@
 "use client";
 
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
-import { fetchOutline, fetchStreamSection, fetchTOC } from "@/lib/ai/fetch";
+import {
+  fetchOutline,
+  fetchPlan,
+  fetchStreamSection,
+  fetchTOC,
+} from "@/lib/ai/fetch";
 import { BookActions, BookContextState, Section } from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
@@ -10,6 +15,7 @@ import { useSettingsStore } from "./settingsStore";
 const initialState: BookContextState = {
   sourceText: "",
   tableOfContents: [],
+  bookPlan: undefined,
   content: "",
   aiConfiguration: {
     toc: {
@@ -62,6 +68,7 @@ export const useBookStore = create(
             {
               sourceText: "",
               tableOfContents: [],
+              bookPlan: undefined,
               content: "",
               flowStatus: "settings",
               chapters: [],
@@ -86,6 +93,7 @@ export const useBookStore = create(
             {
               sourceText: book.sourceText || "",
               tableOfContents: book.tableOfContents || [],
+              bookPlan: undefined,
               content: book.content || "",
               streamingContent: book.content || "",
               currentChapterIndex: null,
@@ -106,6 +114,7 @@ export const useBookStore = create(
               error: null,
               flowStatus: "generating_toc",
               sourceText,
+              bookPlan: undefined,
             },
             false,
             "book/generateTOC_start",
@@ -197,9 +206,6 @@ export const useBookStore = create(
               "book/generating_plan",
             );
 
-            // Use imports dynamically or assuming fetchPlan is imported
-            // Note: fetchPlan is imported from "@/lib/ai/fetch" in context header
-            const { fetchPlan } = await import("@/lib/ai/fetch");
             const bookPlan = await fetchPlan(
               sourceText || "",
               tableOfContents,
