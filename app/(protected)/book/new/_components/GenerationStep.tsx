@@ -238,7 +238,10 @@ export default function GenerationStep() {
 
       {/* Content */}
       <div className="bg-white min-h-[500px]">
-        <MarkdownRenderer content={displayContent} />
+        <MarkdownRenderer
+          content={displayContent}
+          isStreaming={isViewingCurrentChapter && !isReview}
+        />
       </div>
 
       {/* Fixed Bottom Action Bar */}

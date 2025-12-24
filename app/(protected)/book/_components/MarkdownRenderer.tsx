@@ -6,6 +6,7 @@ import { createHighlighter, type Highlighter } from "shiki";
 
 interface MarkdownRendererProps {
   content: string;
+  isStreaming?: boolean;
 }
 
 // 싱글톤 하이라이터 인스턴스 (Highlighter singleton instance)
@@ -32,13 +33,18 @@ function getHighlighter() {
   return highlighterPromise;
 }
 
-const ShikiCodeBlock: React.FC<{ content: string; language: string }> = ({
-  content,
-  language,
-}) => {
+const ShikiCodeBlock: React.FC<{
+  content: string;
+  language: string;
+  isStreaming?: boolean;
+}> = ({ content, language, isStreaming }) => {
   const [highlightedHtml, setHighlightedHtml] = useState<string>("");
 
   useEffect(() => {
+    if (isStreaming) {
+      return;
+    }
+
     let isMounted = true;
     getHighlighter().then((highlighter) => {
       if (!isMounted) return;
@@ -60,7 +66,15 @@ const ShikiCodeBlock: React.FC<{ content: string; language: string }> = ({
     return () => {
       isMounted = false;
     };
-  }, [content, language]);
+  }, [content, language, isStreaming]);
+
+  // 스트리밍 중이거나 아직 하이라이트된 HTML이 없는 경우 폴백 렌더링 (Fallback while streaming or highlighting)
+  const htmlToRender =
+    !isStreaming && highlightedHtml
+      ? highlightedHtml
+      : `<pre style="padding: 1rem; background-color: #f8fafc;"><code>${escapeHtml(
+          content,
+        )}</code></pre>`;
 
   return (
     <div className="relative my-6 group">
@@ -70,14 +84,27 @@ const ShikiCodeBlock: React.FC<{ content: string; language: string }> = ({
       <div
         className="rounded-lg border border-stone-200 bg-stone-50 overflow-hidden text-sm"
         dangerouslySetInnerHTML={{
-          __html: highlightedHtml || `<pre><code>${content}</code></pre>`,
+          __html: htmlToRender,
         }}
       />
     </div>
   );
 };
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+// HTML 이스케이프 함수 (HTML escape function)
+function escapeHtml(unsafe: string) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+  content,
+  isStreaming,
+}) => {
   return (
     <div className="prose prose-lg prose-stone max-w-none font-serif text-ink-800">
       <ReactMarkdown
@@ -146,6 +173,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
               <ShikiCodeBlock
                 language={match?.[1] || "text"}
                 content={content}
+                isStreaming={isStreaming}
               />
             );
           },
