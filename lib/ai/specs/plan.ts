@@ -63,6 +63,7 @@ export const planV1: PromptSpec<PlanInput, PlanOutput> = {
 3. Identify Key Themes that should weave through the book.
 4. Provide specific guidelines for EACH chapter in the <table_of_contents> to ensure they cover the necessary breadth and depth without overlapping unnecessarily.
 5. The output MUST be in ${input.language}.
+6. Respond with a VALID JSON object only (no markdown, no CDATA, no prose) matching the schema: { "targetAudience": string, "writingStyle": string, "keyThemes": string[], "chapterGuidelines": [{ "chapterIndex": number, "title": string, "guidelines": string }] }. Arrays must be real arrays, not embedded in strings.
 </instructions>
 `.trim(),
     },
