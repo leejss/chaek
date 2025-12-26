@@ -115,8 +115,12 @@ export type BookContextState = {
   currentChapterContent: string;
   awaitingChapterDecision: boolean;
   isProcessing: boolean;
+  isSavingBook: boolean;
+  savedBookId: string | null;
   error: string | null;
   generationProgress: GenerationProgress;
+  userBooks: Book[];
+  isLoadingBooks: boolean;
 };
 
 export type BookActions = {
@@ -147,5 +151,8 @@ export type BookActions = {
   goToChapter: (index: number) => void;
   goToPrevChapter: () => void;
   goToNextChapter: () => void;
+  saveBook: () => Promise<void>;
   getBookById: (id: string) => Book | undefined;
+  fetchUserBooks: () => Promise<void>;
+  fetchBookById: (id: string) => Promise<Book | undefined>;
 };

@@ -2,6 +2,8 @@
 
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
 import {
+  fetchBookById,
+  fetchBooks,
   fetchOutline,
   fetchPlan,
   fetchStreamSection,
@@ -34,9 +36,13 @@ const initialState: BookContextState = {
   currentChapterIndex: null,
   currentChapterContent: "",
   awaitingChapterDecision: false,
+  isSavingBook: false,
+  savedBookId: null,
   isProcessing: false,
   error: null,
   generationProgress: { phase: "idle" },
+  userBooks: [],
+  isLoadingBooks: false,
 };
 
 export const useBookStore = create(
@@ -57,6 +63,57 @@ export const useBookStore = create(
         if (chapterDecisionResolver) {
           chapterDecisionResolver(decision);
           chapterDecisionResolver = null;
+        }
+      };
+
+      const saveBook = async () => {
+        const { content, tableOfContents, sourceText, isSavingBook } = get();
+        if (isSavingBook) return;
+
+        const title =
+          tableOfContents && tableOfContents.length > 0
+            ? tableOfContents[0]
+            : "Untitled Book";
+
+        set({ isSavingBook: true, error: null }, false, "book/saveBook_start");
+        try {
+          const res = await fetch("/api/book/save", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title,
+              content,
+              tableOfContents,
+              sourceText,
+            }),
+          });
+
+          const json = (await res.json()) as {
+            ok?: boolean;
+            bookId?: string;
+            error?: string;
+          };
+          if (!res.ok || !json.ok || !json.bookId) {
+            throw new Error(json.error || "책 저장에 실패했습니다.");
+          }
+
+          set(
+            { savedBookId: json.bookId, isSavingBook: false },
+            false,
+            "book/saveBook_success",
+          );
+        } catch (error) {
+          console.error("Failed to save book:", error);
+          set(
+            {
+              isSavingBook: false,
+              error: "책 저장 중 오류가 발생했습니다.",
+            },
+            false,
+            "book/saveBook_error",
+          );
         }
       };
 
@@ -170,24 +227,10 @@ export const useBookStore = create(
           }
 
           set(
-            (state) => ({
-              flowStatus: "generating",
-              aiConfiguration: {
-                ...state.aiConfiguration,
-                content: {
-                  provider,
-                  model,
-                },
-              },
-              chapters: [],
-              viewingChapterIndex: 0,
-              streamingContent: "",
-              currentChapterIndex: null,
-              currentChapterContent: "",
-              awaitingChapterDecision: false,
+            {
               error: null,
               generationProgress: { phase: "idle" },
-            }),
+            },
             false,
             "book/startBookGeneration_start",
           );
@@ -324,20 +367,22 @@ export const useBookStore = create(
 
               if (generationCancelled) break;
 
-              set(
-                {
-                  awaitingChapterDecision: true,
-                  flowStatus: "generating",
-                  generationProgress: { phase: "review" },
-                },
-                false,
-                "book/chapter_review_start",
-              );
+              if (settings.requireConfirm) {
+                set(
+                  {
+                    awaitingChapterDecision: true,
+                    flowStatus: "generating",
+                    generationProgress: { phase: "review" },
+                  },
+                  false,
+                  "book/chapter_review_start",
+                );
 
-              const decision = await waitForChapterDecision();
-              if (decision === "cancel") {
-                generationCancelled = true;
-                break;
+                const decision = await waitForChapterDecision();
+                if (decision === "cancel") {
+                  generationCancelled = true;
+                  break;
+                }
               }
 
               fullContent += chapterContent;
@@ -392,6 +437,8 @@ export const useBookStore = create(
               false,
               "book/startBookGeneration_success",
             );
+
+            await saveBook();
           } catch (err) {
             console.error("Book generation failed:", err);
             set(
@@ -498,10 +545,41 @@ export const useBookStore = create(
           }
         },
 
+        saveBook,
+
         getBookById: (_id) => {
           void _id;
           // Stub: return undefined for now as global library is not yet implemented in store
           return undefined;
+        },
+
+        fetchUserBooks: async () => {
+          try {
+            set({ isLoadingBooks: true, error: null }, false, "book/fetchUserBooks_start");
+            const books = await fetchBooks();
+            set(
+              { userBooks: books, isLoadingBooks: false },
+              false,
+              "book/fetchUserBooks_success",
+            );
+          } catch (error) {
+            console.error("Failed to fetch books:", error);
+            set(
+              { error: "책 목록을 불러오지 못했습니다.", isLoadingBooks: false },
+              false,
+              "book/fetchUserBooks_error",
+            );
+          }
+        },
+
+        fetchBookById: async (id: string) => {
+          try {
+            const book = await fetchBookById(id);
+            return book;
+          } catch (error) {
+            console.error("Failed to fetch book:", error);
+            return undefined;
+          }
         },
       };
 
