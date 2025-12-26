@@ -3,11 +3,18 @@ import { SQL } from "bun";
 
 import { serverEnv } from "@/lib/env";
 
-const url = serverEnv.DATABASE_URL;
+const globalForDb = globalThis as unknown as {
+  client: SQL | undefined;
+};
 
-const client = new SQL({
-  url,
-  prepare: false,
-});
+const client =
+  globalForDb.client ??
+  new SQL({
+    url: serverEnv.DATABASE_URL,
+    prepare: false,
+    idleTimeout: 10,
+  });
+
+if (serverEnv.NODE_ENV !== "production") globalForDb.client = client;
 
 export const db = drizzle({ client });

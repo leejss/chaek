@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Check, Circle } from "lucide-react";
 import { useBookStore } from "@/lib/book/bookContext";
 import { FlowStatus } from "@/lib/book/types";
-import SourceInputStep from "./_components/SourceInputStep";
-import TOCReviewStep from "./_components/TOCReviewStep";
-import GenerationStep from "./_components/GenerationStep";
+import { Check, ChevronLeft, Circle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import AILoadingStep from "./_components/AILoadingStep";
-import StatusOverview from "./_components/StatusOverview";
 import CompletedStep from "./_components/CompletedStep";
+import GenerationStep from "./_components/GenerationStep";
 import SettingsStep from "./_components/SettingsStep";
+import SourceInputStep from "./_components/SourceInputStep";
+import StatusOverview from "./_components/StatusOverview";
+import TOCReviewStep from "./_components/TOCReviewStep";
 
 const FLOW_STEPS = [
   "settings",
@@ -44,9 +44,10 @@ export default function CreateBookPage() {
   const flowStatus = useBookStore((state) => state.flowStatus);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const actions = useBookStore((state) => state.actions);
-  const tableOfContents = useBookStore((state) => state.tableOfContents);
   const completedSteps = useBookStore((state) => state.completedSteps);
-  const bookGenerationStarted = useBookStore((state) => state.bookGenerationStarted);
+  const bookGenerationStarted = useBookStore(
+    (state) => state.bookGenerationStarted,
+  );
 
   const isGenerating = flowStatus === "generating";
   const generationProgress = useBookStore((state) => state.generationProgress);
@@ -54,7 +55,6 @@ export default function CreateBookPage() {
   const currentStepIndex = FLOW_STEPS.indexOf(
     flowStatus as (typeof FLOW_STEPS)[number],
   );
-  const content = useBookStore((state) => state.content);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -101,14 +101,6 @@ export default function CreateBookPage() {
     }
   };
 
-  const handleNext = () => {
-    if (currentStepIndex >= FLOW_STEPS.length - 1) return;
-
-    const nextIndex = currentStepIndex + 1;
-    const nextStep = FLOW_STEPS[nextIndex];
-    actions.setFlowStatus(nextStep);
-  };
-
   return (
     <div className="max-w-4xl mx-auto bg-white border border-stone-200 shadow-xl rounded-sm min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
       {/* Step Navigation */}
@@ -126,24 +118,39 @@ export default function CreateBookPage() {
 
           <div className="flex items-center gap-1">
             {FLOW_STEPS.map((step) => {
-              const stepStatus = getStepStatus(step, flowStatus, completedSteps);
-              const isClickable = stepStatus === "completed" || stepStatus === "available";
+              const stepStatus = getStepStatus(
+                step,
+                flowStatus,
+                completedSteps,
+              );
+              const isClickable =
+                stepStatus === "completed" || stepStatus === "available";
               const isCurrent = stepStatus === "current";
 
               return (
                 <button
                   key={step}
                   onClick={() => isClickable && actions.goToStep(step)}
-                  disabled={!isClickable || (bookGenerationStarted && step !== "settings" && step !== "toc_review")}
+                  disabled={
+                    !isClickable ||
+                    (bookGenerationStarted &&
+                      step !== "settings" &&
+                      step !== "toc_review")
+                  }
                   className={`
                     flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium transition-all
-                    ${isCurrent 
-                      ? "bg-brand-600 text-white" 
-                      : stepStatus === "completed"
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : "bg-stone-100 text-stone-400"
+                    ${
+                      isCurrent
+                        ? "bg-brand-600 text-white"
+                        : stepStatus === "completed"
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : "bg-stone-100 text-stone-400"
                     }
-                    ${isClickable && !isCurrent ? "hover:bg-stone-200 hover:text-stone-600" : ""}
+                    ${
+                      isClickable && !isCurrent
+                        ? "hover:bg-stone-200 hover:text-stone-600"
+                        : ""
+                    }
                     ${!isClickable ? "cursor-not-allowed opacity-60" : ""}
                   `}
                 >
