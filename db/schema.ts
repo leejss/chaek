@@ -37,3 +37,21 @@ export const refreshTokens = pgTable(
     index("refresh_tokens_expires_at_idx").on(table.expiresAt),
   ],
 );
+
+export const books = pgTable(
+  "books",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    tableOfContents: text("table_of_contents").array(),
+    sourceText: text("source_text"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("books_user_id_idx").on(table.userId)],
+);
