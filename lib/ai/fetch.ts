@@ -1,5 +1,6 @@
 import {
   AIProvider,
+  Book,
   ChapterOutline,
   ClaudeModel,
   GeminiModel,
@@ -7,6 +8,13 @@ import {
 } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
+
+type SaveBookParams = {
+  title: string;
+  content: string;
+  tableOfContents: string[];
+  sourceText?: string;
+};
 
 export async function fetchTOC(
   sourceText: string,
@@ -94,6 +102,25 @@ export async function fetchOutline(params: {
   return data.outline as ChapterOutline;
 }
 
+export async function saveBookRequest(params: SaveBookParams) {
+  const response = await fetch("/api/book/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  const data = (await response.json()) as {
+    ok?: boolean;
+    bookId?: string;
+    error?: string;
+  };
+  if (!response.ok || !data.ok || !data.bookId) {
+    throw new Error(data.error || "Failed to save book");
+  }
+
+  return data.bookId;
+}
+
 export async function* fetchStreamSection(params: {
   chapterNumber: number;
   chapterTitle: string;
@@ -129,4 +156,31 @@ export async function* fetchStreamSection(params: {
   for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
     yield decoder.decode(chunk, { stream: true });
   }
+}
+
+export async function fetchBooks(): Promise<Book[]> {
+  const response = await fetch("/api/books");
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch books");
+  }
+
+  const data = await response.json();
+  return data.books as Book[];
+}
+
+export async function fetchBookById(id: string): Promise<Book> {
+  const response = await fetch(`/api/books/${id}`);
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Book not found");
+    }
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch book");
+  }
+
+  const data = await response.json();
+  return data.book as Book;
 }
