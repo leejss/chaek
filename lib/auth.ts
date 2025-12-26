@@ -59,3 +59,22 @@ export async function issueAccessJWT(params: {
 
   return jwt.sign(params.secret);
 }
+
+export async function verifyAccessJWT(token: string, secret: Uint8Array) {
+  try {
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: "bookmaker",
+      audience: "bookmaker-web",
+    });
+    const { sub } = payload;
+    if (!isString(sub)) {
+      throw new HttpError(401, "Invalid credentials");
+    }
+    return { userId: sub };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError(401, "Invalid credentials");
+  }
+}
