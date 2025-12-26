@@ -17,6 +17,7 @@ export default function StatusOverview() {
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
+  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
   if (!isOpen) {
     return (
@@ -68,6 +69,12 @@ export default function StatusOverview() {
               <div className="bg-stone-50 p-3 rounded border border-stone-100">
                 <p className="text-xs text-stone-400 mb-1">챕터 수 (Chapters)</p>
                 <p className="font-medium text-stone-700">{chapterCount}</p>
+              </div>
+              <div className="bg-stone-50 p-3 rounded border border-stone-100">
+                <p className="text-xs text-stone-400 mb-1">검토 모드 (Review Mode)</p>
+                <p className="font-medium text-stone-700">
+                  {requireConfirm ? "Review Each" : "Auto-Generate"}
+                </p>
               </div>
               {userPreference && (
                 <div className="col-span-2 bg-stone-50 p-3 rounded border border-stone-100">

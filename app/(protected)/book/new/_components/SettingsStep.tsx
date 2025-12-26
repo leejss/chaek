@@ -9,6 +9,7 @@ export default function SettingsStep() {
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
+  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
   const settingsActions = useSettingsStore((state) => state.actions);
 
   // const aiConfiguration = useBookStore((state) => state.aiConfiguration);
@@ -133,6 +134,45 @@ export default function SettingsStep() {
             </select>
             <p className="text-xs text-stone-500">
               The language used for generating content.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-stone-700">
+              Chapter Review Mode
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => settingsActions.setRequireConfirm(true)}
+                className={`
+                  flex-1 px-4 py-3 rounded-sm border transition-all text-sm text-left
+                  ${requireConfirm 
+                    ? 'bg-brand-50 border-brand-600 ring-1 ring-brand-600 shadow-sm text-brand-900' 
+                    : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}
+                `}
+              >
+                <div className="font-medium">Review Each Chapter</div>
+                <div className="text-xs mt-1 opacity-75">
+                  Confirm each chapter before proceeding
+                </div>
+              </button>
+              <button
+                onClick={() => settingsActions.setRequireConfirm(false)}
+                className={`
+                  flex-1 px-4 py-3 rounded-sm border transition-all text-sm text-left
+                  ${!requireConfirm 
+                    ? 'bg-brand-50 border-brand-600 ring-1 ring-brand-600 shadow-sm text-brand-900' 
+                    : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}
+                `}
+              >
+                <div className="font-medium">Auto-Generate</div>
+                <div className="text-xs mt-1 opacity-75">
+                  Generate entire book automatically
+                </div>
+              </button>
+            </div>
+            <p className="text-xs text-stone-500">
+              Choose whether to review chapters one by one or generate all at once.
             </p>
           </div>
 

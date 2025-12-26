@@ -1,16 +1,19 @@
 "use client";
 
+import { Slot } from "@radix-ui/react-slot";
 import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost";
   isLoading?: boolean;
+  asChild?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
   children,
   variant = "primary",
   isLoading,
+  asChild = false,
   className = "",
   disabled,
   ...props
@@ -28,10 +31,13 @@ const Button: React.FC<ButtonProps> = ({
     ghost: "text-stone-600 hover:text-brand-900 hover:bg-brand-50 rounded-sm",
   };
 
+  const Component = asChild ? Slot : "button";
+
   return (
-    <button
+    <Component
       className={`${baseStyles} ${variants[variant]} ${className}`}
-      disabled={disabled || isLoading}
+      aria-disabled={asChild ? disabled || isLoading : undefined}
+      {...(!asChild && { disabled: disabled || isLoading })}
       {...props}
     >
       {isLoading ? (
@@ -57,7 +63,7 @@ const Button: React.FC<ButtonProps> = ({
       ) : (
         children
       )}
-    </button>
+    </Component>
   );
 };
 

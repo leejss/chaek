@@ -4,12 +4,13 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useBookStore } from "@/lib/book/bookContext";
-import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
 import AILoadingStep from "./_components/AILoadingStep";
 import StatusOverview from "./_components/StatusOverview";
+import CompletedStep from "./_components/CompletedStep";
+import SettingsStep from "./_components/SettingsStep";
 
 export default function CreateBookPage() {
   const router = useRouter();
@@ -118,7 +119,10 @@ export default function CreateBookPage() {
           />
         )}
         {flowStatus === "toc_review" && <TOCReviewStep />}
-        {isGenerating && generationProgress.phase !== "plan" && <GenerationStep />}
+        {isGenerating && generationProgress.phase !== "plan" && (
+          <GenerationStep />
+        )}
+        {flowStatus === "completed" && <CompletedStep />}
       </div>
 
       <StatusOverview />

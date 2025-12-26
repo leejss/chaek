@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ChevronLeft, Download } from "lucide-react";
 import jsPDF from "jspdf";
@@ -12,20 +12,22 @@ import { Book } from "@/lib/book/types";
 export default function BookDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { getBookById } = useBookStore((state) => state.actions);
+  const { fetchBookById } = useBookStore((state) => state.actions);
   const [book, setBook] = useState<Book | undefined>(undefined);
 
   useEffect(() => {
-    if (params.id) {
-      const foundBook = getBookById(params.id as string);
-      if (foundBook) {
-        setBook(foundBook);
-      } else {
-        // Handle not found - optional: redirect or show error
-        router.push("/book");
+    const loadBook = async () => {
+      if (params.id) {
+        const foundBook = await fetchBookById(params.id as string);
+        if (foundBook) {
+          setBook(foundBook);
+        } else {
+          router.push("/book");
+        }
       }
-    }
-  }, [params.id, getBookById, router]);
+    };
+    loadBook();
+  }, [params.id, fetchBookById, router]);
 
   if (!book) return null;
 

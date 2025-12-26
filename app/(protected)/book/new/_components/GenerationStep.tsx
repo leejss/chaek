@@ -5,6 +5,7 @@ import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
 import { GenerationProgress } from "@/lib/book/types";
 import { useBookStore } from "@/lib/book/bookContext";
+import { useSettingsStore } from "@/lib/book/settingsStore";
 
 function getPhaseLabel(progress: GenerationProgress): string {
   switch (progress.phase) {
@@ -43,6 +44,7 @@ export default function GenerationStep() {
   );
   const { confirmChapter, cancelGeneration, goToPrevChapter, goToNextChapter } =
     useBookStore((state) => state.actions);
+  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
   const [isCopied, setIsCopied] = useState(false);
 
@@ -245,7 +247,7 @@ export default function GenerationStep() {
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      {isViewingCurrentChapter && (
+      {isViewingCurrentChapter && requireConfirm && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-stone-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 safe-area-bottom">
           <div className="max-w-3xl mx-auto flex gap-3">
             <Button
