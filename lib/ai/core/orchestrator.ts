@@ -52,8 +52,13 @@ export class Orchestrator {
   }
 
   async runNext(context: BookContextState) {
-    const { flowStatus, generationProgress, aiConfiguration, sourceText, tableOfContents } =
-      context;
+    const {
+      flowStatus,
+      generationProgress,
+      aiConfiguration,
+      sourceText,
+      tableOfContents,
+    } = context;
 
     // Determine which spec to run based on status
     if (flowStatus === "generating_toc") {

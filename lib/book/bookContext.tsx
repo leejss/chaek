@@ -16,6 +16,7 @@ import { useSettingsStore } from "./settingsStore";
 
 const initialState: BookContextState = {
   sourceText: "",
+  bookTitle: "",
   tableOfContents: [],
   bookPlan: undefined,
   content: "",
@@ -67,13 +68,10 @@ export const useBookStore = create(
       };
 
       const saveBook = async () => {
-        const { content, tableOfContents, sourceText, isSavingBook } = get();
+        const { content, tableOfContents, sourceText, bookTitle, isSavingBook } = get();
         if (isSavingBook) return;
 
-        const title =
-          tableOfContents && tableOfContents.length > 0
-            ? tableOfContents[0]
-            : "Untitled Book";
+        const title = bookTitle?.trim() || "Untitled Book";
 
         set({ isSavingBook: true, error: null }, false, "book/saveBook_start");
         try {
@@ -124,6 +122,7 @@ export const useBookStore = create(
           set(
             {
               sourceText: "",
+              bookTitle: "",
               tableOfContents: [],
               bookPlan: undefined,
               content: "",
@@ -180,7 +179,7 @@ export const useBookStore = create(
           try {
             const { aiConfiguration } = get();
             const settings = useSettingsStore.getState();
-            const toc = await fetchTOC(
+            const { title, toc } = await fetchTOC(
               sourceText,
               aiConfiguration.toc.provider,
               aiConfiguration.toc.model,
@@ -189,6 +188,7 @@ export const useBookStore = create(
             set(
               {
                 flowStatus: "toc_review",
+                bookTitle: title,
                 tableOfContents: toc,
               },
               false,

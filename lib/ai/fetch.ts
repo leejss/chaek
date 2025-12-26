@@ -16,12 +16,17 @@ type SaveBookParams = {
   sourceText?: string;
 };
 
+export type TocResponse = {
+  title: string;
+  toc: string[];
+};
+
 export async function fetchTOC(
   sourceText: string,
   provider?: AIProvider,
   model?: GeminiModel | ClaudeModel,
   settings?: BookSettings,
-) {
+): Promise<TocResponse> {
   const response = await fetch("/api/ai/toc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,7 +46,7 @@ export async function fetchTOC(
   }
 
   const data = await response.json();
-  return data.toc as string[];
+  return { title: data.title, toc: data.toc };
 }
 
 export async function fetchPlan(

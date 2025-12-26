@@ -87,12 +87,7 @@ export async function POST(req: Request) {
       userPreference,
     });
 
-    // The spec returns object { chapters: string[] }. But existing API expects `toc: string[]`.
-    // My tocV1 spec returns `z.infer<typeof TocSchema>` which is `{ chapters: string[] }`.
-    // Existing API returns `{ toc: string[] }`.
-    // I should map `chapters` to `toc`.
-
-    return NextResponse.json({ toc: toc.chapters });
+    return NextResponse.json({ title: toc.title, toc: toc.chapters });
   } catch (error) {
     console.error("TOC generation API error:", error);
 

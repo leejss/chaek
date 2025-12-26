@@ -17,24 +17,28 @@ import Button from "../../_components/Button";
 
 export default function TOCReviewStep() {
   const tableOfContents = useBookStore((state) => state.tableOfContents);
+  const bookTitle = useBookStore((state) => state.bookTitle);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const { setSelectedModel, regenerateTOC, startBookGeneration, updateDraft } =
     useBookStore((state) => state.actions);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [tempTitle, setTempTitle] = useState("");
   const [tempTOC, setTempTOC] = useState<string[]>([]);
 
   const selectedProvider = aiConfiguration.content.provider;
   const selectedModel = aiConfiguration.content.model;
 
   const handleEditStart = () => {
+    setTempTitle(bookTitle);
     setTempTOC([...tableOfContents]);
     setIsEditing(true);
   };
 
   const handleSave = () => {
     updateDraft({
+      bookTitle: tempTitle.trim() || "Untitled Book",
       tableOfContents: tempTOC.filter((t) => t.trim() !== ""),
     });
     setIsEditing(false);
@@ -112,38 +116,57 @@ export default function TOCReviewStep() {
 
           <div className="p-8 md:p-10">
             {isEditing ? (
-              <div className="space-y-4">
-                {tempTOC.map((chapter, idx) => (
-                  <div key={idx} className="flex items-center gap-3 group">
-                    <span className="font-bold w-6 text-brand-900/20 font-sans">
-                      {idx + 1}
-                    </span>
-                    <input
-                      type="text"
-                      value={chapter}
-                      onChange={(e) => updateChapter(idx, e.target.value)}
-                      placeholder={`Chapter ${idx + 1} title...`}
-                      className="flex-1 text-lg leading-relaxed text-ink-900 bg-transparent border-b border-stone-100 focus:outline-none focus:border-brand-600 py-1 transition-colors"
-                    />
-                    <button
-                      onClick={() => removeChapter(idx)}
-                      className="p-2 text-stone-300 hover:text-red-500 transition-colors"
-                      title="Remove chapter"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={addChapter}
-                  className="w-full py-3 mt-4 border border-dashed border-stone-200 rounded-sm flex items-center justify-center gap-2 text-stone-400 hover:text-brand-600 hover:border-brand-600 hover:bg-brand-50/30 transition-all font-sans text-xs uppercase tracking-wider"
-                >
-                  <Plus size={14} />
-                  Add Chapter
-                </button>
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-stone-100">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-brand-900/60 font-sans mb-2">
+                    Book Title
+                  </label>
+                  <input
+                    type="text"
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    placeholder="Enter book title..."
+                    className="w-full text-2xl font-bold leading-relaxed text-ink-900 bg-transparent border-b-2 border-brand-200 focus:outline-none focus:border-brand-600 py-2 transition-colors"
+                  />
+                </div>
+                <div className="space-y-4">
+                  {tempTOC.map((chapter, idx) => (
+                    <div key={idx} className="flex items-center gap-3 group">
+                      <span className="font-bold w-6 text-brand-900/20 font-sans">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={chapter}
+                        onChange={(e) => updateChapter(idx, e.target.value)}
+                        placeholder={`Chapter ${idx + 1} title...`}
+                        className="flex-1 text-lg leading-relaxed text-ink-900 bg-transparent border-b border-stone-100 focus:outline-none focus:border-brand-600 py-1 transition-colors"
+                      />
+                      <button
+                        onClick={() => removeChapter(idx)}
+                        className="p-2 text-stone-300 hover:text-red-500 transition-colors"
+                        title="Remove chapter"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={addChapter}
+                    className="w-full py-3 mt-4 border border-dashed border-stone-200 rounded-sm flex items-center justify-center gap-2 text-stone-400 hover:text-brand-600 hover:border-brand-600 hover:bg-brand-50/30 transition-all font-sans text-xs uppercase tracking-wider"
+                  >
+                    <Plus size={14} />
+                    Add Chapter
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
+                <div className="pb-4 border-b border-stone-100 text-center">
+                  <h2 className="text-2xl font-bold text-brand-900">
+                    {bookTitle || "Untitled Book"}
+                  </h2>
+                </div>
                 {tableOfContents?.length > 0 ? (
                   <div className="space-y-5">
                     {tableOfContents.map((chapter, idx) => (
