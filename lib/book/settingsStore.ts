@@ -8,6 +8,7 @@ interface SettingsState {
   language: Language;
   chapterCount: ChapterCount; // 3-10 or "Auto"
   userPreference: string;
+  requireConfirm: boolean;
 }
 
 interface SettingsStore extends SettingsState {
@@ -15,6 +16,7 @@ interface SettingsStore extends SettingsState {
     setLanguage: (lang: Language) => void;
     setChapterCount: (count: ChapterCount) => void;
     setUserPreference: (pref: string) => void;
+    setRequireConfirm: (value: boolean) => void;
   };
 }
 
@@ -24,11 +26,13 @@ export const useSettingsStore = create<SettingsStore>()(
       language: "Korean", // Default as per context (Korean app)
       chapterCount: "Auto",
       userPreference: "",
+      requireConfirm: true,
 
       actions: {
         setLanguage: (language) => set({ language }),
         setChapterCount: (chapterCount) => set({ chapterCount }),
         setUserPreference: (userPreference) => set({ userPreference }),
+        setRequireConfirm: (requireConfirm) => set({ requireConfirm }),
       },
     }),
     {
