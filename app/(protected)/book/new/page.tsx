@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Circle } from "lucide-react";
 import { useBookStore } from "@/lib/book/bookContext";
+import { FlowStatus } from "@/lib/book/types";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 import GenerationStep from "./_components/GenerationStep";
@@ -12,14 +13,48 @@ import StatusOverview from "./_components/StatusOverview";
 import CompletedStep from "./_components/CompletedStep";
 import SettingsStep from "./_components/SettingsStep";
 
+const FLOW_STEPS = [
+  "settings",
+  "draft",
+  "toc_review",
+  "generating",
+  "completed",
+] as const;
+
+const STEP_LABELS: Record<(typeof FLOW_STEPS)[number], string> = {
+  settings: "Settings",
+  draft: "Source Input",
+  toc_review: "Review Table of Contents",
+  generating: "Generating Book",
+  completed: "Completed",
+};
+
+function getStepStatus(
+  step: FlowStatus,
+  currentStatus: FlowStatus,
+  completedSteps: Set<FlowStatus>,
+): "completed" | "current" | "disabled" | "available" {
+  if (completedSteps.has(step)) return "completed";
+  if (step === currentStatus) return "current";
+  return "disabled";
+}
+
 export default function CreateBookPage() {
   const router = useRouter();
   const flowStatus = useBookStore((state) => state.flowStatus);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const actions = useBookStore((state) => state.actions);
+  const tableOfContents = useBookStore((state) => state.tableOfContents);
+  const completedSteps = useBookStore((state) => state.completedSteps);
+  const bookGenerationStarted = useBookStore((state) => state.bookGenerationStarted);
 
   const isGenerating = flowStatus === "generating";
   const generationProgress = useBookStore((state) => state.generationProgress);
+
+  const currentStepIndex = FLOW_STEPS.indexOf(
+    flowStatus as (typeof FLOW_STEPS)[number],
+  );
+  const content = useBookStore((state) => state.content);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -33,7 +68,6 @@ export default function CreateBookPage() {
   }, [isProcessing, isGenerating]);
 
   const handleBack = () => {
-    // 1. Settings 단계에서는 라이브러리 목록으로 돌아감
     if (flowStatus === "settings") {
       if (
         (isProcessing || isGenerating) &&
@@ -45,7 +79,6 @@ export default function CreateBookPage() {
       return;
     }
 
-    // 2. 진행 중인 상태(Processing/Generating)인 경우 확인 후 중단 및 이전 단계로
     if (isProcessing || isGenerating) {
       if (!confirm("진행 중인 작업을 중단하고 이전 단계로 돌아가시겠습니까?")) {
         return;
@@ -54,51 +87,80 @@ export default function CreateBookPage() {
         actions.cancelGeneration();
       }
 
-      // 구체적인 상태에 따른 복구 지점
       if (flowStatus === "generating_toc") {
         actions.setFlowStatus("draft");
       } else {
-        // Plan 생성이나 본문 생성 중에는 TOC 리뷰 단계로 돌아감
         actions.setFlowStatus("toc_review");
       }
       return;
     }
 
-    // 3. 고정된 각 단계에서의 이전 단계 정의
-    switch (flowStatus) {
-      case "draft":
-        actions.setFlowStatus("settings");
-        break;
-      case "toc_review":
-        actions.setFlowStatus("draft");
-        break;
-      case "completed":
-        actions.setFlowStatus("toc_review");
-        break;
-      default:
-        // 정의되지 않은 상태나 예외 케이스 처리
-        actions.setFlowStatus("settings");
-        break;
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      actions.setFlowStatus(FLOW_STEPS[prevIndex]);
     }
   };
 
-  const backLabel =
-    flowStatus === "settings" ? "Back to Library" : "Previous Step";
+  const handleNext = () => {
+    if (currentStepIndex >= FLOW_STEPS.length - 1) return;
+
+    const nextIndex = currentStepIndex + 1;
+    const nextStep = FLOW_STEPS[nextIndex];
+    actions.setFlowStatus(nextStep);
+  };
 
   return (
     <div className="max-w-4xl mx-auto bg-white border border-stone-200 shadow-xl rounded-sm min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
-      {/* Toolbar */}
-      <div className="px-8 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/50">
-        <button
-          onClick={handleBack}
-          className="flex items-center text-stone-500 hover:text-brand-900 transition-colors text-sm font-medium"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          {backLabel}
-        </button>
+      {/* Step Navigation */}
+      <div className="px-4 py-3 border-b border-stone-200 bg-stone-50/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBack}
+              className="flex items-center text-stone-500 hover:text-brand-900 transition-colors text-sm font-medium px-2 py-1"
+            >
+              <ChevronLeft size={16} className="mr-1" />
+              {flowStatus === "settings" ? "Back" : "Previous"}
+            </button>
+          </div>
 
-        <div className="px-3 py-1 bg-stone-200 text-stone-600 text-xs font-bold rounded uppercase tracking-wider">
-          {flowStatus?.replace("_", " ")}
+          <div className="flex items-center gap-1">
+            {FLOW_STEPS.map((step) => {
+              const stepStatus = getStepStatus(step, flowStatus, completedSteps);
+              const isClickable = stepStatus === "completed" || stepStatus === "available";
+              const isCurrent = stepStatus === "current";
+
+              return (
+                <button
+                  key={step}
+                  onClick={() => isClickable && actions.goToStep(step)}
+                  disabled={!isClickable || (bookGenerationStarted && step !== "settings" && step !== "toc_review")}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium transition-all
+                    ${isCurrent 
+                      ? "bg-brand-600 text-white" 
+                      : stepStatus === "completed"
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "bg-stone-100 text-stone-400"
+                    }
+                    ${isClickable && !isCurrent ? "hover:bg-stone-200 hover:text-stone-600" : ""}
+                    ${!isClickable ? "cursor-not-allowed opacity-60" : ""}
+                  `}
+                >
+                  {stepStatus === "completed" ? (
+                    <Check size={12} className="shrink-0" />
+                  ) : isCurrent ? (
+                    <Circle size={8} className="shrink-0" />
+                  ) : (
+                    <Circle size={8} className="shrink-0" />
+                  )}
+                  <span className="hidden sm:inline">{STEP_LABELS[step]}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-16" />
         </div>
       </div>
 

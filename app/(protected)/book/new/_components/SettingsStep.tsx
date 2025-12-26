@@ -44,7 +44,7 @@ export default function SettingsStep() {
   };
 
   const handleContinue = () => {
-    bookActions.setFlowStatus("draft");
+    bookActions.goToStep("draft");
   };
 
   return (

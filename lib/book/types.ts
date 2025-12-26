@@ -122,6 +122,8 @@ export type BookContextState = {
   generationProgress: GenerationProgress;
   userBooks: Book[];
   isLoadingBooks: boolean;
+  completedSteps: Set<FlowStatus>;
+  bookGenerationStarted: boolean;
 };
 
 export type BookActions = {
@@ -141,6 +143,7 @@ export type BookActions = {
   confirmChapter: () => void;
   cancelGeneration: () => void;
   setFlowStatus: (status: FlowStatus) => void;
+  goToStep: (step: FlowStatus) => void;
   setTocAiConfiguraiton: (
     provider: AIProvider,
     model: GeminiModel | ClaudeModel,
