@@ -1,4 +1,5 @@
 import {
+  foreignKey,
   index,
   pgTable,
   text,
@@ -18,7 +19,7 @@ export const users = pgTable("users", {
 
 export const refreshTokens = pgTable(
   "refresh_tokens",
-  {
+  () => ({
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id")
       .notNull()
@@ -30,11 +31,19 @@ export const refreshTokens = pgTable(
       .notNull()
       .defaultNow(),
     replacedByTokenId: uuid("replaced_by_token_id"),
-  },
+  }),
   (table) => [
+    foreignKey({
+      columns: [table.replacedByTokenId],
+      foreignColumns: [table.id],
+      name: "refresh_tokens_replaced_by_token_id_fk",
+    }).onDelete("set null"),
     index("user_id_idx").on(table.userId),
     uniqueIndex("refresh_tokens_token_hash_uq").on(table.tokenHash),
     index("refresh_tokens_expires_at_idx").on(table.expiresAt),
+    index("refresh_tokens_replaced_by_token_id_idx").on(
+      table.replacedByTokenId,
+    ),
   ],
 );
 

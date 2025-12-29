@@ -14,6 +14,7 @@ import { generateRandomToken, sha256Hex } from "@/utils";
 import { add, Duration } from "date-fns";
 import { NextResponse } from "next/server";
 import { serverEnv } from "@/lib/env";
+import { and, eq, isNull } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
       googleClientId,
     );
 
-    // Upsert users
+    // 이미 같은 googleSub을 가진 사용자가 있으면 email을 업데이트한다.
     const [user] = await db
       .insert(users)
       .values({ email, googleSub })
@@ -55,24 +56,35 @@ export async function POST(req: Request) {
       secret: ourJwtSecret,
     });
 
-    // Refresh token을 생성하고 DB에 저장한다.
     const refreshToken = generateRandomToken();
     const refreshTokenHash = await sha256Hex(refreshToken);
 
-    await db.insert(refreshTokens).values({
-      userId: user.id,
-      tokenHash: refreshTokenHash,
-      expiresAt: add(new Date(), refreshTokenConfig.duration as Duration),
-    });
-
     const res = NextResponse.json({ ok: true }, { status: 200 });
 
-    res.cookies.set(accessTokenConfig.name, jwt, {
-      ...accessAuthCookieOptions,
-    });
+    await db.transaction(async (tx) => {
+      await tx
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(
+          and(
+            eq(refreshTokens.userId, user.id),
+            isNull(refreshTokens.revokedAt),
+          ),
+        );
 
-    res.cookies.set(refreshTokenConfig.name, refreshToken, {
-      ...refreshAuthCookieOptions,
+      await tx.insert(refreshTokens).values({
+        userId: user.id,
+        tokenHash: refreshTokenHash,
+        expiresAt: add(new Date(), refreshTokenConfig.duration as Duration),
+      });
+
+      res.cookies.set(accessTokenConfig.name, jwt, {
+        ...accessAuthCookieOptions,
+      });
+
+      res.cookies.set(refreshTokenConfig.name, refreshToken, {
+        ...refreshAuthCookieOptions,
+      });
     });
 
     return res;

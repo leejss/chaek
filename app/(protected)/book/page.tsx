@@ -87,14 +87,6 @@ export default async function LibraryPage() {
                   ? book.content.substring(0, 150) + "..."
                   : "No content preview available."}
               </div>
-              <div className="flex justify-between items-center mt-auto pt-4 border-t border-stone-100">
-                <span className="text-xs font-medium text-brand-700 bg-brand-50 px-2 py-1 rounded">
-                  Completed
-                </span>
-                <span className="text-stone-400 group-hover:text-brand-900 transition-colors">
-                  <ChevronLeft className="rotate-180" size={20} />
-                </span>
-              </div>
             </Link>
           ))}
         </div>

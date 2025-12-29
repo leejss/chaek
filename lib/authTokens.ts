@@ -12,19 +12,29 @@ export const refreshTokenConfig = {
   maxAge: 30 * 24 * 60 * 60,
 };
 
-export const commonAuthCookieOptions = {
+const baseCookieOptions = {
   httpOnly: true,
   secure: serverEnv.NODE_ENV === "production",
-  sameSite: "lax" as const,
   path: "/",
 };
 
+export const authCookieOptions = {
+  ui: {
+    ...baseCookieOptions,
+    sameSite: "lax" as const,
+  },
+  api: {
+    ...baseCookieOptions,
+    sameSite: "strict" as const,
+  },
+};
+
 export const accessAuthCookieOptions = {
-  ...commonAuthCookieOptions,
+  ...authCookieOptions.api,
   maxAge: accessTokenConfig.maxAge,
 };
 
 export const refreshAuthCookieOptions = {
-  ...commonAuthCookieOptions,
+  ...authCookieOptions.api,
   maxAge: refreshTokenConfig.maxAge,
 };

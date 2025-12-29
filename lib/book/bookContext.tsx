@@ -13,6 +13,7 @@ import { BookActions, BookContextState, FlowStatus, Section } from "@/lib/book/t
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
+import { authFetch } from "@/lib/api";
 
 const FLOW_STEPS = [
   "settings",
@@ -121,7 +122,7 @@ export const useBookStore = create(
 
         set({ isSavingBook: true, error: null }, false, "book/saveBook_start");
         try {
-          const res = await fetch("/api/book/save", {
+          const res = await authFetch("/api/book/save", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

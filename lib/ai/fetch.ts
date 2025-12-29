@@ -8,6 +8,7 @@ import {
 } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
+import { authFetch } from "@/lib/api";
 
 type SaveBookParams = {
   title: string;
@@ -27,7 +28,7 @@ export async function fetchTOC(
   model?: GeminiModel | ClaudeModel,
   settings?: BookSettings,
 ): Promise<TocResponse> {
-  const response = await fetch("/api/ai/toc", {
+  const response = await authFetch("/api/ai/toc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -56,7 +57,7 @@ export async function fetchPlan(
   model?: GeminiModel | ClaudeModel,
   settings?: BookSettings,
 ): Promise<PlanOutput> {
-  const response = await fetch("/api/ai/plan", {
+  const response = await authFetch("/api/ai/plan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -88,7 +89,7 @@ export async function fetchOutline(params: {
   settings?: BookSettings;
 }): Promise<ChapterOutline> {
   const { settings, ...rest } = params;
-  const response = await fetch("/api/ai/outline", {
+  const response = await authFetch("/api/ai/outline", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -108,7 +109,7 @@ export async function fetchOutline(params: {
 }
 
 export async function saveBookRequest(params: SaveBookParams) {
-  const response = await fetch("/api/book/save", {
+  const response = await authFetch("/api/book/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -140,7 +141,7 @@ export async function* fetchStreamSection(params: {
   settings?: BookSettings;
 }) {
   const { settings, ...rest } = params;
-  const response = await fetch("/api/ai/section", {
+  const response = await authFetch("/api/ai/section", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -164,7 +165,7 @@ export async function* fetchStreamSection(params: {
 }
 
 export async function fetchBooks(): Promise<Book[]> {
-  const response = await fetch("/api/books");
+  const response = await authFetch("/api/books");
 
   if (!response.ok) {
     const error = await response.json();
@@ -176,7 +177,7 @@ export async function fetchBooks(): Promise<Book[]> {
 }
 
 export async function fetchBookById(id: string): Promise<Book> {
-  const response = await fetch(`/api/books/${id}`);
+  const response = await authFetch(`/api/books/${id}`);
 
   if (!response.ok) {
     if (response.status === 404) {
