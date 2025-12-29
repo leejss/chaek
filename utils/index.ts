@@ -25,3 +25,13 @@ export async function readJson(req: Request): Promise<ReadJsonResult> {
     return { ok: false, error: new InvalidJsonError() };
   }
 }
+
+export const slugify = (text: string) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-");
+};

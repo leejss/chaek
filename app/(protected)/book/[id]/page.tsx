@@ -1,113 +1,161 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { ChevronLeft, Download } from "lucide-react";
-import jsPDF from "jspdf";
-import { useBookStore } from "@/lib/book/bookContext";
-import Button from "../_components/Button";
-import MarkdownRenderer from "../_components/MarkdownRenderer";
+import { db } from "@/db";
+import { books } from "@/db/schema";
+import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
+import { serverEnv } from "@/lib/env";
+import { highlightCode, extractTOC } from "@/lib/book/serverMarkdown";
+import { eq, and } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import ReactMarkdown from "react-markdown";
+import BookView from "./_components/BookView";
 import { Book } from "@/lib/book/types";
 
-export default function BookDetailPage() {
-  const router = useRouter();
-  const params = useParams();
-  const { fetchBookById } = useBookStore((state) => state.actions);
-  const [book, setBook] = useState<Book | undefined>(undefined);
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
-  useEffect(() => {
-    const loadBook = async () => {
-      if (params.id) {
-        const foundBook = await fetchBookById(params.id as string);
-        if (foundBook) {
-          setBook(foundBook);
-        } else {
-          router.push("/book");
-        }
-      }
-    };
-    loadBook();
-  }, [params.id, fetchBookById, router]);
+export default async function BookDetailPage({ params }: PageProps) {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(accessTokenConfig.name)?.value;
 
-  if (!book) return null;
+  if (!accessToken) {
+    redirect("/login");
+  }
 
-  const handleReturnToList = () => {
-    router.push("/book");
+  const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
+  const { userId } = await verifyAccessJWT(accessToken, secret);
+
+  const { id: bookId } = await params;
+
+  const foundBooks = await db
+    .select()
+    .from(books)
+    .where(and(eq(books.id, bookId), eq(books.userId, userId)))
+    .limit(1);
+
+  if (foundBooks.length === 0) {
+    notFound();
+  }
+
+  const bookData = foundBooks[0];
+
+  const book: Book = {
+    id: bookData.id,
+    title: bookData.title,
+    content: bookData.content,
+    tableOfContents: bookData.tableOfContents || [],
+    sourceText: bookData.sourceText || undefined,
+    createdAt: bookData.createdAt.toISOString(),
   };
 
-  const handleDownloadPDF = () => {
-    if (!book.content) return;
+  const headings = extractTOC(book.content);
 
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    const maxLineWidth = pageWidth - margin * 2;
-
-    // Simple text split for PDF (Advanced implementation would use HTML rendering)
-    const splitText = doc.splitTextToSize(book.content, maxLineWidth);
-
-    let y = 20;
-    doc.setFont("times", "normal");
-    doc.setFontSize(12);
-
-    // Very basic pagination
-    for (let i = 0; i < splitText.length; i++) {
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(splitText[i], margin, y);
-      y += 7;
-    }
-
-    doc.save(`${book.title || "generated-book"}.pdf`);
-  };
-
-  return (
-    <div className="max-w-4xl mx-auto bg-white border border-stone-200 shadow-xl rounded-sm min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
-      {/* Detail Toolbar */}
-      <div className="px-8 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/50">
-        <button
-          onClick={handleReturnToList}
-          className="flex items-center text-stone-500 hover:text-brand-900 transition-colors text-sm font-medium"
+  const components = {
+    h1: ({ children, ...props }: any) => {
+      const text = typeof children === "string" ? children : String(children);
+      return (
+        <h1
+          id={`heading-${text}`}
+          data-heading-text={text}
+          className="text-4xl font-bold mt-8 mb-6 text-brand-900 border-b border-brand-100 pb-4 scroll-mt-24"
+          {...props}
         >
-          <ChevronLeft size={16} className="mr-1" />
-          Back to Library
-        </button>
+          {children}
+        </h1>
+      );
+    },
+    h2: ({ children, ...props }: any) => {
+      const text = typeof children === "string" ? children : String(children);
+      return (
+        <h2
+          id={`heading-${text}`}
+          data-heading-text={text}
+          className="text-2xl font-semibold mt-8 mb-4 text-ink-900 scroll-mt-24"
+          {...props}
+        >
+          {children}
+        </h2>
+      );
+    },
+    h3: ({ children, ...props }: any) => {
+      const text = typeof children === "string" ? children : String(children);
+      return (
+        <h3
+          id={`heading-${text}`}
+          data-heading-text={text}
+          className="text-xl font-medium mt-6 mb-3 text-ink-800 scroll-mt-24"
+          {...props}
+        >
+          {children}
+        </h3>
+      );
+    },
+    h4: ({ ...props }: any) => (
+      <h4
+        className="text-lg font-semibold mt-6 mb-2 text-ink-800"
+        {...props}
+      />
+    ),
+    h5: ({ ...props }: any) => (
+      <h5
+        className="text-base font-bold mt-4 mb-2 text-ink-700 uppercase tracking-wide"
+        {...props}
+      />
+    ),
+    p: ({ ...props }: any) => (
+      <p className="leading-loose mb-4 text-lg" {...props} />
+    ),
+    ul: ({ ...props }: any) => (
+      <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />
+    ),
+    ol: ({ ...props }: any) => (
+      <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />
+    ),
+    blockquote: ({ ...props }: any) => (
+      <blockquote
+        className="border-l-4 border-accent-500 pl-4 italic text-ink-400 my-6"
+        {...props}
+      />
+    ),
+    code: async ({ className, children, ...props }: any) => {
+      const content = String(children).replace(/\n$/, "");
+      const match = /language-(\w+)/.exec(className || "");
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleDownloadPDF}
-            className="text-xs"
+      if (!match && !content.includes("\n")) {
+        return (
+          <code
+            className="px-1.5 py-0.5 rounded bg-stone-100 text-rose-600 font-mono text-[0.9em] border border-stone-200"
+            {...props}
           >
-            <Download size={14} className="mr-2" />
-            Download PDF
-          </Button>
-          <div className="px-3 py-1 bg-brand-100 text-brand-900 text-xs font-bold rounded uppercase tracking-wider hidden sm:block">
-            Read Mode
+            {children}
+          </code>
+        );
+      }
+
+      const html = await highlightCode(content, match?.[1] || "text");
+
+      return (
+        <div className="relative my-6 group">
+          <div className="absolute right-3 top-3 text-xs text-stone-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+            {match?.[1]}
           </div>
+          <div
+            className="rounded-lg border border-stone-200 bg-stone-50 overflow-hidden text-sm"
+            dangerouslySetInnerHTML={{
+              __html: html,
+            }}
+          />
         </div>
-      </div>
+      );
+    },
+    pre: ({ children }: any) => <>{children}</>,
+  };
 
-      {/* Detail Content */}
-      <div className="flex-1 p-8 md:p-12 overflow-y-auto">
-        <div className="mb-10 text-center border-b border-stone-100 pb-8">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-900 mb-4">
-            {book.title}
-          </h1>
-          <p className="text-stone-400 text-sm uppercase tracking-widest">
-            Created {new Date(book.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-
-        <MarkdownRenderer content={book.content || ""} />
-
-        <div className="mt-16 pt-8 border-t border-stone-100 flex justify-center flex-col items-center">
-          <div className="w-8 h-1 bg-stone-300 rounded mb-4"></div>
-          <p className="text-stone-400 italic font-serif">End of Book</p>
-        </div>
-      </div>
+  const markdownHtml = (
+    <div className="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:font-medium prose-p:leading-relaxed prose-p:text-stone-700">
+      <ReactMarkdown components={components as any}>{book.content}</ReactMarkdown>
     </div>
   );
+
+  return <BookView book={book} headings={headings} markdownHtml={markdownHtml} />;
 }

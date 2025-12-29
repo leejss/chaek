@@ -7,6 +7,7 @@ import { createHighlighter, type Highlighter } from "shiki";
 interface MarkdownRendererProps {
   content: string;
   isStreaming?: boolean;
+  onHeadingRender?: (level: number, text: string) => number | undefined;
 }
 
 // 싱글톤 하이라이터 인스턴스 (Highlighter singleton instance)
@@ -104,29 +105,54 @@ function escapeHtml(unsafe: string) {
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   isStreaming,
+  onHeadingRender,
 }) => {
   return (
     <div className="prose prose-lg prose-stone max-w-none font-serif text-ink-800">
       <ReactMarkdown
         components={{
-          h1: ({ ...props }) => (
-            <h1
-              className="text-4xl font-bold mt-8 mb-6 text-brand-900 border-b border-brand-100 pb-4"
-              {...props}
-            />
-          ),
-          h2: ({ ...props }) => (
-            <h2
-              className="text-2xl font-semibold mt-8 mb-4 text-ink-900"
-              {...props}
-            />
-          ),
-          h3: ({ ...props }) => (
-            <h3
-              className="text-xl font-medium mt-6 mb-3 text-ink-800"
-              {...props}
-            />
-          ),
+          h1: ({ children, ...props }) => {
+            const text =
+              typeof children === "string" ? children : String(children);
+            return (
+              <h1
+                id={`heading-${text}`}
+                data-heading-text={text}
+                className="text-4xl font-bold mt-8 mb-6 text-brand-900 border-b border-brand-100 pb-4 scroll-mt-24"
+                {...props}
+              >
+                {children}
+              </h1>
+            );
+          },
+          h2: ({ children, ...props }) => {
+            const text =
+              typeof children === "string" ? children : String(children);
+            return (
+              <h2
+                id={`heading-${text}`}
+                data-heading-text={text}
+                className="text-2xl font-semibold mt-8 mb-4 text-ink-900 scroll-mt-24"
+                {...props}
+              >
+                {children}
+              </h2>
+            );
+          },
+          h3: ({ children, ...props }) => {
+            const text =
+              typeof children === "string" ? children : String(children);
+            return (
+              <h3
+                id={`heading-${text}`}
+                data-heading-text={text}
+                className="text-xl font-medium mt-6 mb-3 text-ink-800 scroll-mt-24"
+                {...props}
+              >
+                {children}
+              </h3>
+            );
+          },
           h4: ({ ...props }) => (
             <h4
               className="text-lg font-semibold mt-6 mb-2 text-ink-800"
