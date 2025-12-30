@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
 }
 
 @theme {
@@ -16,19 +16,19 @@
   --color-foreground: var(--foreground);
 
   /* Copy specific palette */
-  --color-paper: #f9f8f6;
+  --color-paper: #000000;
 
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-900: #312e81; /* Deep Indigo - Corrected from copy */
+  --color-brand-50: #16181c;
+  --color-brand-100: #2f3336;
+  --color-brand-600: #1d9bf0; /* X Blue */
+  --color-brand-700: #1a8cd8;
+  --color-brand-900: #ffffff;
 
-  --color-ink-900: #1a1a1a;
-  --color-ink-800: #2d2d2d;
-  --color-ink-400: #9ca3af;
+  --color-ink-900: #ffffff;
+  --color-ink-800: #e7e9ea;
+  --color-ink-400: #71767b;
 
-  --color-accent-500: #d97706; /* Muted Amber */
+  --color-accent-500: #1d9bf0;
 }
 
 /* Shiki Syntax Highlighting Styles (Notion-like) */
@@ -57,11 +57,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #333333;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #555555;
 }
 
 body {
@@ -72,8 +72,8 @@ body {
 
 /* Base styles for selection matching copy */
 ::selection {
-  background-color: var(--color-brand-100);
-  color: var(--color-brand-900);
+  background-color: var(--color-brand-600);
+  color: #ffffff;
 }
 
 /* Custom Scrollbar */
@@ -87,10 +87,10 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e5e5e5;
+  background: #333333;
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #d4d4d4;
+  background: #555555;
 }

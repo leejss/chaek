@@ -21,17 +21,15 @@ export default function CreditBalance() {
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 text-sm">
-        <span className="text-gray-600">Credits:</span>
-        <span className="font-semibold text-gray-900">{balance}</span>
+        <span className="text-neutral-500">Credits:</span>
+        <span className="font-bold text-white">{balance}</span>
         {freeCredits > 0 && (
-          <span className="text-xs text-green-600">
-            ({freeCredits} free)
-          </span>
+          <span className="text-xs text-green-400">({freeCredits} free)</span>
         )}
       </div>
       <Link
         href="/credits"
-        className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+        className="rounded-full bg-brand-600 px-3 py-1 text-sm font-bold text-white hover:bg-brand-700 transition-colors"
       >
         Top Up
       </Link>

@@ -111,10 +111,10 @@ export default function CreateBookPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white border border-stone-200 shadow-xl rounded-sm min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-4xl mx-auto bg-black border border-neutral-800 rounded-2xl min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
       {/* Credit Balance Warning */}
       {!isLoadingBalance && hasInsufficientCredits && (
-        <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-200">
+        <div className="px-4 py-3 bg-yellow-900/20 border-b border-yellow-900">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <svg
@@ -128,7 +128,7 @@ export default function CreateBookPage() {
               >
                 <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
               </svg>
-              <span className="text-sm font-medium text-yellow-800">
+              <span className="text-sm font-medium text-yellow-400">
                 Insufficient credits: You need {BOOK_CREATION_COST} credits to
                 create a book, but you have {balance}.
               </span>
@@ -144,37 +144,24 @@ export default function CreateBookPage() {
       )}
 
       {!isLoadingBalance && balance !== null && !hasInsufficientCredits && (
-        <div className="px-4 py-2 bg-blue-50 border-b border-blue-200">
+        <div className="px-4 py-2 bg-blue-900/20 border-b border-blue-900">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-blue-800">
+            <span className="text-blue-400">
               Available credits:{" "}
-              <span className="font-semibold">{balance}</span> (This
-              book will cost {BOOK_CREATION_COST} credits)
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Credit Balance Display */}
-      {!isLoadingBalance && balance !== null && !hasInsufficientCredits && (
-        <div className="px-4 py-2 bg-blue-50 border-b border-blue-200">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-blue-800">
-              Available credits:{" "}
-              <span className="font-semibold">{balance}</span> (This
-              book will cost {BOOK_CREATION_COST} credits)
+              <span className="font-semibold">{balance}</span> (This book will
+              cost {BOOK_CREATION_COST} credits)
             </span>
           </div>
         </div>
       )}
 
       {/* Step Navigation */}
-      <div className="px-4 py-3 border-b border-stone-200 bg-stone-50/50">
+      <div className="px-4 py-3 border-b border-neutral-800 bg-neutral-900/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={handleBack}
-              className="flex items-center text-stone-500 hover:text-brand-900 transition-colors text-sm font-medium px-2 py-1"
+              className="flex items-center text-neutral-500 hover:text-white transition-colors text-sm font-medium px-2 py-1"
             >
               <ChevronLeft size={16} className="mr-1" />
               {flowStatus === "settings" ? "Back" : "Previous"}
@@ -203,17 +190,17 @@ export default function CreateBookPage() {
                       step !== "toc_review")
                   }
                   className={`
-                    flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium transition-all
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
                     ${
                       isCurrent
                         ? "bg-brand-600 text-white"
                         : stepStatus === "completed"
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : "bg-stone-100 text-stone-400"
+                        ? "bg-green-900/20 text-green-400 border border-green-900"
+                        : "bg-neutral-900 text-neutral-600"
                     }
                     ${
                       isClickable && !isCurrent
-                        ? "hover:bg-stone-200 hover:text-stone-600"
+                        ? "hover:bg-neutral-800 hover:text-neutral-400"
                         : ""
                     }
                     ${!isClickable ? "cursor-not-allowed opacity-60" : ""}

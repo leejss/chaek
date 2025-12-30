@@ -19,16 +19,17 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center px-5 py-2.5 text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
     primary:
-      "bg-brand-900 text-white hover:bg-brand-700 shadow-sm focus:ring-brand-900 rounded-sm",
+      "bg-brand-600 text-white hover:bg-brand-700 shadow-sm focus:ring-brand-600 rounded-full",
     secondary:
-      "bg-stone-200 text-stone-800 hover:bg-stone-300 focus:ring-stone-400 rounded-sm",
+      "bg-neutral-800 text-white hover:bg-neutral-700 focus:ring-neutral-600 rounded-full",
     outline:
-      "border border-stone-300 text-stone-700 hover:bg-stone-50 hover:border-stone-400 focus:ring-stone-400 bg-transparent rounded-sm",
-    ghost: "text-stone-600 hover:text-brand-900 hover:bg-brand-50 rounded-sm",
+      "border border-neutral-600 text-white hover:bg-neutral-900 focus:ring-neutral-600 bg-transparent rounded-full",
+    ghost:
+      "text-neutral-400 hover:text-brand-600 hover:bg-brand-900/10 rounded-full",
   };
 
   const Component = asChild ? Slot : "button";

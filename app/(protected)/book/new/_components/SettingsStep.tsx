@@ -51,23 +51,21 @@ export default function SettingsStep() {
     <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center mb-10">
         <div className="flex items-center justify-center gap-3 mb-4">
-          <Settings size={32} className="text-brand-700" />
+          <Settings size={32} className="text-brand-600" />
         </div>
-        <h2 className="text-3xl font-serif text-brand-900 mb-3">
-          Book Settings
-        </h2>
-        <p className="text-stone-500">
+        <h2 className="text-3xl font-bold text-white mb-3">Book Settings</h2>
+        <p className="text-neutral-500">
           Configure your book preferences before we begin.
         </p>
       </div>
 
-      <div className="bg-white p-8 space-y-8">
+      <div className="bg-black border border-neutral-800 rounded-2xl p-8 space-y-8">
         <div className="space-y-6">
           {/* AI Model Configuration */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Cpu size={18} className="text-brand-700" />
-              <h3 className="text-sm font-bold text-stone-700 uppercase tracking-wider">
+              <Cpu size={18} className="text-brand-600" />
+              <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">
                 AI Writer Model
               </h3>
             </div>
@@ -117,7 +115,7 @@ export default function SettingsStep() {
             </div> */}
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-stone-700">
+            <label className="block text-sm font-bold text-white">
               Output Language
             </label>
             <select
@@ -125,33 +123,35 @@ export default function SettingsStep() {
               onChange={(e) =>
                 settingsActions.setLanguage(e.target.value as Language)
               }
-              className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 border"
+              className="mt-1 block w-full rounded-lg border-neutral-800 bg-neutral-900 text-white shadow-sm focus:border-brand-600 focus:ring-brand-600 sm:text-sm p-2 border"
             >
               <option value="Korean">Korean (한국어)</option>
               <option value="English">English</option>
               <option value="Japanese">Japanese (日本語)</option>
               <option value="Chinese">Chinese (中文)</option>
             </select>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-neutral-500">
               The language used for generating content.
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-stone-700">
+            <label className="block text-sm font-bold text-white">
               Chapter Review Mode
             </label>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => settingsActions.setRequireConfirm(true)}
                 className={`
-                  flex-1 px-4 py-3 rounded-sm border transition-all text-sm text-left
-                  ${requireConfirm 
-                    ? 'bg-brand-50 border-brand-600 ring-1 ring-brand-600 shadow-sm text-brand-900' 
-                    : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}
+                  flex-1 px-4 py-3 rounded-xl border transition-all text-sm text-left
+                  ${
+                    requireConfirm
+                      ? "bg-brand-900/20 border-brand-600 ring-1 ring-brand-600 shadow-sm text-brand-400"
+                      : "bg-black border-neutral-800 text-neutral-400 hover:border-neutral-600"
+                  }
                 `}
               >
-                <div className="font-medium">Review Each Chapter</div>
+                <div className="font-bold text-white">Review Each Chapter</div>
                 <div className="text-xs mt-1 opacity-75">
                   Confirm each chapter before proceeding
                 </div>
@@ -159,26 +159,29 @@ export default function SettingsStep() {
               <button
                 onClick={() => settingsActions.setRequireConfirm(false)}
                 className={`
-                  flex-1 px-4 py-3 rounded-sm border transition-all text-sm text-left
-                  ${!requireConfirm 
-                    ? 'bg-brand-50 border-brand-600 ring-1 ring-brand-600 shadow-sm text-brand-900' 
-                    : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}
+                  flex-1 px-4 py-3 rounded-xl border transition-all text-sm text-left
+                  ${
+                    !requireConfirm
+                      ? "bg-brand-900/20 border-brand-600 ring-1 ring-brand-600 shadow-sm text-brand-400"
+                      : "bg-black border-neutral-800 text-neutral-400 hover:border-neutral-600"
+                  }
                 `}
               >
-                <div className="font-medium">Auto-Generate</div>
+                <div className="font-bold text-white">Auto-Generate</div>
                 <div className="text-xs mt-1 opacity-75">
                   Generate entire book automatically
                 </div>
               </button>
             </div>
-            <p className="text-xs text-stone-500">
-              Choose whether to review chapters one by one or generate all at once.
+            <p className="text-xs text-neutral-500">
+              Choose whether to review chapters one by one or generate all at
+              once.
             </p>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-stone-700">
+              <label className="block text-sm font-bold text-white">
                 Chapter Count
               </label>
               <div className="flex items-center gap-2">
@@ -187,11 +190,11 @@ export default function SettingsStep() {
                   id="auto-chapters"
                   checked={chapterCount === "Auto"}
                   onChange={(e) => toggleAutoChapters(e.target.checked)}
-                  className="rounded border-stone-300 text-brand-600 focus:ring-brand-500 h-4 w-4"
+                  className="rounded border-neutral-600 bg-neutral-900 text-brand-600 focus:ring-brand-600 h-4 w-4"
                 />
                 <label
                   htmlFor="auto-chapters"
-                  className="text-sm text-stone-600"
+                  className="text-sm text-neutral-400"
                 >
                   Auto
                 </label>
@@ -213,20 +216,20 @@ export default function SettingsStep() {
                   step="1"
                   value={chapterCount === "Auto" ? 5 : chapterCount}
                   onChange={handleChapterCountChange}
-                  className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                  className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-brand-600"
                 />
-                <span className="text-sm font-medium w-8 text-center bg-stone-100 py-1 rounded">
+                <span className="text-sm font-bold w-8 text-center bg-neutral-900 text-white py-1 rounded">
                   {chapterCount === "Auto" ? "Auto" : chapterCount}
                 </span>
               </div>
-              <p className="text-xs text-stone-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 Range: 3 to 10 chapters
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-stone-700">
+            <label className="block text-sm font-bold text-white">
               Custom Instructions
             </label>
             <textarea
@@ -235,10 +238,10 @@ export default function SettingsStep() {
                 settingsActions.setUserPreference(e.target.value)
               }
               rows={4}
-              className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 border"
+              className="mt-1 block w-full rounded-xl border-neutral-800 bg-neutral-900 text-white shadow-sm focus:border-brand-600 focus:ring-brand-600 sm:text-sm p-3 border placeholder:text-neutral-600"
               placeholder="E.g., Maintain a humorous tone, use simple analogies, focus on technical depth..."
             />
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-neutral-500">
               These instructions will be appended to the AI prompt for every
               generation.
             </p>

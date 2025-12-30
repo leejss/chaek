@@ -17,7 +17,11 @@ interface BookViewProps {
   markdownHtml: React.ReactNode;
 }
 
-export default function BookView({ book, headings, markdownHtml }: BookViewProps) {
+export default function BookView({
+  book,
+  headings,
+  markdownHtml,
+}: BookViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeText, setActiveText] = useState<string>("");
   const [showMobileTOC, setShowMobileTOC] = useState(false);
@@ -89,21 +93,21 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
   const activeHeading = headings.find((h) => h.text === activeText);
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-8rem)] flex flex-col bg-[#fcfcfc] rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.04)] border border-stone-200/60 overflow-hidden animate-in fade-in duration-700 relative">
-      <div className="flex-none px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-white/80 backdrop-blur-sm z-20 relative">
+    <div className="max-w-7xl mx-auto h-[calc(100vh-8rem)] flex flex-col bg-black rounded-2xl border border-neutral-800 overflow-hidden animate-in fade-in duration-700 relative">
+      <div className="flex-none px-6 py-4 border-b border-neutral-800 flex items-center justify-between bg-black/80 backdrop-blur-sm z-20 relative">
         <div className="flex items-center gap-4">
           <button
             onClick={() => window.history.back()}
-            className="group flex items-center text-stone-500 hover:text-stone-800 transition-colors text-sm font-medium"
+            className="group flex items-center text-neutral-500 hover:text-white transition-colors text-sm font-medium"
           >
-            <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center mr-2 group-hover:bg-stone-200 transition-colors">
+            <div className="w-6 h-6 rounded-full bg-neutral-900 flex items-center justify-center mr-2 group-hover:bg-neutral-800 transition-colors">
               <ChevronLeft size={14} />
             </div>
             Back
           </button>
 
           <button
-            className="lg:hidden p-2 text-stone-500 hover:bg-stone-100 rounded-md"
+            className="lg:hidden p-2 text-neutral-500 hover:bg-neutral-900 rounded-md"
             onClick={() => setShowMobileTOC(!showMobileTOC)}
           >
             <List size={18} />
@@ -111,7 +115,7 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
         </div>
 
         <div
-          className="hidden md:flex items-center gap-2 text-sm text-stone-500 font-medium opacity-0 animate-in fade-in duration-300 data-[visible=true]:opacity-100"
+          className="hidden md:flex items-center gap-2 text-sm text-neutral-500 font-medium opacity-0 animate-in fade-in duration-300 data-[visible=true]:opacity-100"
           data-visible={!!activeHeading}
         >
           {activeHeading && (
@@ -128,7 +132,7 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
           <Button
             variant="outline"
             onClick={handleDownloadMarkdown}
-            className="text-xs h-8 px-3 bg-white hover:bg-stone-50 border-stone-200 text-stone-600"
+            className="text-xs h-8 px-3 bg-black hover:bg-neutral-900 border-neutral-700 text-neutral-400"
           >
             <Download size={14} className="mr-2" />
             Download
@@ -137,8 +141,8 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
       </div>
 
       <div className="flex-1 flex overflow-hidden relative">
-        <aside className="hidden lg:block w-64 border-r border-stone-100 bg-stone-50/30 overflow-y-auto custom-scrollbar p-6">
-          <div className="mb-4 text-xs font-bold text-stone-400 uppercase tracking-wider">
+        <aside className="hidden lg:block w-64 border-r border-neutral-800 bg-black overflow-y-auto custom-scrollbar p-6">
+          <div className="mb-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">
             Table of Contents
           </div>
           <nav className="space-y-1">
@@ -150,8 +154,8 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
                   block w-full text-left text-sm py-1.5 px-2 rounded-md transition-colors
                   ${
                     activeText === heading.text
-                      ? "bg-white text-brand-700 font-medium shadow-sm ring-1 ring-stone-200"
-                      : "text-stone-500 hover:text-stone-900 hover:bg-stone-100/50"
+                      ? "bg-neutral-900 text-white font-medium"
+                      : "text-neutral-500 hover:text-white hover:bg-neutral-900/50"
                   }
                   ${heading.level === 3 ? "pl-6 text-xs" : ""}
                 `}
@@ -163,14 +167,12 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
         </aside>
 
         {showMobileTOC && (
-          <div className="absolute inset-0 z-30 bg-white/95 backdrop-blur-sm lg:hidden flex flex-col p-6 animate-in slide-in-from-top-5">
+          <div className="absolute inset-0 z-30 bg-black/95 backdrop-blur-sm lg:hidden flex flex-col p-6 animate-in slide-in-from-top-5">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-serif text-xl font-bold text-stone-900">
-                Contents
-              </h3>
+              <h3 className="text-xl font-bold text-white">Contents</h3>
               <button
                 onClick={() => setShowMobileTOC(false)}
-                className="p-2 hover:bg-stone-100 rounded-full"
+                className="p-2 hover:bg-neutral-900 rounded-full text-white"
               >
                 <ChevronLeft size={20} />
               </button>
@@ -184,8 +186,8 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
                     block w-full text-left py-3 px-4 rounded-lg border transition-all
                     ${
                       activeText === heading.text
-                        ? "bg-brand-50 border-brand-200 text-brand-800 font-medium"
-                        : "bg-white border-stone-100 text-stone-600"
+                        ? "bg-neutral-900 border-neutral-700 text-white font-medium"
+                        : "bg-black border-neutral-800 text-neutral-500"
                     }
                     ${heading.level === 3 ? "ml-4 w-[calc(100%-1rem)]" : ""}
                   `}
@@ -199,14 +201,14 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
 
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative"
+          className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative bg-black"
         >
           <div className="max-w-3xl mx-auto px-8 py-12 md:py-20">
-            <div className="mb-12 text-center border-b border-stone-100 pb-10">
-              <h1 className="text-4xl md:text-5xl font-serif font-medium text-stone-900 mb-6 leading-tight">
+            <div className="mb-12 text-center border-b border-neutral-800 pb-10">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight tracking-tight">
                 {book.title}
               </h1>
-              <div className="flex items-center justify-center gap-2 text-stone-400 text-xs uppercase tracking-widest font-medium">
+              <div className="flex items-center justify-center gap-2 text-neutral-500 text-xs uppercase tracking-widest font-medium">
                 <span>Generated Book</span>
                 <span>•</span>
                 <span>
@@ -219,11 +221,11 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
               </div>
             </div>
 
-            <div className="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:font-medium prose-p:leading-relaxed prose-p:text-stone-700">
+            <div className="prose prose-invert prose-lg max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-p:text-neutral-300">
               {markdownHtml}
 
-              <div className="mt-24 pt-12 border-t border-stone-100 flex justify-center flex-col items-center">
-                <div className="text-stone-300 mb-4">
+              <div className="mt-24 pt-12 border-t border-neutral-800 flex justify-center flex-col items-center">
+                <div className="text-neutral-700 mb-4">
                   <svg
                     width="24"
                     height="24"
@@ -239,9 +241,7 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
                     <circle cx="5" cy="12" r="1" />
                   </svg>
                 </div>
-                <p className="text-stone-400 text-sm font-serif italic">
-                  End of Book
-                </p>
+                <p className="text-neutral-600 text-sm italic">End of Book</p>
               </div>
             </div>
           </div>
@@ -249,8 +249,8 @@ export default function BookView({ book, headings, markdownHtml }: BookViewProps
           <div
             className={`
             lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-20 
-            bg-white/90 backdrop-blur shadow-lg border border-stone-200 rounded-full px-4 py-2 
-            flex items-center gap-2 text-sm font-medium text-stone-700
+            bg-neutral-900/90 backdrop-blur shadow-lg border border-neutral-700 rounded-full px-4 py-2 
+            flex items-center gap-2 text-sm font-medium text-white
             transition-all duration-300
             ${
               activeHeading

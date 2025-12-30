@@ -63,23 +63,23 @@ export default function TOCReviewStep() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 font-serif text-ink-900">
+    <div className="max-w-3xl mx-auto px-4 py-12 text-white">
       <div className="space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-3">
-          <h1 className="text-3xl font-bold tracking-tight text-brand-900">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
             Review Table of Contents
           </h1>
-          <p className="text-sm text-stone-500 font-sans max-w-md mx-auto">
+          <p className="text-sm text-neutral-500 font-sans max-w-md mx-auto">
             Review and refine the book structure. You can edit chapter titles or
             regenerate the entire outline.
           </p>
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white border border-stone-200 shadow-sm rounded-sm overflow-hidden">
-          <div className="p-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-brand-900/60 font-sans">
+        <div className="bg-black border border-neutral-800 shadow-sm rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/30">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500 font-sans">
               Chapters Outline
             </h2>
             <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export default function TOCReviewStep() {
                 <Button
                   variant="outline"
                   onClick={handleEditStart}
-                  className="h-8 px-3 text-xs gap-1.5 bg-white"
+                  className="h-8 px-3 text-xs gap-1.5 bg-black border-neutral-800 text-white hover:bg-neutral-900 rounded-full"
                 >
                   <Edit2 size={13} />
                   Edit List
@@ -117,8 +117,8 @@ export default function TOCReviewStep() {
           <div className="p-8 md:p-10">
             {isEditing ? (
               <div className="space-y-6">
-                <div className="pb-4 border-b border-stone-100">
-                  <label className="block text-xs font-bold uppercase tracking-widest text-brand-900/60 font-sans mb-2">
+                <div className="pb-4 border-b border-neutral-800">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 font-sans mb-2">
                     Book Title
                   </label>
                   <input
@@ -126,13 +126,13 @@ export default function TOCReviewStep() {
                     value={tempTitle}
                     onChange={(e) => setTempTitle(e.target.value)}
                     placeholder="Enter book title..."
-                    className="w-full text-2xl font-bold leading-relaxed text-ink-900 bg-transparent border-b-2 border-brand-200 focus:outline-none focus:border-brand-600 py-2 transition-colors"
+                    className="w-full text-2xl font-bold leading-relaxed text-white bg-transparent border-b-2 border-neutral-800 focus:outline-none focus:border-brand-600 py-2 transition-colors"
                   />
                 </div>
                 <div className="space-y-4">
                   {tempTOC.map((chapter, idx) => (
                     <div key={idx} className="flex items-center gap-3 group">
-                      <span className="font-bold w-6 text-brand-900/20 font-sans">
+                      <span className="font-bold w-6 text-neutral-700 font-sans">
                         {idx + 1}
                       </span>
                       <input
@@ -140,11 +140,11 @@ export default function TOCReviewStep() {
                         value={chapter}
                         onChange={(e) => updateChapter(idx, e.target.value)}
                         placeholder={`Chapter ${idx + 1} title...`}
-                        className="flex-1 text-lg leading-relaxed text-ink-900 bg-transparent border-b border-stone-100 focus:outline-none focus:border-brand-600 py-1 transition-colors"
+                        className="flex-1 text-lg leading-relaxed text-white bg-transparent border-b border-neutral-800 focus:outline-none focus:border-brand-600 py-1 transition-colors"
                       />
                       <button
                         onClick={() => removeChapter(idx)}
-                        className="p-2 text-stone-300 hover:text-red-500 transition-colors"
+                        className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
                         title="Remove chapter"
                       >
                         <Trash2 size={14} />
@@ -153,7 +153,7 @@ export default function TOCReviewStep() {
                   ))}
                   <button
                     onClick={addChapter}
-                    className="w-full py-3 mt-4 border border-dashed border-stone-200 rounded-sm flex items-center justify-center gap-2 text-stone-400 hover:text-brand-600 hover:border-brand-600 hover:bg-brand-50/30 transition-all font-sans text-xs uppercase tracking-wider"
+                    className="w-full py-3 mt-4 border border-dashed border-neutral-800 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-brand-600 hover:border-brand-600 hover:bg-neutral-900 transition-all font-sans text-xs uppercase tracking-wider"
                   >
                     <Plus size={14} />
                     Add Chapter
@@ -162,8 +162,8 @@ export default function TOCReviewStep() {
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="pb-4 border-b border-stone-100 text-center">
-                  <h2 className="text-2xl font-bold text-brand-900">
+                <div className="pb-4 border-b border-neutral-800 text-center">
+                  <h2 className="text-2xl font-bold text-white">
                     {bookTitle || "Untitled Book"}
                   </h2>
                 </div>
@@ -174,17 +174,17 @@ export default function TOCReviewStep() {
                         key={idx}
                         className="flex items-baseline gap-4 group"
                       >
-                        <span className="font-bold text-brand-700/40 font-sans w-5">
+                        <span className="font-bold text-neutral-700 font-sans w-5">
                           {idx + 1}
                         </span>
-                        <span className="text-lg leading-relaxed text-ink-900">
+                        <span className="text-lg leading-relaxed text-white">
                           {chapter}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-12 text-center text-stone-400 italic font-sans text-sm">
+                  <div className="py-12 text-center text-neutral-500 italic font-sans text-sm">
                     No chapters generated yet.
                   </div>
                 )}
@@ -196,14 +196,14 @@ export default function TOCReviewStep() {
         {/* Bottom Actions Section */}
         {!isEditing && (
           <div className="pt-4 space-y-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 bg-stone-50 border border-stone-200 rounded-sm">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 bg-neutral-900 border border-neutral-800 rounded-2xl">
               <div className="space-y-1.5 text-center md:text-left">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-brand-900/60 font-sans">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 font-sans">
                   Intelligence Engine
                 </h3>
                 <div className="relative inline-block">
                   <select
-                    className="appearance-none bg-transparent py-1 pl-0 pr-6 text-sm font-medium text-brand-900 focus:outline-none cursor-pointer hover:text-brand-600 transition-colors font-sans"
+                    className="appearance-none bg-transparent py-1 pl-0 pr-6 text-sm font-medium text-white focus:outline-none cursor-pointer hover:text-brand-600 transition-colors font-sans"
                     value={selectedModel}
                     onChange={(e) => {
                       const modelId = e.target.value;
@@ -226,7 +226,7 @@ export default function TOCReviewStep() {
                       </optgroup>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-brand-900/40">
+                  <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-neutral-500">
                     <ChevronDown size={14} />
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export default function TOCReviewStep() {
                   variant="outline"
                   onClick={regenerateTOC}
                   disabled={isProcessing}
-                  className="flex-1 md:flex-none gap-2 px-6 bg-white"
+                  className="flex-1 md:flex-none gap-2 px-6 bg-black border-neutral-800 text-white hover:bg-neutral-900 rounded-full"
                 >
                   <RefreshCw
                     size={16}
@@ -251,7 +251,7 @@ export default function TOCReviewStep() {
                     startBookGeneration(selectedProvider, selectedModel)
                   }
                   disabled={isProcessing || tableOfContents.length === 0}
-                  className="flex-1 md:flex-none gap-2 px-8 shadow-lg shadow-brand-900/10"
+                  className="flex-1 md:flex-none gap-2 px-8 shadow-lg shadow-brand-900/10 rounded-full"
                 >
                   <FileText size={16} />
                   Start Writing
@@ -259,7 +259,7 @@ export default function TOCReviewStep() {
               </div>
             </div>
 
-            <p className="text-[11px] text-stone-400 text-center font-sans">
+            <p className="text-[11px] text-neutral-500 text-center font-sans">
               Click <strong>Start Writing</strong> to begin generating the full
               content for each chapter.
             </p>
