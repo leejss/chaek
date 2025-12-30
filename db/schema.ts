@@ -1,6 +1,9 @@
 import {
   foreignKey,
   index,
+  integer,
+  jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -63,4 +66,56 @@ export const books = pgTable(
       .defaultNow(),
   },
   (table) => [index("books_user_id_idx").on(table.userId)],
+);
+
+export const creditTransactionTypeEnum = pgEnum("credit_transaction_type", [
+  "purchase",
+  "usage",
+  "refund",
+  "free_signup",
+]);
+
+export type CreditTransactionType =
+  (typeof creditTransactionTypeEnum.enumValues)[number];
+
+export const creditBalances = pgTable("credit_balances", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  balance: integer("balance").notNull().default(0),
+  freeCredits: integer("free_credits").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const creditTransactions = pgTable(
+  "credit_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: creditTransactionTypeEnum("type").notNull(),
+    amount: integer("amount").notNull(),
+    balanceAfter: integer("balance_after").notNull(),
+    lemonSqueezyOrderId: text("lemonsqueezy_order_id"),
+    bookId: uuid("book_id").references(() => books.id, {
+      onDelete: "set null",
+    }),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("credit_transactions_user_id_idx").on(table.userId),
+    index("credit_transactions_type_idx").on(table.type),
+    index("credit_transactions_created_at_idx").on(table.createdAt),
+    uniqueIndex("credit_transactions_purchase_order_uq").on(
+      table.type,
+      table.lemonSqueezyOrderId,
+    ),
+  ],
 );

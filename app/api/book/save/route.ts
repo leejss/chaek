@@ -5,6 +5,8 @@ import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { serverEnv } from "@/lib/env";
 import { readJson } from "@/utils";
 import { NextResponse, type NextRequest } from "next/server";
+import { getUserBalance, deductCredits } from "@/lib/credits/operations";
+import { BOOK_CREATION_COST } from "@/lib/credits/config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,6 +45,11 @@ export async function POST(req: NextRequest) {
     const sourceText =
       typeof body.sourceText === "string" ? body.sourceText : null;
 
+    const balance = await getUserBalance(userId);
+    if (balance.balance < BOOK_CREATION_COST) {
+      throw new HttpError(402, "Insufficient credits");
+    }
+
     const [inserted] = await db
       .insert(books)
       .values({
@@ -57,6 +64,15 @@ export async function POST(req: NextRequest) {
     if (!inserted) {
       throw new Error("Failed to insert book");
     }
+
+    await deductCredits({
+      userId,
+      amount: BOOK_CREATION_COST,
+      bookId: inserted.id,
+      metadata: {
+        bookTitle: title,
+      },
+    });
 
     return NextResponse.json(
       { ok: true, bookId: inserted.id },

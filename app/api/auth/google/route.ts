@@ -15,6 +15,7 @@ import { add, Duration } from "date-fns";
 import { NextResponse } from "next/server";
 import { serverEnv } from "@/lib/env";
 import { and, eq, isNull } from "drizzle-orm";
+import { grantFreeSignupCredits } from "@/lib/credits/operations";
 
 export async function POST(req: Request) {
   try {
@@ -36,6 +37,14 @@ export async function POST(req: Request) {
       googleClientId,
     );
 
+    const existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.googleSub, googleSub))
+      .limit(1);
+
+    const isNewUser = existingUser.length === 0;
+
     // 이미 같은 googleSub을 가진 사용자가 있으면 email을 업데이트한다.
     const [user] = await db
       .insert(users)
@@ -48,6 +57,10 @@ export async function POST(req: Request) {
 
     if (!user) {
       throw new Error("Failed to upsert user");
+    }
+
+    if (isNewUser) {
+      await grantFreeSignupCredits(user.id);
     }
 
     const jwt = await issueAccessJWT({

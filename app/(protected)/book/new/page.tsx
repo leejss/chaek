@@ -4,7 +4,7 @@ import { useBookStore } from "@/lib/book/bookContext";
 import { FlowStatus } from "@/lib/book/types";
 import { Check, ChevronLeft, Circle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AILoadingStep from "./_components/AILoadingStep";
 import CompletedStep from "./_components/CompletedStep";
 import GenerationStep from "./_components/GenerationStep";
@@ -12,6 +12,8 @@ import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import StatusOverview from "./_components/StatusOverview";
 import TOCReviewStep from "./_components/TOCReviewStep";
+import { authFetch } from "@/lib/api";
+import Link from "next/link";
 
 const FLOW_STEPS = [
   "settings",
@@ -39,6 +41,8 @@ function getStepStatus(
   return "disabled";
 }
 
+const BOOK_CREATION_COST = 10;
+
 export default function CreateBookPage() {
   const router = useRouter();
   const flowStatus = useBookStore((state) => state.flowStatus);
@@ -49,12 +53,39 @@ export default function CreateBookPage() {
     (state) => state.bookGenerationStarted,
   );
 
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+
   const isGenerating = flowStatus === "generating";
   const generationProgress = useBookStore((state) => state.generationProgress);
 
   const currentStepIndex = FLOW_STEPS.indexOf(
     flowStatus as (typeof FLOW_STEPS)[number],
   );
+
+  const hasInsufficientCredits =
+    creditBalance !== null && creditBalance < BOOK_CREATION_COST;
+
+  useEffect(() => {
+    async function fetchBalance() {
+      try {
+        const response = await authFetch("/api/credits/balance", {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setCreditBalance(data.balance);
+        }
+      } catch (error) {
+        console.error("Failed to fetch credit balance:", error);
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    }
+
+    fetchBalance();
+  }, []);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -103,6 +134,52 @@ export default function CreateBookPage() {
 
   return (
     <div className="max-w-4xl mx-auto bg-white border border-stone-200 shadow-xl rounded-sm min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
+      {/* Credit Balance Warning */}
+      {!isLoadingBalance && hasInsufficientCredits && (
+        <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg
+                className="h-5 w-5 text-yellow-600"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <span className="text-sm font-medium text-yellow-800">
+                Insufficient credits: You need {BOOK_CREATION_COST} credits to
+                create a book, but you have {creditBalance}.
+              </span>
+            </div>
+            <Link
+              href="/credits"
+              className="rounded bg-yellow-600 px-3 py-1 text-sm font-semibold text-white hover:bg-yellow-700"
+            >
+              Purchase Credits
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Credit Balance Display */}
+      {!isLoadingBalance &&
+        creditBalance !== null &&
+        !hasInsufficientCredits && (
+          <div className="px-4 py-2 bg-blue-50 border-b border-blue-200">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-blue-800">
+                Available credits:{" "}
+                <span className="font-semibold">{creditBalance}</span> (This
+                book will cost {BOOK_CREATION_COST} credits)
+              </span>
+            </div>
+          </div>
+        )}
+
       {/* Step Navigation */}
       <div className="px-4 py-3 border-b border-stone-200 bg-stone-50/50">
         <div className="flex items-center justify-between">
