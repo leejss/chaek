@@ -1,32 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import Link from "next/link";
-import { authFetch } from "@/lib/api";
 
 export default function CreditsSuccessPage() {
-  const searchParams = useSearchParams();
-  const [balance, setBalance] = useState<number | null>(null);
-
-  useEffect(() => {
-    async function fetchBalance() {
-      try {
-        const response = await authFetch("/api/credits/balance", {
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setBalance(data.balance);
-        }
-      } catch (error) {
-        console.error("Failed to fetch balance:", error);
-      }
-    }
-
-    fetchBalance();
-  }, []);
+  const { balance, isLoading } = useCreditBalance();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
@@ -53,7 +31,7 @@ export default function CreditsSuccessPage() {
           </p>
         </div>
 
-        {balance !== null && (
+        {!isLoading && balance !== null && (
           <div className="mb-6 rounded-lg bg-blue-50 p-4 text-center">
             <div className="text-sm text-gray-600">Current Balance</div>
             <div className="text-3xl font-bold text-blue-600">

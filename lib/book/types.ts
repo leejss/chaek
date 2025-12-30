@@ -120,8 +120,6 @@ export type BookContextState = {
   savedBookId: string | null;
   error: string | null;
   generationProgress: GenerationProgress;
-  userBooks: Book[];
-  isLoadingBooks: boolean;
   completedSteps: Set<FlowStatus>;
   bookGenerationStarted: boolean;
 };
@@ -156,7 +154,4 @@ export type BookActions = {
   goToPrevChapter: () => void;
   goToNextChapter: () => void;
   saveBook: () => Promise<void>;
-  getBookById: (id: string) => Book | undefined;
-  fetchUserBooks: () => Promise<void>;
-  fetchBookById: (id: string) => Promise<Book | undefined>;
 };

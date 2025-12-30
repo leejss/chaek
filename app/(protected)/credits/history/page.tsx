@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { authFetch } from "@/lib/api";
+import { useTransactions } from "@/lib/hooks/useTransactions";
 import Link from "next/link";
 
-interface Transaction {
+export interface Transaction {
   id: string;
   type: "purchase" | "usage" | "refund" | "free_signup";
   amount: number;
   balanceAfter: number;
   createdAt: string;
-  metadata?: Record<string, unknown>;
+  metadata?: {
+    bookTitle?: string;
+    reason?: string;
+    [key: string]: unknown;
+  };
 }
 
 const typeLabels: Record<Transaction["type"], string> = {
@@ -20,7 +23,7 @@ const typeLabels: Record<Transaction["type"], string> = {
   free_signup: "Free Signup Bonus",
 };
 
-const typeColors: Record<Transaction["type"], string> = {
+const typeColors: Record<string, string> = {
   purchase: "text-green-600 bg-green-50",
   usage: "text-red-600 bg-red-50",
   refund: "text-orange-600 bg-orange-50",
@@ -28,35 +31,9 @@ const typeColors: Record<Transaction["type"], string> = {
 };
 
 export default function CreditsHistoryPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { transactions, isLoading, error, loadMore, hasMore } = useTransactions();
 
-  useEffect(() => {
-    async function fetchTransactions() {
-      try {
-        const response = await authFetch("/api/credits/transactions", {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch transactions");
-        }
-
-        const data = await response.json();
-        setTransactions(data.transactions);
-      } catch (err) {
-        console.error("Failed to fetch transactions:", err);
-        setError(err instanceof Error ? err.message : "Failed to load transactions");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchTransactions();
-  }, []);
-
-  if (isLoading) {
+  if (isLoading && transactions.length === 0) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12">
         <div className="text-center">Loading...</div>
@@ -67,7 +44,9 @@ export default function CreditsHistoryPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12">
-        <div className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
+        <div className="rounded-lg bg-red-50 p-4 text-red-800">
+          {error.message}
+        </div>
       </div>
     );
   }
@@ -97,73 +76,87 @@ export default function CreditsHistoryPage() {
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Balance After
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {transactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {new Date(transaction.createdAt).toLocaleString()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                        typeColors[transaction.type]
-                      }`}
-                    >
-                      {typeLabels[transaction.type]}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                    <span
-                      className={
-                        transaction.amount > 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }
-                    >
-                      {transaction.amount > 0 ? "+" : ""}
-                      {transaction.amount}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    {transaction.balanceAfter}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {transaction.metadata &&
-                      typeof transaction.metadata === "object" && (
-                        <div className="max-w-xs truncate">
-                          {transaction.metadata.bookTitle &&
-                            `Book: ${transaction.metadata.bookTitle}`}
-                          {transaction.metadata.reason &&
-                            `${transaction.metadata.reason}`}
-                        </div>
-                      )}
-                  </td>
+        <>
+          <div className="overflow-hidden rounded-lg bg-white shadow">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Balance After
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Details
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {transactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {new Date(transaction.createdAt).toLocaleString()}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                          typeColors[transaction.type]
+                        }`}
+                      >
+                        {typeLabels[transaction.type]}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
+                      <span
+                        className={
+                          transaction.amount > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
+                        {transaction.amount > 0 ? "+" : ""}
+                        {transaction.amount}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      {transaction.balanceAfter}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {transaction.metadata &&
+                        typeof transaction.metadata === "object" && (
+                          <div className="max-w-xs truncate">
+                            {"bookTitle" in transaction.metadata &&
+                              `Book: ${String(transaction.metadata.bookTitle)}`}
+                            {"reason" in transaction.metadata &&
+                              `${String(transaction.metadata.reason)}`}
+                          </div>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {hasMore && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={loadMore}
+                disabled={isLoading}
+                className="rounded-lg bg-gray-100 px-6 py-3 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+              >
+                {isLoading ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

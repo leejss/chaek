@@ -2,8 +2,6 @@
 
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
 import {
-  fetchBookById,
-  fetchBooks,
   fetchOutline,
   fetchPlan,
   fetchStreamSection,
@@ -51,8 +49,6 @@ const initialState: BookContextState = {
   isProcessing: false,
   error: null,
   generationProgress: { phase: "idle" },
-  userBooks: [],
-  isLoadingBooks: false,
   completedSteps: new Set(["settings"]),
   bookGenerationStarted: false,
 };
@@ -614,41 +610,6 @@ export const useBookStore = create(
         },
 
         saveBook,
-
-        getBookById: (_id) => {
-          void _id;
-          // Stub: return undefined for now as global library is not yet implemented in store
-          return undefined;
-        },
-
-        fetchUserBooks: async () => {
-          try {
-            set({ isLoadingBooks: true, error: null }, false, "book/fetchUserBooks_start");
-            const books = await fetchBooks();
-            set(
-              { userBooks: books, isLoadingBooks: false },
-              false,
-              "book/fetchUserBooks_success",
-            );
-          } catch (error) {
-            console.error("Failed to fetch books:", error);
-            set(
-              { error: "책 목록을 불러오지 못했습니다.", isLoadingBooks: false },
-              false,
-              "book/fetchUserBooks_error",
-            );
-          }
-        },
-
-        fetchBookById: async (id: string) => {
-          try {
-            const book = await fetchBookById(id);
-            return book;
-          } catch (error) {
-            console.error("Failed to fetch book:", error);
-            return undefined;
-          }
-        },
       };
 
       return { actions };

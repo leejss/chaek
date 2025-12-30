@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans, Noto_Serif } from "next/font/google";
 import "./globals.css";
+import { SWRConfig } from "@/lib/swr";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -31,7 +32,16 @@ export default function RootLayout({
       className={`${notoSans.variable} ${notoSerif.variable} antialiased`}
       lang="en"
     >
-      <body>{children}</body>
+      <body>
+        <SWRConfig
+          value={{
+            revalidateOnFocus: false,
+            revalidateOnReconnect: false,
+          }}
+        >
+          {children}
+        </SWRConfig>
+      </body>
     </html>
   );
 }
