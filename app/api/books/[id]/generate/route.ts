@@ -9,7 +9,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { AIProvider } from "@/lib/book/types";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
-import { deductCredits, getUserBalance } from "@/lib/credits/operations";
+import {
+  deductCredits,
+  getUserBalance,
+  refundUsageCredits,
+} from "@/lib/credits/operations";
 
 const requestSchema = z.object({
   title: z.string().min(1),
@@ -37,15 +41,16 @@ export async function POST(
 ) {
   try {
     const { userId } = await authenticate(req);
-
     const { id: bookId } = await params;
-
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
     const parsed = requestSchema.safeParse(jsonResult.data);
     if (!parsed.success) throw new HttpError(400, "Invalid request body");
 
     const body = parsed.data;
+
+    let createdNewBook = false;
+    let didDeductCredits = false;
 
     const existing = await db
       .select()
@@ -54,6 +59,7 @@ export async function POST(
       .limit(1);
 
     if (existing.length === 0) {
+      createdNewBook = true;
       await db.insert(books).values({
         id: bookId,
         userId,
@@ -88,11 +94,6 @@ export async function POST(
         .where(and(eq(books.id, bookId), eq(books.userId, userId)));
     }
 
-    const balance = await getUserBalance(userId);
-    if (balance.balance < BOOK_CREATION_COST) {
-      throw new HttpError(402, "Insufficient credits");
-    }
-
     const existingUsage = await db
       .select({ id: creditTransactions.id })
       .from(creditTransactions)
@@ -105,6 +106,16 @@ export async function POST(
       .limit(1);
 
     if (existingUsage.length === 0) {
+      const balance = await getUserBalance(userId);
+      if (balance.balance < BOOK_CREATION_COST) {
+        if (createdNewBook) {
+          await db
+            .delete(books)
+            .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+        }
+        throw new HttpError(402, "Insufficient credits");
+      }
+
       await deductCredits({
         userId,
         amount: BOOK_CREATION_COST,
@@ -113,16 +124,67 @@ export async function POST(
           reason: "async_book_generation",
         },
       });
+      didDeductCredits = true;
     }
 
-    await enqueueGenerateBookJob({
-      bookId,
-      step: "init",
-      provider: body.provider,
-      model: body.model,
-      language: body.language,
-      userPreference: body.userPreference,
-    });
+    try {
+      await enqueueGenerateBookJob({
+        bookId,
+        step: "init",
+        provider: body.provider,
+        model: body.model,
+        language: body.language,
+        userPreference: body.userPreference,
+      });
+    } catch (error) {
+      console.error("[books/[id]/generate] enqueue error:", error);
+
+      if (didDeductCredits) {
+        try {
+          await refundUsageCredits({
+            userId,
+            amount: BOOK_CREATION_COST,
+            bookId,
+            metadata: {
+              reason: "enqueue_failed",
+            },
+          });
+        } catch (refundError) {
+          console.error(
+            "[books/[id]/generate] refund usage credits error:",
+            refundError,
+          );
+
+          await db
+            .update(books)
+            .set({
+              status: "failed",
+              error: "Queue enqueue failed (and credit refund failed)",
+              updatedAt: new Date(),
+            })
+            .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+
+          throw new HttpError(503, "Job queue is temporarily unavailable");
+        }
+      }
+
+      if (createdNewBook) {
+        await db
+          .delete(books)
+          .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+      } else {
+        await db
+          .update(books)
+          .set({
+            status: "failed",
+            error: "Queue enqueue failed",
+            updatedAt: new Date(),
+          })
+          .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+      }
+
+      throw new HttpError(503, "Job queue is temporarily unavailable");
+    }
 
     return NextResponse.json({ ok: true }, { status: 202 });
   } catch (error) {

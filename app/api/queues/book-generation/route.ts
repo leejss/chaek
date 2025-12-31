@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get("upstash-signature");
   const body = await req.text();
 
+  console.log("[queues/book-generation] received request:", body);
+
   if (!signature) {
     return NextResponse.json(
       { ok: false, error: "Missing signature" },

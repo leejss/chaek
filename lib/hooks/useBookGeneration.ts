@@ -38,7 +38,6 @@ export function useBookGeneration() {
 
       const bookId = crypto.randomUUID();
       setupGeneration(bookId);
-
       const startRes = await authFetch(`/api/books/${bookId}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
