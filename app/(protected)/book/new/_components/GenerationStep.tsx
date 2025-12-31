@@ -247,7 +247,7 @@ export default function GenerationStep() {
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      {isViewingCurrentChapter && requireConfirm && (
+      {isViewingCurrentChapter && awaitingChapterDecision && requireConfirm && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-neutral-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.12)] z-50 safe-area-bottom">
           <div className="max-w-3xl mx-auto flex gap-3">
             <Button

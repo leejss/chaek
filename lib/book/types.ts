@@ -122,6 +122,7 @@ export type BookContextState = {
   generationProgress: GenerationProgress;
   completedSteps: Set<FlowStatus>;
   bookGenerationStarted: boolean;
+  generationCancelled: boolean;
 };
 
 export type BookActions = {
@@ -134,10 +135,6 @@ export type BookActions = {
   setActiveBook: (book: Book) => void;
   generateTOC: (sourceText: string) => Promise<void>;
   regenerateTOC: () => Promise<void>;
-  startBookGeneration: (
-    provider: AIProvider,
-    model: GeminiModel | ClaudeModel,
-  ) => Promise<void>;
   confirmChapter: () => void;
   cancelGeneration: () => void;
   setFlowStatus: (status: FlowStatus) => void;
@@ -154,4 +151,13 @@ export type BookActions = {
   goToPrevChapter: () => void;
   goToNextChapter: () => void;
   saveBook: () => Promise<void>;
+  setupGeneration: (bookId: string) => void;
+  syncGenerationProgress: (data: {
+    chapters: ChapterContent[];
+    streamingContent: string;
+    currentChapterIndex: number | null;
+  }) => void;
+  failGeneration: (error: string) => void;
+  completeGeneration: (content: string) => void;
+  setViewingChapterIndex: (index: number) => void;
 };

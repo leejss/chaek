@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createCheckout } from "@/lib/credits/lemonsqueezy";
 import { getCreditPackage } from "@/lib/credits/config";
-import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
+import { authenticate } from "@/lib/auth";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
-import { serverEnv } from "@/lib/env";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -16,13 +15,7 @@ const CheckoutSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const accessToken = req.cookies.get(accessTokenConfig.name)?.value;
-    if (!accessToken) {
-      throw new HttpError(401, "Missing access token");
-    }
-
-    const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
-    const { userId } = await verifyAccessJWT(accessToken, secret);
+    const { userId } = await authenticate(req);
 
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) {

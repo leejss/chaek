@@ -1,8 +1,7 @@
 import { db } from "@/db";
 import { books } from "@/db/schema";
-import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
+import { authenticate } from "@/lib/auth";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { serverEnv } from "@/lib/env";
 import { readJson } from "@/utils";
 import { NextResponse, type NextRequest } from "next/server";
 import { getUserBalance, deductCredits } from "@/lib/credits/operations";
@@ -10,13 +9,7 @@ import { BOOK_CREATION_COST } from "@/lib/credits/config";
 
 export async function POST(req: NextRequest) {
   try {
-    const accessToken = req.cookies.get(accessTokenConfig.name)?.value;
-    if (!accessToken) {
-      throw new HttpError(401, "Missing access token");
-    }
-
-    const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
-    const { userId } = await verifyAccessJWT(accessToken, secret);
+    const { userId } = await authenticate(req);
 
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;

@@ -79,7 +79,7 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="w-full max-w-[350px] flex flex-col gap-8 z-10 relative">
+      <div className="w-full max-w-[350px] flex flex-col gap-8 relative items-center">
         {/* Logo Area */}
         <div className="flex flex-col gap-2">
           <h1 className="text-5xl font-bold text-foreground tracking-tighter">
@@ -87,7 +87,7 @@ function LoginContent() {
           </h1>
         </div>
 
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-4 w-full items-center">
           <h2 className="text-2xl font-bold text-foreground">
             Sign in to book.build
           </h2>
@@ -104,31 +104,6 @@ function LoginContent() {
               Authenticating...
             </p>
           )}
-
-          <div className="flex items-center gap-2 my-2">
-            <div className="h-px bg-neutral-800 flex-1" />
-            <span className="text-neutral-500 text-sm">or</span>
-            <div className="h-px bg-neutral-800 flex-1" />
-          </div>
-
-          <button
-            disabled
-            className="w-full bg-white text-black font-bold rounded-full h-10 text-sm hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Create account
-          </button>
-
-          <p className="text-[11px] text-neutral-500 leading-normal mt-2">
-            By signing up, you agree to the{" "}
-            <span className="text-blue-400 hover:underline cursor-pointer">
-              Terms of Service
-            </span>{" "}
-            and{" "}
-            <span className="text-blue-400 hover:underline cursor-pointer">
-              Privacy Policy
-            </span>
-            , including Cookie Use.
-          </p>
         </div>
       </div>
     </div>

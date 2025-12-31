@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { useBookStore } from "@/lib/book/bookContext";
+import { useBookGeneration } from "@/lib/hooks/useBookGeneration";
 import { ClaudeModel, GeminiModel } from "@/lib/book/types";
 import {
   FileText,
@@ -20,8 +21,11 @@ export default function TOCReviewStep() {
   const bookTitle = useBookStore((state) => state.bookTitle);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
-  const { setSelectedModel, regenerateTOC, startBookGeneration, updateDraft } =
-    useBookStore((state) => state.actions);
+  const { setSelectedModel, regenerateTOC, updateDraft } = useBookStore(
+    (state) => state.actions,
+  );
+
+  const { generate: startBookGeneration, isGenerating } = useBookGeneration();
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
@@ -248,9 +252,14 @@ export default function TOCReviewStep() {
                 <Button
                   variant="primary"
                   onClick={() =>
-                    startBookGeneration(selectedProvider, selectedModel)
+                    startBookGeneration({
+                      provider: selectedProvider,
+                      model: selectedModel,
+                    })
                   }
-                  disabled={isProcessing || tableOfContents.length === 0}
+                  disabled={
+                    isProcessing || isGenerating || tableOfContents.length === 0
+                  }
                   className="flex-1 md:flex-none gap-2 px-8 shadow-lg shadow-brand-900/10 rounded-full"
                 >
                   <FileText size={16} />

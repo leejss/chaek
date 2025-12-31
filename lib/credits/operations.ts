@@ -215,6 +215,65 @@ export async function refundCredits(
   }
 }
 
+export interface RefundUsageCreditsParams {
+  userId: string;
+  amount: number;
+  bookId: string;
+  metadata?: Record<string, unknown>;
+}
+
+export async function refundUsageCredits(
+  params: RefundUsageCreditsParams,
+): Promise<void> {
+  const { userId, amount, bookId, metadata } = params;
+
+  await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ id: creditTransactions.id })
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.type, "usage_refund"),
+          eq(creditTransactions.bookId, bookId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return;
+    }
+
+    const currentBalance = await tx
+      .select()
+      .from(creditBalances)
+      .where(eq(creditBalances.userId, userId))
+      .limit(1);
+
+    if (currentBalance.length === 0) {
+      throw new Error("User credit balance not found");
+    }
+
+    const newBalance = currentBalance[0].balance + amount;
+
+    await tx
+      .update(creditBalances)
+      .set({
+        balance: newBalance,
+        updatedAt: new Date(),
+      })
+      .where(eq(creditBalances.userId, userId));
+
+    await tx.insert(creditTransactions).values({
+      userId,
+      type: "usage_refund",
+      amount,
+      balanceAfter: newBalance,
+      bookId,
+      metadata,
+    });
+  });
+}
+
 export async function grantFreeSignupCredits(userId: string): Promise<void> {
   const existingBalance = await db
     .select()

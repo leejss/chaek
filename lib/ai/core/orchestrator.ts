@@ -9,6 +9,7 @@ import { serverEnv } from "@/lib/env";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { draftV1 } from "../specs/draft";
+import { draftTextV1 } from "../specs/draftText";
 import { outlineV1 } from "../specs/outline";
 import { PlanOutput, planV1 } from "../specs/plan";
 import { summaryV1 } from "../specs/summary";
@@ -30,6 +31,7 @@ registry.register(tocV1);
 registry.register(planV1);
 registry.register(outlineV1);
 registry.register(draftV1);
+registry.register(draftTextV1);
 registry.register(summaryV1);
 
 const google = createGoogleGenerativeAI({ apiKey: serverEnv.GEMINI_API_KEY });
@@ -200,6 +202,36 @@ export class Orchestrator {
       },
       model,
       "stream",
+    );
+  }
+
+  async generateSectionDraftText(params: {
+    chapterNumber: number;
+    chapterTitle: string;
+    chapterOutline: Array<{ title: string; summary: string }>;
+    sectionIndex: number;
+    previousSections: Array<{ title: string; summary: string }>;
+    bookPlan: PlanOutput;
+    settings: GenerationSettings;
+  }) {
+    const model = this.getModel(
+      params.settings.provider,
+      params.settings.model,
+    );
+    return registry.runSpec(
+      "book.chapter.draftText@v1",
+      {
+        chapterNumber: params.chapterNumber,
+        chapterTitle: params.chapterTitle,
+        chapterOutline: params.chapterOutline,
+        sectionIndex: params.sectionIndex,
+        previousSections: params.previousSections,
+        plan: params.bookPlan,
+        language: params.settings.language || "Korean",
+        userPreference: params.settings.userPreference,
+      },
+      model,
+      "text",
     );
   }
 

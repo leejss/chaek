@@ -2,6 +2,8 @@ import { HttpError } from "@/lib/errors";
 import { isString } from "@/lib/typeGuards";
 import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
 import { accessTokenConfig } from "./authTokens";
+import { serverEnv } from "@/lib/env";
+import { type NextRequest } from "next/server";
 
 export { accessTokenConfig, refreshTokenConfig } from "./authTokens";
 
@@ -77,4 +79,14 @@ export async function verifyAccessJWT(token: string, secret: Uint8Array) {
     }
     throw new HttpError(401, "Invalid credentials");
   }
+}
+
+export async function authenticate(req: NextRequest) {
+  const accessToken = req.cookies.get(accessTokenConfig.name)?.value;
+  if (!accessToken) {
+    throw new HttpError(401, "Missing access token");
+  }
+
+  const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
+  return await verifyAccessJWT(accessToken, secret);
 }

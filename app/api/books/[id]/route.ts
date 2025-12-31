@@ -1,8 +1,7 @@
 import { db } from "@/db";
 import { books } from "@/db/schema";
-import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
+import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
-import { serverEnv } from "@/lib/env";
 import { eq, and } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -11,13 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const accessToken = req.cookies.get(accessTokenConfig.name)?.value;
-    if (!accessToken) {
-      throw new HttpError(401, "Missing access token");
-    }
-
-    const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
-    const { userId } = await verifyAccessJWT(accessToken, secret);
+    const { userId } = await authenticate(req);
 
     const { id: bookId } = await params;
 

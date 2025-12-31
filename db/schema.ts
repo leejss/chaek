@@ -11,6 +11,24 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+export const bookStatusEnum = pgEnum("book_status", [
+  "draft",
+  "generating",
+  "completed",
+  "failed",
+]);
+
+export type BookStatus = (typeof bookStatusEnum.enumValues)[number];
+
+export const chapterStatusEnum = pgEnum("chapter_status", [
+  "pending",
+  "generating",
+  "completed",
+  "failed",
+]);
+
+export type ChapterStatus = (typeof chapterStatusEnum.enumValues)[number];
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
@@ -58,19 +76,60 @@ export const books = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    content: text("content").notNull(),
+    content: text("content").notNull().default(""),
     tableOfContents: text("table_of_contents").array(),
     sourceText: text("source_text"),
+    status: bookStatusEnum("status").notNull().default("draft"),
+    currentChapterIndex: integer("current_chapter_index"),
+    error: text("error"),
+    generationSettings: jsonb("generation_settings"),
+    bookPlan: jsonb("book_plan"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (table) => [index("books_user_id_idx").on(table.userId)],
+  (table) => [
+    index("books_user_id_idx").on(table.userId),
+    index("books_status_idx").on(table.status),
+    index("books_updated_at_idx").on(table.updatedAt),
+  ],
+);
+
+export const chapters = pgTable(
+  "chapters",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookId: uuid("book_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    chapterNumber: integer("chapter_number").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull().default(""),
+    status: chapterStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("chapters_book_id_chapter_number_uq").on(
+      table.bookId,
+      table.chapterNumber,
+    ),
+    index("chapters_book_id_idx").on(table.bookId),
+    index("chapters_status_idx").on(table.status),
+  ],
 );
 
 export const creditTransactionTypeEnum = pgEnum("credit_transaction_type", [
   "purchase",
   "usage",
+  "usage_refund",
   "refund",
   "free_signup",
 ]);

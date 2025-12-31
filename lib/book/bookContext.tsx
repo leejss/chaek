@@ -1,13 +1,8 @@
 "use client";
 
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
-import {
-  fetchOutline,
-  fetchPlan,
-  fetchStreamSection,
-  fetchTOC,
-} from "@/lib/ai/fetch";
-import { BookActions, BookContextState, FlowStatus, Section } from "@/lib/book/types";
+import { fetchTOC } from "@/lib/ai/fetch";
+import { BookActions, BookContextState, FlowStatus } from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
@@ -51,6 +46,7 @@ const initialState: BookContextState = {
   generationProgress: { phase: "idle" },
   completedSteps: new Set(["settings"]),
   bookGenerationStarted: false,
+  generationCancelled: false,
 };
 
 export const useBookStore = create(
@@ -59,13 +55,6 @@ export const useBookStore = create(
       let chapterDecisionResolver:
         | ((decision: "confirm" | "cancel") => void)
         | null = null;
-      let generationCancelled = false;
-
-      const waitForChapterDecision = () => {
-        return new Promise<"confirm" | "cancel">((resolve) => {
-          chapterDecisionResolver = resolve;
-        });
-      };
 
       const resolveChapterDecision = (decision: "confirm" | "cancel") => {
         if (chapterDecisionResolver) {
@@ -74,7 +63,10 @@ export const useBookStore = create(
         }
       };
 
-      const canAccessStep = (step: FlowStatus, state: BookContextState): boolean => {
+      const canAccessStep = (
+        step: FlowStatus,
+        state: BookContextState,
+      ): boolean => {
         if (!FLOW_STEPS.includes(step as (typeof FLOW_STEPS)[number])) {
           return false;
         }
@@ -82,7 +74,9 @@ export const useBookStore = create(
         const currentIndex = FLOW_STEPS.indexOf(
           state.flowStatus as (typeof FLOW_STEPS)[number],
         );
-        const targetIndex = FLOW_STEPS.indexOf(step as (typeof FLOW_STEPS)[number]);
+        const targetIndex = FLOW_STEPS.indexOf(
+          step as (typeof FLOW_STEPS)[number],
+        );
 
         if (state.bookGenerationStarted) {
           return step === "toc_review" || step === "settings";
@@ -111,7 +105,13 @@ export const useBookStore = create(
       };
 
       const saveBook = async () => {
-        const { content, tableOfContents, sourceText, bookTitle, isSavingBook } = get();
+        const {
+          content,
+          tableOfContents,
+          sourceText,
+          bookTitle,
+          isSavingBook,
+        } = get();
         if (isSavingBook) return;
 
         const title = bookTitle?.trim() || "Untitled Book";
@@ -160,7 +160,6 @@ export const useBookStore = create(
 
       const actions: BookActions = {
         startNewBook: () => {
-          generationCancelled = false;
           resolveChapterDecision("cancel");
           set(
             {
@@ -179,6 +178,7 @@ export const useBookStore = create(
               error: null,
               completedSteps: new Set(["settings"]),
               bookGenerationStarted: false,
+              generationCancelled: false,
             },
             false,
             "book/startNewBook",
@@ -236,7 +236,10 @@ export const useBookStore = create(
                 flowStatus: "toc_review",
                 bookTitle: title,
                 tableOfContents: toc,
-                completedSteps: new Set([...get().completedSteps, "toc_review"]),
+                completedSteps: new Set([
+                  ...get().completedSteps,
+                  "toc_review",
+                ]),
               },
               false,
               "book/generateTOC_success",
@@ -261,264 +264,19 @@ export const useBookStore = create(
           await actions.generateTOC(sourceText || "");
         },
 
-        startBookGeneration: async (provider, model) => {
-          const { tableOfContents, sourceText } = get();
-
-          if (!tableOfContents.length) {
-            set(
-              { error: "차례가 없습니다. 먼저 TOC를 생성하세요." },
-              false,
-              "book/startBookGeneration_noTOC",
-            );
-            return;
-          }
-
-          set(
-            {
-              error: null,
-              generationProgress: { phase: "idle" },
-              bookGenerationStarted: true,
-            },
-            false,
-            "book/startBookGeneration_start",
-          );
-
-          try {
-            generationCancelled = false;
-
-            const settings = useSettingsStore.getState();
-            set(
-              {
-                flowStatus: "generating",
-                generationProgress: { phase: "plan" },
-              },
-              false,
-              "book/generating_plan",
-            );
-
-            const bookPlan = await fetchPlan(
-              sourceText || "",
-              tableOfContents,
-              provider,
-              model,
-              settings,
-            );
-
-            if (generationCancelled) {
-              // handle cancellation
-            }
-
-            set({ bookPlan }, false, "book/plan_generated");
-
-            let fullContent = "";
-
-            for (let i = 0; i < tableOfContents.length; i++) {
-              if (generationCancelled) break;
-
-              const chapterTitle = tableOfContents[i];
-              const chapterNumber = i + 1;
-
-              set(
-                {
-                  currentChapterIndex: i,
-                  currentChapterContent: "",
-                  awaitingChapterDecision: false,
-                  error: null,
-                  flowStatus: "generating",
-                  generationProgress: { phase: "outline" },
-                },
-                false,
-                "book/generating_outline",
-              );
-
-              // fetchOutline matches signature update
-              const outline = await fetchOutline({
-                toc: tableOfContents,
-                chapterNumber,
-                sourceText: sourceText || "",
-                bookPlan,
-                provider: provider,
-                model: model,
-                settings,
-              });
-
-              if (generationCancelled) break;
-
-              set(
-                {
-                  flowStatus: "generating",
-                  generationProgress: {
-                    phase: "sections",
-                    currentSection: 0,
-                    totalSections: outline.sections.length,
-                    currentOutline: outline,
-                  },
-                },
-                false,
-                "book/outline_generated",
-              );
-
-              let chapterContent = `## ${chapterTitle}\n\n`;
-              const completedSections: Section[] = [];
-
-              for (let j = 0; j < outline.sections.length; j++) {
-                if (generationCancelled) break;
-
-                set(
-                  (state) => ({
-                    generationProgress: {
-                      ...state.generationProgress,
-                      phase: "sections",
-                      currentSection: j + 1,
-                      totalSections: outline.sections.length,
-                    },
-                  }),
-                  false,
-                  "book/generating_section",
-                );
-
-                let sectionContent = "";
-                for await (const chunk of fetchStreamSection({
-                  chapterNumber,
-                  chapterTitle,
-                  chapterOutline: outline.sections,
-                  sectionIndex: j,
-                  previousSections: completedSections,
-                  toc: tableOfContents,
-                  sourceText: sourceText || "",
-                  bookPlan,
-                  provider: provider,
-                  model: model,
-                  settings,
-                })) {
-                  if (generationCancelled) break;
-
-                  sectionContent += chunk;
-                  set(
-                    {
-                      currentChapterContent: chapterContent + sectionContent,
-                      streamingContent:
-                        fullContent + chapterContent + sectionContent,
-                    },
-                    false,
-                    "book/streaming_section_content",
-                  );
-                }
-
-                completedSections.push({
-                  ...outline.sections[j],
-                  content: sectionContent,
-                });
-                chapterContent += sectionContent + "\n\n";
-              }
-
-              if (generationCancelled) break;
-
-              if (settings.requireConfirm) {
-                set(
-                  {
-                    awaitingChapterDecision: true,
-                    flowStatus: "generating",
-                    generationProgress: { phase: "review" },
-                  },
-                  false,
-                  "book/chapter_review_start",
-                );
-
-                const decision = await waitForChapterDecision();
-                if (decision === "cancel") {
-                  generationCancelled = true;
-                  break;
-                }
-              }
-
-              fullContent += chapterContent;
-              set(
-                (state) => ({
-                  chapters: [
-                    ...state.chapters,
-                    {
-                      chapterNumber,
-                      chapterTitle,
-                      content: chapterContent,
-                      isComplete: true,
-                    },
-                  ],
-                  viewingChapterIndex: state.chapters.length,
-                  streamingContent: fullContent,
-                  awaitingChapterDecision: false,
-                  currentChapterContent: "",
-                  flowStatus: "generating",
-                  generationProgress: { phase: "idle" },
-                }),
-                false,
-                "book/chapter_confirmed",
-              );
-            }
-
-            if (generationCancelled) {
-              set(
-                {
-                  error: "생성이 취소되었습니다.",
-                  awaitingChapterDecision: false,
-                  currentChapterIndex: null,
-                  currentChapterContent: "",
-                  flowStatus: "toc_review",
-                  generationProgress: { phase: "idle" },
-                },
-                false,
-                "book/generation_cancelled",
-              );
-              return;
-            }
-
-            set(
-              {
-                content: fullContent,
-                flowStatus: "completed",
-                currentChapterIndex: null,
-                currentChapterContent: "",
-                awaitingChapterDecision: false,
-                generationProgress: { phase: "idle" },
-                bookGenerationStarted: false,
-                completedSteps: new Set([...get().completedSteps, "completed"]),
-              },
-              false,
-              "book/startBookGeneration_success",
-            );
-
-            await saveBook();
-          } catch (err) {
-            console.error("Book generation failed:", err);
-            set(
-              {
-                error: "본문 생성 중 오류가 발생했습니다.",
-                awaitingChapterDecision: false,
-                currentChapterIndex: null,
-                currentChapterContent: "",
-                flowStatus: "toc_review",
-                generationProgress: { phase: "idle" },
-                bookGenerationStarted: false,
-              },
-              false,
-              "book/startBookGeneration_error",
-            );
-          }
-        },
-
         confirmChapter: () => {
           set({ awaitingChapterDecision: false }, false, "book/confirmChapter");
           resolveChapterDecision("confirm");
         },
 
         cancelGeneration: () => {
-          generationCancelled = true;
           set(
             {
               awaitingChapterDecision: false,
               currentChapterIndex: null,
               currentChapterContent: "",
               bookGenerationStarted: false,
+              generationCancelled: true,
             },
             false,
             "book/cancelGeneration",
@@ -607,6 +365,85 @@ export const useBookStore = create(
               "book/goToNextChapter",
             );
           }
+        },
+
+        setViewingChapterIndex: (index) => {
+          set(
+            { viewingChapterIndex: index },
+            false,
+            "book/setViewingChapterIndex",
+          );
+        },
+
+        setupGeneration: (bookId) => {
+          set(
+            {
+              savedBookId: bookId,
+              error: null,
+              generationProgress: { phase: "sections" },
+              bookGenerationStarted: true,
+              generationCancelled: false,
+              flowStatus: "generating",
+              currentChapterIndex: 0,
+              chapters: [],
+              streamingContent: "",
+              viewingChapterIndex: 0,
+              awaitingChapterDecision: false,
+            },
+            false,
+            "book/setupGeneration",
+          );
+        },
+
+        syncGenerationProgress: ({
+          chapters,
+          streamingContent,
+          currentChapterIndex,
+        }) => {
+          set(
+            {
+              chapters,
+              streamingContent,
+              viewingChapterIndex: chapters.length,
+              currentChapterIndex,
+              generationProgress: { phase: "sections" },
+            },
+            false,
+            "book/syncGenerationProgress",
+          );
+        },
+
+        failGeneration: (error) => {
+          set(
+            {
+              error,
+              awaitingChapterDecision: false,
+              currentChapterIndex: null,
+              flowStatus: "toc_review",
+              generationProgress: { phase: "idle" },
+              bookGenerationStarted: false,
+            },
+            false,
+            "book/failGeneration",
+          );
+        },
+
+        completeGeneration: (content) => {
+          const { completedSteps } = get();
+          set(
+            {
+              content,
+              flowStatus: "completed",
+              currentChapterIndex: null,
+              currentChapterContent: "",
+              awaitingChapterDecision: false,
+              generationProgress: { phase: "idle" },
+              bookGenerationStarted: false,
+              completedSteps: new Set([...completedSteps, "completed"]),
+            },
+            false,
+            "book/completeGeneration",
+          );
         },
 
         saveBook,
