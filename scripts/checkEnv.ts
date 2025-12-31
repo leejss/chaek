@@ -11,12 +11,16 @@ function loadEnvFile(filename: string) {
 loadEnvFile(".env");
 loadEnvFile(".env.local");
 
-try {
-  const { serverEnv, clientEnv } = await import("../lib/env");
-  void serverEnv;
-  void clientEnv;
-  console.log("✅ Environment variables validated");
-} catch {
-  console.error("❌ Environment variables validation failed");
-  process.exitCode = 1;
-}
+const validateEnv = async () => {
+  try {
+    const { serverEnv, clientEnv } = await import("../lib/env");
+    void serverEnv;
+    void clientEnv;
+    console.log("✅ Environment variables validated");
+  } catch {
+    console.error("❌ Environment variables validation failed");
+    process.exitCode = 1;
+  }
+};
+
+void validateEnv();
