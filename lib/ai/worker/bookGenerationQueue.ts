@@ -6,7 +6,8 @@ const client = new Client({ token: serverEnv.QSTASH_TOKEN });
 const sanitizeDeduplicationPart = (value: string) =>
   value.replace(/[^a-zA-Z0-9._-]/g, "-");
 export async function enqueueGenerateBookJob(job: GenerateBookJob) {
-  const url = `${serverEnv.QSTASH_BASE_URL}/api/queues/book-generation`;
+  const baseUrl = serverEnv.QSTASH_BASE_URL.replace(/\/$/, "");
+  const url = `${baseUrl}/api/queues/book-generation`;
 
   const deduplicationId = [
     sanitizeDeduplicationPart(job.bookId),
