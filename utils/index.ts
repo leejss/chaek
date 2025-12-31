@@ -7,9 +7,11 @@ export function generateRandomToken(byteLength = 32): string {
 }
 
 export async function sha256Hex(input: string): Promise<string> {
-  const hasher = new Bun.CryptoHasher("sha256");
-  hasher.update(input);
-  return hasher.digest("hex");
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export type ReadJsonResult =

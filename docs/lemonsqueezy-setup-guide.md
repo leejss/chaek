@@ -132,16 +132,16 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
 
 ```bash
 # 마이그레이션 파일 생성
-bun run db:generate
+npm run db:generate
 
 # 마이그레이션 실행
-bun run db:migrate
+npm run db:migrate
 ```
 
 또는 개발 환경에서는:
 
 ```bash
-bun run db:push
+npm run db:push
 ```
 
 ## 7. Webhook 로컬 테스트 (선택사항)
@@ -166,7 +166,7 @@ ngrok http 3000
 
 ### 7.3. 테스트 결제 진행
 
-1. 로컬 개발 서버를 실행합니다: `bun --bun next dev`
+1. 로컬 개발 서버를 실행합니다: `npm run dev`
 2. 크레딧 구매 페이지로 이동합니다.
 3. 테스트 모드에서 결제를 진행합니다.
 4. Webhook 이벤트가 로컬 서버로 전달되는지 확인합니다.

@@ -3,18 +3,18 @@
 ## Commands
 
 ### Development
-- `bun --bun next dev` - Start development server
-- `bun --bun next build` - Build for production
-- `bun --bun next start` - Start production server
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
 
 ### Code Quality
-- `eslint` - Run ESLint (fixes automatically)
-- **Note**: Type checking happens during `bun --bun next build`. No separate typecheck command exists.
+- `npm run lint` - Run ESLint (fixes automatically)
+- `npm run typecheck` - Run TypeScript type checking
 
 ### Database
-- `bun run db:push` - Push schema changes to database
-- `bun run db:generate` - Generate migration files
-- `bun run db:migrate` - Run migrations
+- `npm run db:push` - Push schema changes to database
+- `npm run db:generate` - Generate migration files
+- `npm run db:migrate` - Run migrations
 
 ### Testing
 - **No test framework configured** - Tests are not currently set up in this project.
