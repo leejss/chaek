@@ -10,8 +10,8 @@ import { enqueueGenerateBookJob } from "./bookGenerationQueue";
 function toSettings(job: GenerateBookJob): BookSettings {
   return {
     language: job.language,
-    userPreference: job.userPreference,
-    requireConfirm: false,
+    chapterCount: "Auto",
+    userPreference: job.userPreference ?? "",
   };
 }
 
@@ -105,7 +105,7 @@ async function initGeneration(job: GenerateBookJob) {
         bookId: job.bookId,
         chapterNumber: idx + 1,
         title,
-        status: "pending",
+        status: "pending" as const,
         updatedAt: new Date(),
       })),
     )
@@ -125,7 +125,8 @@ async function initGeneration(job: GenerateBookJob) {
 }
 
 async function generateChapter(job: GenerateBookJob) {
-  if (!job.chapterNumber) throw new Error("Missing chapterNumber");
+  const chapterNumber = job.chapterNumber;
+  if (chapterNumber == null) throw new Error("Missing chapterNumber");
 
   const found = await db
     .select()
@@ -137,7 +138,7 @@ async function generateChapter(job: GenerateBookJob) {
   if (!book) throw new Error("Book not found");
 
   const toc = normalizeToc(book.tableOfContents);
-  const chapterTitle = toc[job.chapterNumber - 1];
+  const chapterTitle = toc[chapterNumber - 1];
   if (!book.sourceText || !chapterTitle) {
     throw new Error("Missing sourceText or chapter title");
   }
@@ -148,7 +149,7 @@ async function generateChapter(job: GenerateBookJob) {
     .where(
       and(
         eq(chapters.bookId, job.bookId),
-        eq(chapters.chapterNumber, job.chapterNumber),
+        eq(chapters.chapterNumber, chapterNumber),
       ),
     )
     .limit(1);
@@ -165,7 +166,7 @@ async function generateChapter(job: GenerateBookJob) {
     .where(
       and(
         eq(chapters.bookId, job.bookId),
-        eq(chapters.chapterNumber, job.chapterNumber),
+        eq(chapters.chapterNumber, chapterNumber),
         inArray(chapters.status, ["pending", "failed", "generating"]),
       ),
     );
@@ -176,14 +177,14 @@ async function generateChapter(job: GenerateBookJob) {
   const outline = await orchestrator.generateChapterOutline({
     toc,
     chapterTitle,
-    chapterNumber: job.chapterNumber,
+    chapterNumber,
     sourceText: book.sourceText,
     bookPlan: plan,
     settings: {
       provider: job.provider,
       model: job.model,
       language: job.language,
-      userPreference: job.userPreference,
+      userPreference: job.userPreference ?? "",
     },
   });
 
@@ -196,7 +197,7 @@ async function generateChapter(job: GenerateBookJob) {
     sectionIndex++
   ) {
     const sectionText = await orchestrator.generateSectionDraftText({
-      chapterNumber: job.chapterNumber,
+      chapterNumber,
       chapterTitle,
       chapterOutline: outline.sections,
       sectionIndex,
@@ -206,7 +207,7 @@ async function generateChapter(job: GenerateBookJob) {
         provider: job.provider,
         model: job.model,
         language: job.language,
-        userPreference: job.userPreference,
+        userPreference: job.userPreference ?? "",
       },
     });
 
@@ -228,14 +229,14 @@ async function generateChapter(job: GenerateBookJob) {
       .where(
         and(
           eq(chapters.bookId, job.bookId),
-          eq(chapters.chapterNumber, job.chapterNumber),
+          eq(chapters.chapterNumber, chapterNumber),
         ),
       );
 
     await tx
       .update(books)
       .set({
-        currentChapterIndex: job.chapterNumber,
+        currentChapterIndex: chapterNumber,
         updatedAt: new Date(),
       })
       .where(eq(books.id, job.bookId));

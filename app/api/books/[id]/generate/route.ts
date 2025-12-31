@@ -17,8 +17,10 @@ const requestSchema = z.object({
   sourceText: z.string().min(1),
   provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
   model: z.string().min(1),
-  language: z.string().min(1).default("Korean"),
-  userPreference: z.string().optional(),
+  language: z
+    .enum(["Korean", "English", "Japanese", "Chinese", "Auto"])
+    .default("Korean"),
+  userPreference: z.string().default(""),
 });
 
 function normalizeToHttpError(error: unknown): HttpError | null {

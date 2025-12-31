@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 const serverSchema = z.object({
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   DATABASE_DIRECT_URL: z.string().min(1, "DATABASE_DIRECT_URL is required"),
   GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
@@ -15,13 +18,11 @@ const serverSchema = z.object({
     .string()
     .min(1, "QSTASH_NEXT_SIGNING_KEY is required"),
   QSTASH_BASE_URL: z.string().url("QSTASH_BASE_URL must be a valid URL"),
-  // LEMONSQUEEZY_API_KEY: z.string().min(1, "LEMONSQUEEZY_API_KEY is required"),
-  // LEMONSQUEEZY_WEBHOOK_SECRET: z
-  //   .string()
-  //   .min(1, "LEMONSQUEEZY_WEBHOOK_SECRET is required"),
-  // LEMONSQUEEZY_STORE_ID: z
-  //   .string()
-  //   .min(1, "LEMONSQUEEZY_STORE_ID is required"),
+  LEMONSQUEEZY_API_KEY: z.string().min(1, "LEMONSQUEEZY_API_KEY is required"),
+  LEMONSQUEEZY_WEBHOOK_SECRET: z
+    .string()
+    .min(1, "LEMONSQUEEZY_WEBHOOK_SECRET is required"),
+  LEMONSQUEEZY_STORE_ID: z.string().min(1, "LEMONSQUEEZY_STORE_ID is required"),
 });
 
 const clientSchema = z.object({
