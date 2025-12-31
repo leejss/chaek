@@ -69,7 +69,9 @@ export default function CreditsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
       <div className="mb-8 text-center">
-        <h1 className="mb-2 text-3xl font-bold text-white">Purchase Credits</h1>
+        <h1 className="mb-2 text-3xl font-bold text-foreground">
+          Purchase Credits
+        </h1>
         <p className="text-neutral-500">
           Select a package to add credits to your account
         </p>
@@ -88,21 +90,21 @@ export default function CreditsPage() {
             className={`relative rounded-2xl border p-6 ${
               pkg.popular
                 ? "border-brand-600 bg-brand-900/5"
-                : "border-neutral-800 bg-black"
+                : "border-neutral-800 bg-background"
             }`}
           >
             {pkg.popular && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-foreground">
                 Most Popular
               </div>
             )}
 
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-white">{pkg.name}</h3>
+              <h3 className="text-xl font-bold text-foreground">{pkg.name}</h3>
             </div>
 
             <div className="mb-6">
-              <div className="mb-1 text-4xl font-bold text-white">
+              <div className="mb-1 text-4xl font-bold text-foreground">
                 ${pkg.price.toFixed(2)}
               </div>
               <div className="text-sm text-neutral-500">
@@ -118,7 +120,7 @@ export default function CreditsPage() {
               disabled={isProcessing}
               className={`w-full rounded-full py-3 font-bold transition-colors ${
                 pkg.popular
-                  ? "bg-brand-600 text-white hover:bg-brand-700 disabled:bg-brand-900 disabled:opacity-50"
+                  ? "bg-brand-600 text-foreground hover:bg-brand-700 disabled:bg-brand-900 disabled:opacity-50"
                   : "bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-600 disabled:opacity-50"
               }`}
             >
@@ -129,7 +131,9 @@ export default function CreditsPage() {
       </div>
 
       <div className="mt-12 rounded-2xl bg-neutral-900/30 border border-neutral-800 p-6">
-        <h2 className="mb-4 text-lg font-bold text-white">How Credits Work</h2>
+        <h2 className="mb-4 text-lg font-bold text-foreground">
+          How Credits Work
+        </h2>
         <ul className="space-y-2 text-neutral-400">
           <li className="flex items-start">
             <span className="mr-2 text-brand-600">•</span>

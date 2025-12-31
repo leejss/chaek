@@ -43,7 +43,7 @@ export default function CreditsSuccessPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link
             href="/book/new"
-            className="flex-1 rounded-lg bg-blue-600 px-6 py-3 text-center font-semibold text-white hover:bg-blue-700"
+            className="flex-1 rounded-lg bg-blue-600 px-6 py-3 text-center font-semibold text-foreground hover:bg-blue-700"
           >
             Create a Book
           </Link>

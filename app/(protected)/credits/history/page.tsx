@@ -31,7 +31,8 @@ const typeColors: Record<string, string> = {
 };
 
 export default function CreditsHistoryPage() {
-  const { transactions, isLoading, error, loadMore, hasMore } = useTransactions();
+  const { transactions, isLoading, error, loadMore, hasMore } =
+    useTransactions();
 
   if (isLoading && transactions.length === 0) {
     return (
@@ -59,7 +60,7 @@ export default function CreditsHistoryPage() {
         </h1>
         <Link
           href="/credits"
-          className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          className="rounded bg-blue-600 px-4 py-2 text-foreground hover:bg-blue-700"
         >
           Purchase Credits
         </Link>
@@ -70,7 +71,7 @@ export default function CreditsHistoryPage() {
           <p className="mb-4 text-gray-600">No transactions yet</p>
           <Link
             href="/credits"
-            className="inline-block rounded bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+            className="inline-block rounded bg-blue-600 px-6 py-3 text-foreground hover:bg-blue-700"
           >
             Purchase Your First Credits
           </Link>

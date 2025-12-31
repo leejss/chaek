@@ -112,7 +112,7 @@ export default function GenerationStep() {
     <div className="max-w-3xl mx-auto pb-32">
       {/* Header with status */}
       {isViewingCurrentChapter && (
-        <div className="sticky top-0 bg-black/95 backdrop-blur py-2 border-b border-neutral-800 mb-4 z-10 flex items-center justify-center gap-2 text-brand-600">
+        <div className="sticky top-0 bg-background/95 backdrop-blur py-2 border-b border-neutral-200 mb-4 z-10 flex items-center justify-center gap-2 text-brand-600">
           {!isReview && (
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-brand-600 border-t-transparent"></div>
           )}
@@ -143,7 +143,7 @@ export default function GenerationStep() {
                     ? "bg-brand-600"
                     : idx < chapters.length
                     ? "bg-green-500"
-                    : "bg-neutral-800"
+                    : "bg-neutral-200"
                 }`}
               />
             ))}
@@ -164,19 +164,19 @@ export default function GenerationStep() {
       {isViewingCurrentChapter &&
         tableOfContents &&
         typeof currentChapterIndex === "number" && (
-          <div className="mb-6 bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-            <div className="text-sm text-neutral-500">
+          <div className="mb-6 bg-neutral-50 border border-neutral-200 rounded-2xl p-4">
+            <div className="text-sm text-neutral-600">
               {`Chapter ${currentChapterIndex + 1} of ${
                 tableOfContents.length
               }`}
             </div>
-            <div className="font-serif text-lg text-white mt-1">
+            <div className="font-serif text-lg text-foreground mt-1">
               {tableOfContents[currentChapterIndex]}
             </div>
 
             {generationProgress.currentOutline && (
-              <div className="mt-3 pt-3 border-t border-neutral-800">
-                <div className="text-xs text-neutral-500 mb-2">Sections:</div>
+              <div className="mt-3 pt-3 border-t border-neutral-200">
+                <div className="text-xs text-neutral-600 mb-2">Sections:</div>
                 <div className="flex flex-wrap gap-1">
                   {generationProgress.currentOutline.sections.map(
                     (section, idx) => (
@@ -185,10 +185,10 @@ export default function GenerationStep() {
                         className={`text-xs px-2 py-1 rounded-full ${
                           generationProgress.currentSection &&
                           idx < generationProgress.currentSection
-                            ? "bg-green-900/30 text-green-400"
+                            ? "bg-green-100 text-green-700"
                             : generationProgress.currentSection === idx + 1
-                            ? "bg-brand-900/30 text-brand-400"
-                            : "bg-neutral-800 text-neutral-500"
+                            ? "bg-brand-100 text-brand-700"
+                            : "bg-neutral-100 text-neutral-600"
                         }`}
                       >
                         {section.title}
@@ -203,16 +203,16 @@ export default function GenerationStep() {
 
       {/* Viewing completed chapter header */}
       {!isViewingCurrentChapter && viewingChapter && (
-        <div className="mb-6 bg-green-900/10 border border-green-900/30 rounded-2xl p-4">
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-0.5 bg-green-900/30 text-green-400 rounded-full">
+            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
               Completed
             </span>
-            <span className="text-sm text-neutral-500">
+            <span className="text-sm text-neutral-600">
               Chapter {viewingChapter.chapterNumber}
             </span>
           </div>
-          <div className="font-serif text-lg text-white mt-1">
+          <div className="font-serif text-lg text-foreground mt-1">
             {viewingChapter.chapterTitle}
           </div>
         </div>
@@ -239,7 +239,7 @@ export default function GenerationStep() {
       </div>
 
       {/* Content */}
-      <div className="bg-black min-h-[500px]">
+      <div className="bg-background min-h-[500px]">
         <MarkdownRenderer
           content={displayContent}
           isStreaming={isViewingCurrentChapter && !isReview}
@@ -248,7 +248,7 @@ export default function GenerationStep() {
 
       {/* Fixed Bottom Action Bar */}
       {isViewingCurrentChapter && requireConfirm && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-neutral-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.5)] z-50 safe-area-bottom">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-neutral-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.12)] z-50 safe-area-bottom">
           <div className="max-w-3xl mx-auto flex gap-3">
             <Button
               variant="outline"

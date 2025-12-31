@@ -16,14 +16,14 @@ export default function CompletedStep() {
 
   return (
     <div className="max-w-3xl mx-auto py-10 space-y-8">
-      <div className="border border-neutral-800 bg-black rounded-2xl p-8">
+      <div className="border border-neutral-200 bg-background rounded-2xl p-8">
         <p className="uppercase text-xs tracking-[0.18em] text-neutral-500 mb-4">
           Flow Status
         </p>
-        <h1 className="font-bold text-3xl text-white mb-2">
+        <h1 className="font-bold text-3xl text-foreground mb-2">
           모든 챕터 생성이 완료되었습니다.
         </h1>
-        <p className="text-neutral-400 leading-relaxed">
+        <p className="text-neutral-600 leading-relaxed">
           생성된 책은 자동으로 저장되었습니다. 아래에서 결과를 확인하거나 새로운
           책 만들기를 시작할 수 있습니다.
         </p>
@@ -43,15 +43,15 @@ export default function CompletedStep() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="border border-neutral-800 bg-neutral-900/30 rounded-2xl p-6">
+        <div className="border border-neutral-200 bg-neutral-50 rounded-2xl p-6">
           <p className="uppercase text-[10px] tracking-[0.2em] text-neutral-500 mb-3">
             Table of Contents
           </p>
           {tableOfContents.length > 0 ? (
-            <ol className="space-y-2 text-neutral-300">
+            <ol className="space-y-2 text-neutral-700">
               {tableOfContents.map((item, idx) => (
                 <li key={idx} className="flex gap-2">
-                  <span className="text-neutral-600 font-mono text-xs w-6">
+                  <span className="text-neutral-400 font-mono text-xs w-6">
                     {String(idx + 1).padStart(2, "0")}
                   </span>
                   <span className="font-medium">{item}</span>
@@ -59,20 +59,20 @@ export default function CompletedStep() {
               ))}
             </ol>
           ) : (
-            <p className="text-neutral-500 text-sm">차례 정보가 없습니다.</p>
+            <p className="text-neutral-600 text-sm">차례 정보가 없습니다.</p>
           )}
         </div>
 
-        <div className="border border-neutral-800 bg-black rounded-2xl p-6">
+        <div className="border border-neutral-200 bg-background rounded-2xl p-6">
           <p className="uppercase text-[10px] tracking-[0.2em] text-neutral-500 mb-3">
             본문 미리보기
           </p>
           {content ? (
-            <div className="prose prose-sm prose-invert max-w-none text-neutral-300">
+            <div className="prose prose-sm max-w-none text-neutral-700">
               <p className="line-clamp-12 whitespace-pre-line">{content}</p>
             </div>
           ) : (
-            <p className="text-neutral-500 text-sm">내용이 없습니다.</p>
+            <p className="text-neutral-600 text-sm">내용이 없습니다.</p>
           )}
         </div>
       </div>

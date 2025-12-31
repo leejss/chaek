@@ -78,17 +78,17 @@ function LoginContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="w-full max-w-[350px] flex flex-col gap-8 z-10 relative">
         {/* Logo Area */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-5xl font-bold text-white tracking-tighter">
+          <h1 className="text-5xl font-bold text-foreground tracking-tighter">
             book.build
           </h1>
         </div>
 
         <div className="flex flex-col gap-4 w-full">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-foreground">
             Sign in to book.build
           </h2>
 
