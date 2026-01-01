@@ -5,7 +5,6 @@ import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
 import { GenerationProgress } from "@/lib/book/types";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import { useShallow } from "zustand/react/shallow";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 
 function getPhaseLabel(progress: GenerationProgress): string {
@@ -26,24 +25,22 @@ function getPhaseLabel(progress: GenerationProgress): string {
 }
 
 export default function GenerationStep() {
-  const {
-    chapters,
-    viewingChapterIndex,
-    currentChapterContent,
-    tableOfContents,
-    currentChapterIndex,
-    generationProgress,
-    awaitingChapterDecision,
-  } = useBookStore(
-    useShallow((state) => ({
-      chapters: state.chapters,
-      viewingChapterIndex: state.viewingChapterIndex,
-      currentChapterContent: state.currentChapterContent,
-      tableOfContents: state.tableOfContents,
-      currentChapterIndex: state.currentChapterIndex,
-      generationProgress: state.generationProgress || { phase: "idle" },
-      awaitingChapterDecision: state.awaitingChapterDecision,
-    })),
+  const chapters = useBookStore((state) => state.chapters);
+  const viewingChapterIndex = useBookStore(
+    (state) => state.viewingChapterIndex,
+  );
+  const currentChapterContent = useBookStore(
+    (state) => state.currentChapterContent,
+  );
+  const tableOfContents = useBookStore((state) => state.tableOfContents);
+  const currentChapterIndex = useBookStore(
+    (state) => state.currentChapterIndex,
+  );
+  const generationProgress = useBookStore(
+    (state) => state.generationProgress || { phase: "idle" },
+  );
+  const awaitingChapterDecision = useBookStore(
+    (state) => state.awaitingChapterDecision,
   );
 
   const requireConfirm = useSettingsStore((state) => state.requireConfirm);
