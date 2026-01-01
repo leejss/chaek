@@ -317,7 +317,12 @@ async function* streamChapter(
         summary: s.summary,
       }));
 
-    const result = await orchestrator.streamSectionDraft({
+    const streamFunc =
+      process.env.NODE_ENV === "development"
+        ? orchestrator.streamSectionDraftDev.bind(orchestrator)
+        : orchestrator.streamSectionDraft.bind(orchestrator);
+
+    const result = await streamFunc({
       chapterNumber,
       chapterTitle,
       chapterOutline: outlineResult.sections,
