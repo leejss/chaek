@@ -52,6 +52,7 @@ export default function CreateBookPage() {
   const bookGenerationStarted = useBookStore(
     (state) => state.bookGenerationStarted,
   );
+  const savedBookId = useBookStore((state) => state.savedBookId);
 
   const { balance, isLoading: isLoadingBalance } = useCreditBalance();
 
@@ -64,6 +65,12 @@ export default function CreateBookPage() {
 
   const hasInsufficientCredits =
     balance !== null && balance < BOOK_CREATION_COST;
+
+  useEffect(() => {
+    if (flowStatus === "generating" && savedBookId) {
+      router.replace(`/new/${savedBookId}`);
+    }
+  }, [flowStatus, savedBookId, router]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {

@@ -4,8 +4,6 @@ import { authenticate } from "@/lib/auth";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
 import { NextResponse, type NextRequest } from "next/server";
-import { getUserBalance, deductCredits } from "@/lib/credits/operations";
-import { BOOK_CREATION_COST } from "@/lib/credits/config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,15 +12,11 @@ export async function POST(req: NextRequest) {
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
     const body = jsonResult.data as {
+      bookId?: string;
       title?: unknown;
-      content?: unknown;
       tableOfContents?: unknown;
       sourceText?: unknown;
     };
-
-    if (typeof body.content !== "string" || body.content.trim().length === 0) {
-      throw new HttpError(400, "Missing content");
-    }
 
     const title =
       typeof body.title === "string" && body.title.trim().length > 0
@@ -38,39 +32,33 @@ export async function POST(req: NextRequest) {
     const sourceText =
       typeof body.sourceText === "string" ? body.sourceText : null;
 
-    const balance = await getUserBalance(userId);
-    if (balance.balance < BOOK_CREATION_COST) {
-      throw new HttpError(402, "Insufficient credits");
-    }
+    const bookId =
+      typeof body.bookId === "string" && body.bookId.trim().length > 0
+        ? body.bookId.trim()
+        : crypto.randomUUID();
 
-    const [inserted] = await db
+    await db
       .insert(books)
       .values({
+        id: bookId,
         userId,
         title,
-        content: body.content,
+        content: "",
         tableOfContents: toc,
         sourceText: sourceText ?? undefined,
+        status: "draft",
       })
-      .returning({ id: books.id });
+      .onConflictDoUpdate({
+        target: books.id,
+        set: {
+          title,
+          tableOfContents: toc,
+          sourceText: sourceText ?? undefined,
+          updatedAt: new Date(),
+        },
+      });
 
-    if (!inserted) {
-      throw new Error("Failed to insert book");
-    }
-
-    await deductCredits({
-      userId,
-      amount: BOOK_CREATION_COST,
-      bookId: inserted.id,
-      metadata: {
-        bookTitle: title,
-      },
-    });
-
-    return NextResponse.json(
-      { ok: true, bookId: inserted.id },
-      { status: 200 },
-    );
+    return NextResponse.json({ ok: true, bookId }, { status: 200 });
   } catch (error) {
     console.error("[book/save] error:", error);
 

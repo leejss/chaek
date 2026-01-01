@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { useBookStore } from "@/lib/book/bookContext";
-import { useBookStreaming } from "@/lib/hooks/useBookStreaming";
+import { authFetch } from "@/lib/api";
 import { ClaudeModel, GeminiModel } from "@/lib/book/types";
 import {
   FileText,
@@ -17,19 +18,20 @@ import {
 import Button from "../../_components/Button";
 
 export default function TOCReviewStep() {
+  const router = useRouter();
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const bookTitle = useBookStore((state) => state.bookTitle);
+  const sourceText = useBookStore((state) => state.sourceText);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
   const { setSelectedModel, regenerateTOC, updateDraft } = useBookStore(
     (state) => state.actions,
   );
 
-  const { generate: startBookGeneration, isGenerating } = useBookStreaming();
-
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const [tempTOC, setTempTOC] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectedProvider = aiConfiguration.content.provider;
   const selectedModel = aiConfiguration.content.model;
@@ -64,6 +66,38 @@ export default function TOCReviewStep() {
     const newTOC = [...tempTOC];
     newTOC[index] = value;
     setTempTOC(newTOC);
+  };
+
+  const handleStartWriting = async () => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const bookId = crypto.randomUUID();
+
+      const res = await authFetch("/api/book/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId,
+          title: bookTitle || "Untitled Book",
+          tableOfContents,
+          sourceText: sourceText || "",
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || "책 저장에 실패했습니다.");
+      }
+
+      router.push(`/book/new/${bookId}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "알 수 없는 오류";
+      alert(`오류: ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -251,20 +285,14 @@ export default function TOCReviewStep() {
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={() =>
-                    startBookGeneration({
-                      bookId: crypto.randomUUID(),
-                      provider: selectedProvider,
-                      model: selectedModel,
-                    })
-                  }
+                  onClick={handleStartWriting}
                   disabled={
-                    isProcessing || isGenerating || tableOfContents.length === 0
+                    isProcessing || isSaving || tableOfContents.length === 0
                   }
                   className="flex-1 md:flex-none gap-2 px-8 shadow-lg shadow-brand-900/10 rounded-full"
                 >
                   <FileText size={16} />
-                  Start Writing
+                  {isSaving ? "저장 중..." : "Start Writing"}
                 </Button>
               </div>
             </div>

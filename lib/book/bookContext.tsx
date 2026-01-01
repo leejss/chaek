@@ -225,6 +225,30 @@ export const useBookStore = create(
           );
         },
 
+        initializeFromBook: (book: Book) => {
+          set(
+            {
+              sourceText: book.sourceText || "",
+              bookTitle: book.title,
+              tableOfContents: book.tableOfContents || [],
+              content: book.content || "",
+              chapters: [],
+              viewingChapterIndex: 0,
+              streamingContent: "",
+              currentChapterIndex: null,
+              currentChapterContent: "",
+              awaitingChapterDecision: false,
+              flowStatus: "generating",
+              generationProgress: { phase: "idle" },
+              bookGenerationStarted: false,
+              generationCancelled: false,
+              error: null,
+            },
+            false,
+            "book/initializeFromBook",
+          );
+        },
+
         generateTOC: async (sourceText: string) => {
           if (!sourceText.trim()) return;
 
