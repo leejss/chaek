@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { useBookStore } from "@/lib/book/bookContext";
-import { useBookGeneration } from "@/lib/hooks/useBookGeneration";
+import { useBookStreaming } from "@/lib/hooks/useBookStreaming";
 import { ClaudeModel, GeminiModel } from "@/lib/book/types";
 import {
   FileText,
@@ -25,7 +25,7 @@ export default function TOCReviewStep() {
     (state) => state.actions,
   );
 
-  const { generate: startBookGeneration, isGenerating } = useBookGeneration();
+  const { generate: startBookGeneration, isGenerating } = useBookStreaming();
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
@@ -253,6 +253,7 @@ export default function TOCReviewStep() {
                   variant="primary"
                   onClick={() =>
                     startBookGeneration({
+                      bookId: crypto.randomUUID(),
                       provider: selectedProvider,
                       model: selectedModel,
                     })

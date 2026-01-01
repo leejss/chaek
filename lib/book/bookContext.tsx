@@ -2,7 +2,15 @@
 
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
 import { fetchTOC } from "@/lib/ai/fetch";
-import { BookActions, BookContextState, FlowStatus } from "@/lib/book/types";
+import {
+  AIProvider,
+  Book,
+  BookContextState,
+  ChapterContent,
+  ClaudeModel,
+  FlowStatus,
+  GeminiModel,
+} from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
@@ -158,7 +166,7 @@ export const useBookStore = create(
         }
       };
 
-      const actions: BookActions = {
+      const actions = {
         startNewBook: () => {
           resolveChapterDecision("cancel");
           set(
@@ -185,11 +193,22 @@ export const useBookStore = create(
           );
         },
 
-        updateDraft: (draft) => {
+        updateDraft: (
+          draft: Partial<
+            Pick<
+              BookContextState,
+              | "sourceText"
+              | "bookTitle"
+              | "tableOfContents"
+              | "content"
+              | "currentChapterContent"
+            >
+          >,
+        ) => {
           set(draft, false, "book/updateDraft");
         },
 
-        setActiveBook: (book) => {
+        setActiveBook: (book: Book) => {
           set(
             {
               sourceText: book.sourceText || "",
@@ -206,7 +225,7 @@ export const useBookStore = create(
           );
         },
 
-        generateTOC: async (sourceText) => {
+        generateTOC: async (sourceText: string) => {
           if (!sourceText.trim()) return;
 
           set(
@@ -284,11 +303,11 @@ export const useBookStore = create(
           resolveChapterDecision("cancel");
         },
 
-        setFlowStatus: (status) => {
+        setFlowStatus: (status: FlowStatus) => {
           set({ flowStatus: status }, false, "book/setFlowStatus");
         },
 
-        goToStep: (step) => {
+        goToStep: (step: FlowStatus) => {
           const state = get();
 
           if (state.bookGenerationStarted) {
@@ -301,7 +320,10 @@ export const useBookStore = create(
           set({ flowStatus: step }, false, "book/goToStep");
         },
 
-        setTocAiConfiguraiton: (provider, model) => {
+        setTocAiConfiguraiton: (
+          provider: AIProvider,
+          model: GeminiModel | ClaudeModel,
+        ) => {
           set(
             (state) => ({
               aiConfiguration: {
@@ -317,7 +339,10 @@ export const useBookStore = create(
           );
         },
 
-        setSelectedModel: (provider, model) => {
+        setSelectedModel: (
+          provider: AIProvider,
+          model: GeminiModel | ClaudeModel,
+        ) => {
           set(
             (state) => ({
               aiConfiguration: {
@@ -333,7 +358,7 @@ export const useBookStore = create(
           );
         },
 
-        goToChapter: (index) => {
+        goToChapter: (index: number) => {
           const { chapters } = get();
           if (index >= 0 && index < chapters.length) {
             set({ viewingChapterIndex: index }, false, "book/goToChapter");
@@ -367,7 +392,7 @@ export const useBookStore = create(
           }
         },
 
-        setViewingChapterIndex: (index) => {
+        setViewingChapterIndex: (index: number) => {
           set(
             { viewingChapterIndex: index },
             false,
@@ -375,7 +400,7 @@ export const useBookStore = create(
           );
         },
 
-        setupGeneration: (bookId) => {
+        setupGeneration: (bookId: string) => {
           set(
             {
               savedBookId: bookId,
@@ -399,6 +424,10 @@ export const useBookStore = create(
           chapters,
           streamingContent,
           currentChapterIndex,
+        }: {
+          chapters: ChapterContent[];
+          streamingContent: string;
+          currentChapterIndex: number | null;
         }) => {
           set(
             {
@@ -413,7 +442,7 @@ export const useBookStore = create(
           );
         },
 
-        failGeneration: (error) => {
+        failGeneration: (error: string) => {
           set(
             {
               error,
@@ -428,7 +457,7 @@ export const useBookStore = create(
           );
         },
 
-        completeGeneration: (content) => {
+        completeGeneration: (content: string) => {
           const { completedSteps } = get();
           set(
             {
@@ -453,3 +482,5 @@ export const useBookStore = create(
     }),
   ),
 );
+
+export const bookStoreActions = useBookStore.getState().actions;

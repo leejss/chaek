@@ -84,6 +84,7 @@ export const books = pgTable(
     error: text("error"),
     generationSettings: jsonb("generation_settings"),
     bookPlan: jsonb("book_plan"),
+    streamingStatus: jsonb("streaming_status"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -101,6 +101,12 @@ export type ChapterContent = {
   isComplete: boolean;
 };
 
+export type StreamingStatus = {
+  lastStreamedChapter: number | null;
+  lastStreamedSection: number | null;
+  lastUpdated: string;
+};
+
 export type BookContextState = {
   sourceText: string;
   bookTitle: string;
@@ -123,41 +129,4 @@ export type BookContextState = {
   completedSteps: Set<FlowStatus>;
   bookGenerationStarted: boolean;
   generationCancelled: boolean;
-};
-
-export type BookActions = {
-  startNewBook: () => void;
-  updateDraft: (
-    draft: Partial<
-      Pick<BookContextState, "sourceText" | "bookTitle" | "tableOfContents" | "content">
-    >,
-  ) => void;
-  setActiveBook: (book: Book) => void;
-  generateTOC: (sourceText: string) => Promise<void>;
-  regenerateTOC: () => Promise<void>;
-  confirmChapter: () => void;
-  cancelGeneration: () => void;
-  setFlowStatus: (status: FlowStatus) => void;
-  goToStep: (step: FlowStatus) => void;
-  setTocAiConfiguraiton: (
-    provider: AIProvider,
-    model: GeminiModel | ClaudeModel,
-  ) => void;
-  setSelectedModel: (
-    provider: AIProvider,
-    model: GeminiModel | ClaudeModel,
-  ) => void;
-  goToChapter: (index: number) => void;
-  goToPrevChapter: () => void;
-  goToNextChapter: () => void;
-  saveBook: () => Promise<void>;
-  setupGeneration: (bookId: string) => void;
-  syncGenerationProgress: (data: {
-    chapters: ChapterContent[];
-    streamingContent: string;
-    currentChapterIndex: number | null;
-  }) => void;
-  failGeneration: (error: string) => void;
-  completeGeneration: (content: string) => void;
-  setViewingChapterIndex: (index: number) => void;
 };

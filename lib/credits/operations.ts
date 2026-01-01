@@ -1,5 +1,6 @@
 import { db } from "@/db";
-import { creditBalances, creditTransactions } from "@/db/schema";
+import { books, creditBalances, creditTransactions } from "@/db/schema";
+import { HttpError } from "@/lib/errors";
 import { and, desc, eq } from "drizzle-orm";
 import { FREE_SIGNUP_CREDITS } from "./config";
 
@@ -305,4 +306,101 @@ export async function getCreditTransactions(
     .orderBy(desc(creditTransactions.createdAt))
     .limit(limit)
     .offset(offset);
+}
+
+export interface InitializeBookAndDeductCreditsParams {
+  userId: string;
+  bookId: string;
+  title: string;
+  tableOfContents: string[];
+  sourceText: string;
+  cost: number;
+  startChapter: number;
+}
+
+export async function initializeBookAndDeductCredits(
+  params: InitializeBookAndDeductCreditsParams,
+): Promise<{ isNewBook: boolean }> {
+  const {
+    userId,
+    bookId,
+    title,
+    tableOfContents,
+    sourceText,
+    cost,
+    startChapter,
+  } = params;
+
+  return await db.transaction(async (tx) => {
+    const existingBook = await tx
+      .select()
+      .from(books)
+      .where(eq(books.id, bookId))
+      .limit(1);
+
+    if (existingBook.length > 0 && existingBook[0].status === "completed") {
+      throw new HttpError(409, "Book already completed");
+    }
+
+    const currentBalance = await tx
+      .select()
+      .from(creditBalances)
+      .where(eq(creditBalances.userId, userId))
+      .limit(1);
+
+    if (currentBalance.length === 0 || currentBalance[0].balance < cost) {
+      throw new HttpError(402, "Insufficient credits");
+    }
+
+    let isNewBook = false;
+    if (existingBook.length === 0) {
+      isNewBook = true;
+      await tx.insert(books).values({
+        id: bookId,
+        userId,
+        title,
+        content: "",
+        tableOfContents,
+        sourceText,
+        status: "generating",
+        updatedAt: new Date(),
+      });
+    } else {
+      await tx
+        .update(books)
+        .set({
+          title,
+          tableOfContents,
+          sourceText,
+          status: "generating",
+          streamingStatus: {
+            lastStreamedChapter: startChapter - 1,
+            lastStreamedSection: null,
+            lastUpdated: new Date().toISOString(),
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(books.id, bookId));
+    }
+
+    const newBalance = currentBalance[0].balance - cost;
+    await tx
+      .update(creditBalances)
+      .set({
+        balance: newBalance,
+        updatedAt: new Date(),
+      })
+      .where(eq(creditBalances.userId, userId));
+
+    await tx.insert(creditTransactions).values({
+      userId,
+      type: "usage",
+      amount: -cost,
+      balanceAfter: newBalance,
+      bookId,
+      metadata: { reason: "streaming_book_generation" },
+    });
+
+    return { isNewBook };
+  });
 }

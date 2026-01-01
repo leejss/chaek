@@ -16,9 +16,6 @@ import { summaryV1 } from "../specs/summary";
 import { tocV1 } from "../specs/toc";
 import { registry } from "./registry";
 
-/**
- * AI 생성을 위한 설정 타입
- */
 export interface GenerationSettings {
   provider?: AIProvider;
   model?: string;
@@ -162,13 +159,8 @@ export class Orchestrator {
     return registry.runSpec(
       "book.chapter.outline@v1",
       {
-        toc: params.toc,
-        chapterTitle: params.chapterTitle,
-        chapterNumber: params.chapterNumber,
-        sourceText: params.sourceText,
-        plan: params.bookPlan,
+        ...params,
         language: params.settings.language || "Korean",
-        userPreference: params.settings.userPreference,
       },
       model,
       "object",

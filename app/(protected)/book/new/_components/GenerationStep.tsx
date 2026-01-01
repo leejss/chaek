@@ -4,7 +4,8 @@ import { useState } from "react";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
 import { GenerationProgress } from "@/lib/book/types";
-import { useBookStore } from "@/lib/book/bookContext";
+import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
+import { useShallow } from "zustand/react/shallow";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 
 function getPhaseLabel(progress: GenerationProgress): string {
@@ -25,25 +26,26 @@ function getPhaseLabel(progress: GenerationProgress): string {
 }
 
 export default function GenerationStep() {
-  const chapters = useBookStore((state) => state.chapters);
-  const viewingChapterIndex = useBookStore(
-    (state) => state.viewingChapterIndex,
+  const {
+    chapters,
+    viewingChapterIndex,
+    currentChapterContent,
+    tableOfContents,
+    currentChapterIndex,
+    generationProgress,
+    awaitingChapterDecision,
+  } = useBookStore(
+    useShallow((state) => ({
+      chapters: state.chapters,
+      viewingChapterIndex: state.viewingChapterIndex,
+      currentChapterContent: state.currentChapterContent,
+      tableOfContents: state.tableOfContents,
+      currentChapterIndex: state.currentChapterIndex,
+      generationProgress: state.generationProgress || { phase: "idle" },
+      awaitingChapterDecision: state.awaitingChapterDecision,
+    })),
   );
-  const currentChapterContent = useBookStore(
-    (state) => state.currentChapterContent,
-  );
-  const tableOfContents = useBookStore((state) => state.tableOfContents);
-  const currentChapterIndex = useBookStore(
-    (state) => state.currentChapterIndex,
-  );
-  const generationProgress = useBookStore(
-    (state) => state.generationProgress,
-  ) || { phase: "idle" };
-  const awaitingChapterDecision = useBookStore(
-    (state) => state.awaitingChapterDecision,
-  );
-  const { confirmChapter, cancelGeneration, goToPrevChapter, goToNextChapter } =
-    useBookStore((state) => state.actions);
+
   const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
   const [isCopied, setIsCopied] = useState(false);
@@ -108,6 +110,7 @@ export default function GenerationStep() {
     URL.revokeObjectURL(url);
   };
 
+  console.log("currentChapterContent", currentChapterContent);
   return (
     <div className="max-w-3xl mx-auto pb-32">
       {/* Header with status */}
@@ -126,7 +129,7 @@ export default function GenerationStep() {
       {totalPages > 0 && (
         <div className="flex items-center justify-between mb-4 px-2">
           <button
-            onClick={goToPrevChapter}
+            onClick={bookStoreActions.goToPrevChapter}
             disabled={!canGoPrev}
             className="flex items-center gap-1 px-3 py-2 text-sm text-neutral-500 hover:text-brand-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
@@ -150,7 +153,7 @@ export default function GenerationStep() {
           </div>
 
           <button
-            onClick={goToNextChapter}
+            onClick={bookStoreActions.goToNextChapter}
             disabled={!canGoNext}
             className="flex items-center gap-1 px-3 py-2 text-sm text-neutral-500 hover:text-brand-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
@@ -241,7 +244,7 @@ export default function GenerationStep() {
       {/* Content */}
       <div className="bg-background min-h-[500px]">
         <MarkdownRenderer
-          content={displayContent}
+          content={currentChapterContent}
           isStreaming={isViewingCurrentChapter && !isReview}
         />
       </div>
@@ -252,16 +255,18 @@ export default function GenerationStep() {
           <div className="max-w-3xl mx-auto flex gap-3">
             <Button
               variant="outline"
-              onClick={cancelGeneration}
+              onClick={bookStoreActions.cancelGeneration}
               className="flex-1"
-              disabled={!cancelGeneration}
+              disabled={!bookStoreActions.cancelGeneration}
             >
               Cancel
             </Button>
             <Button
-              onClick={confirmChapter}
+              onClick={bookStoreActions.confirmChapter}
               className="flex-1"
-              disabled={!awaitingChapterDecision || !confirmChapter}
+              disabled={
+                !awaitingChapterDecision || !bookStoreActions.confirmChapter
+              }
             >
               Confirm Chapter
             </Button>
