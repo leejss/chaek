@@ -13,6 +13,7 @@ import { devtools } from "zustand/middleware";
 export interface GenerationContextState {
   savedBookId: string | null;
   bookTitle: string;
+  bookStatus: "draft" | "generating" | "completed" | "failed";
   sourceText: string;
   tableOfContents: string[];
   generationSettings: BookGenerationSettings;
@@ -64,8 +65,10 @@ export type GenerationStoreState = GenerationContextState & {
 export type GenerationInit = {
   bookId: string;
   title: string;
+  bookStatus?: "draft" | "generating" | "completed" | "failed";
   content: string;
   tableOfContents: string[];
+  chapters?: ChapterContent[];
   sourceText?: string;
   generationSettings?: Partial<BookGenerationSettings>;
   bookPlan?: PlanOutput;
@@ -86,6 +89,7 @@ const createInitialSettings = (
 const initialState: GenerationContextState = {
   savedBookId: null,
   bookTitle: "",
+  bookStatus: "draft",
   sourceText: "",
   tableOfContents: [],
   generationSettings: createInitialSettings(),
@@ -125,8 +129,10 @@ export const createGenerationStore = (init?: GenerationInit) => {
             {
               savedBookId: payload.bookId,
               bookTitle: payload.title,
+              bookStatus: payload.bookStatus || "draft",
               content: payload.content || "",
               streamingContent: payload.content || "",
+              chapters: payload.chapters || [],
               tableOfContents: payload.tableOfContents || [],
               sourceText: payload.sourceText || "",
               generationSettings: createInitialSettings(
@@ -321,8 +327,10 @@ export const createGenerationStore = (init?: GenerationInit) => {
           ...base,
           savedBookId: init.bookId,
           bookTitle: init.title,
+          bookStatus: init.bookStatus || "draft",
           content: init.content || "",
           streamingContent: init.content || "",
+          chapters: init.chapters || [],
           tableOfContents: init.tableOfContents || [],
           sourceText: init.sourceText || "",
           generationSettings: createInitialSettings(init.generationSettings),

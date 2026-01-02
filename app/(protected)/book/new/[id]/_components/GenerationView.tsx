@@ -1,6 +1,5 @@
-"use client";
-
 import { useRef, useState, useCallback } from "react";
+import { Play } from "lucide-react";
 import {
   useGenerationStore,
   useGenerationStoreApi,
@@ -10,7 +9,7 @@ import { ClaudeModel, GeminiModel, Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
-import { updateBookAction } from "@/lib/actions/book";
+import { updateBookAction, saveChapterAction } from "@/lib/actions/book";
 import GenerationStep from "../../_components/GenerationStep";
 import Button from "../../../_components/Button";
 import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration";
@@ -22,14 +21,17 @@ export default function GenerationView() {
     (state) => state.generationProgress,
   );
   const bookTitle = useGenerationStore((state) => state.bookTitle);
+  const bookStatus = useGenerationStore((state) => state.bookStatus);
   const tableOfContents = useGenerationStore((state) => state.tableOfContents);
   const sourceText = useGenerationStore((state) => state.sourceText);
+  const chapters = useGenerationStore((state) => state.chapters);
   const generationSettings = useGenerationStore(
     (state) => state.generationSettings,
   );
   const savedBookId = useGenerationStore((state) => state.savedBookId);
   const abortRef = useRef<AbortController | null>(null);
   const [isDeductingCredits, setIsDeductingCredits] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const clearError = useCallback(() => {
     actions.updateGenerationProgress({ error: null });
@@ -57,23 +59,28 @@ export default function GenerationView() {
       return;
     }
 
-    if (isDeductingCredits) return;
+    if (isProcessing) return;
 
     abortRef.current = new AbortController();
-    setIsDeductingCredits(true);
+    setIsProcessing(true);
     clearError();
 
     try {
-      await deductCreditsAction(savedBookId);
-
-      actions.setupGeneration(tableOfContents.length);
-      actions.updateGenerationProgress({
-        phase: "planning",
-        totalChapters: tableOfContents.length,
-        currentChapter: 1,
-        currentSection: 0,
-        totalSections: 0,
-      });
+      // 1. Deduct credits only if starting for the first time
+      if (chapters.length === 0) {
+        setIsDeductingCredits(true);
+        await deductCreditsAction(savedBookId);
+        setIsDeductingCredits(false);
+        
+        actions.setupGeneration(tableOfContents.length);
+      } else {
+        // Prepare for resume: update progress phase
+        actions.updateGenerationProgress({
+          phase: "planning",
+          totalChapters: tableOfContents.length,
+          currentChapter: chapters.length + 1,
+        });
+      }
 
       const settings: BookSettings = {
         language: generationSettings.language,
@@ -81,19 +88,26 @@ export default function GenerationView() {
         userPreference: generationSettings.userPreference,
       };
 
-      const bookPlan = await generatePlanAction({
-        bookId: savedBookId,
-        sourceText: sourceText || "",
-        toc: tableOfContents,
-        provider: generationSettings.provider,
-        model: generationSettings.model as GeminiModel | ClaudeModel,
-        settings,
-      });
+      // 2. Planning (Ensure plan exists)
+      let bookPlan = storeApi.getState().bookPlan;
+      if (!bookPlan) {
+        actions.updateGenerationProgress({ phase: "planning" });
+        bookPlan = await generatePlanAction({
+          bookId: savedBookId,
+          sourceText: sourceText || "",
+          toc: tableOfContents,
+          provider: generationSettings.provider,
+          model: generationSettings.model as GeminiModel | ClaudeModel,
+          settings,
+        });
+        actions.setBookPlan(bookPlan);
+      }
 
-      actions.setBookPlan(bookPlan);
+      // 3. Generation Loop (Start from the next missing chapter)
+      const startChapterNum = chapters.length + 1;
 
       for (
-        let chapterNum = 1;
+        let chapterNum = startChapterNum;
         chapterNum <= tableOfContents.length;
         chapterNum++
       ) {
@@ -110,6 +124,7 @@ export default function GenerationView() {
 
         const chapterTitle = tableOfContents[chapterNum - 1];
 
+        // 3a. Generate Outline
         const chapterOutline = await generateOutlineAction({
           toc: tableOfContents,
           chapterNumber: chapterNum,
@@ -120,13 +135,13 @@ export default function GenerationView() {
           settings,
         });
 
+        // Add Chapter Header to draft
         {
-          const { streamingContent, currentChapterContent } =
-            storeApi.getState();
+          const { streamingContent } = storeApi.getState();
           const chapterHeader = `\n\n## ${chapterTitle}\n\n`;
           actions.updateDraft({
             streamingContent: streamingContent + chapterHeader,
-            currentChapterContent: currentChapterContent + chapterHeader,
+            currentChapterContent: chapterHeader,
           });
         }
 
@@ -137,6 +152,7 @@ export default function GenerationView() {
           currentSection: 0,
         });
 
+        // 3b. Generate Sections
         for (
           let sectionIndex = 0;
           sectionIndex < chapterOutline.sections.length;
@@ -175,13 +191,22 @@ export default function GenerationView() {
           });
         }
 
-        const { currentChapterContent, streamingContent } = storeApi.getState();
+        // 3c. Finish and Save Chapter to DB
+        const { currentChapterContent } = storeApi.getState();
+        
+        // Save to DB immediately after each chapter
+        await saveChapterAction(
+          savedBookId,
+          chapterNum,
+          chapterTitle,
+          currentChapterContent
+        );
+
+        // Update local store
         actions.finishChapter(chapterTitle, currentChapterContent);
+        
+        const { streamingContent } = storeApi.getState();
         actions.setContent(streamingContent);
-        await updateBookAction(savedBookId, {
-          content: streamingContent,
-          status: "generating",
-        });
 
         actions.updateGenerationProgress({
           currentChapter: chapterNum + 1,
@@ -191,11 +216,9 @@ export default function GenerationView() {
         });
       }
 
+      // 4. Finalize Book
       actions.completeGeneration();
-      const { streamingContent } = storeApi.getState();
-      actions.setContent(streamingContent);
       await updateBookAction(savedBookId, {
-        content: streamingContent,
         status: "completed",
       });
 
@@ -211,12 +234,13 @@ export default function GenerationView() {
       });
       actions.failGeneration(message);
 
-      if (savedBookId) {
+      if (savedBookId && !abortRef.current?.signal.aborted) {
         await updateBookAction(savedBookId, {
           status: "failed",
         });
       }
     } finally {
+      setIsProcessing(false);
       setIsDeductingCredits(false);
       abortRef.current = null;
     }
@@ -232,6 +256,7 @@ export default function GenerationView() {
     generationProgress.phase !== "completed";
 
   const isCompleted = generationProgress.phase === "completed";
+  const isResumable = bookStatus === "generating" || bookStatus === "failed";
 
   if (isCompleted) {
     return (
@@ -312,27 +337,42 @@ export default function GenerationView() {
           차례 (Table of Contents)
         </h3>
         <div className="space-y-3">
-          {tableOfContents.map((chapter, idx) => (
-            <div
-              key={idx}
-              className="flex items-baseline gap-4 text-base p-2 hover:bg-neutral-50 rounded-lg transition-colors"
-            >
-              <span className="font-bold text-neutral-400 w-6 text-right">
-                {idx + 1}.
-              </span>
-              <span className="text-foreground font-medium">{chapter}</span>
-            </div>
-          ))}
+          {tableOfContents.map((chapter, idx) => {
+            const isFinished = chapters.some(c => c.chapterNumber === idx + 1);
+            return (
+              <div
+                key={idx}
+                className={`flex items-baseline gap-4 text-base p-2 rounded-lg transition-colors ${
+                  isFinished ? "bg-green-50/50" : "hover:bg-neutral-50"
+                }`}
+              >
+                <span className={`font-bold w-6 text-right ${isFinished ? "text-green-500" : "text-neutral-400"}`}>
+                  {isFinished ? "✓" : `${idx + 1}.`}
+                </span>
+                <span className={`font-medium ${isFinished ? "text-green-700" : "text-foreground"}`}>
+                  {chapter}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="mt-8">
         <Button
           onClick={handleStart}
-          disabled={isDeductingCredits}
-          className="w-full h-14 text-lg font-semibold"
+          disabled={isProcessing}
+          className={`w-full h-14 text-lg font-semibold ${
+            isResumable ? "bg-brand-600 hover:bg-brand-700 text-white" : ""
+          }`}
         >
-          {isDeductingCredits ? "크레딧 차감 중..." : "책 생성 시작하기"}
+          {isDeductingCredits 
+            ? "크레딧 차감 중..." 
+            : isProcessing 
+              ? "처리 중..." 
+              : isResumable 
+                ? "생성 재개하기" 
+                : "책 생성 시작하기"}
         </Button>
       </div>
 
