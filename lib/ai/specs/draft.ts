@@ -1,12 +1,17 @@
 import { PromptSpec } from "../core/types";
 import { PlanOutput } from "./plan";
 
+export type Section = {
+  title: string;
+  summary: string;
+};
+
 export type DraftInput = {
   chapterNumber: number;
   chapterTitle: string;
-  chapterOutline: Array<{ title: string; summary: string }>;
+  chapterOutline: Section[];
   sectionIndex: number;
-  previousSections: Array<{ title: string; summary: string }>;
+  previousSections: Section[];
   language: string;
   userPreference?: string;
   plan: PlanOutput;
@@ -29,30 +34,8 @@ You keep terminology consistent across chapters and maintain a cohesive narrativ
 </role>
 `.trim();
 
-export const draftV1: PromptSpec<DraftInput, void> = {
-  id: "book.chapter.draft",
-  version: "v1",
-  kind: "stream",
-  buildMessages: (input) => {
-    const currentSection = input.chapterOutline[input.sectionIndex];
-    if (!currentSection) throw new Error("Section not found");
-
-    const outlineText = input.chapterOutline
-      .map((s, i) => `${i + 1}. ${s.title}: ${s.summary}`)
-      .join("\n");
-
-    const previousText =
-      input.previousSections.length > 0
-        ? input.previousSections
-            .map((s) => `- ${s.title}: ${s.summary}`)
-            .join("\n")
-        : "(This is the first section)";
-
-    return [
-      {
-        role: "system",
-        content: `${CHAPTER_ROLE}
-
+function createInstructions(input: DraftInput): string {
+  return `
 <instructions>
 1. Write ONLY the specified section content in Markdown.
 2. **Heading Rule**:
@@ -67,44 +50,88 @@ export const draftV1: PromptSpec<DraftInput, void> = {
 8. Target 300-600 words per section.
 9. The output MUST be in ${input.language}.
 </instructions>
-`.trim(),
+`.trim();
+}
+
+function createBookPlanContext(plan: PlanOutput): string {
+  return `
+<book_plan_context>
+Writing Style: ${plan.writingStyle}
+Key Themes: ${plan.keyThemes.join(", ")}
+Target Audience: ${plan.targetAudience}
+</book_plan_context>
+`.trim();
+}
+
+function createChapterContext(chapterNumber: number, chapterTitle: string): string {
+  return `
+<chapter_context>
+Chapter ${chapterNumber}: ${chapterTitle}
+</chapter_context>
+`.trim();
+}
+
+function createChapterOutline(outline: Section[]): string {
+  return `
+<chapter_outline>
+${outline.map((s, i) => `${i + 1}. ${s.title}: ${s.summary}`).join("\n")}
+</chapter_outline>
+`.trim();
+}
+
+function createPreviousSectionsSummary(previousSections: Section[]): string {
+  const text = previousSections.length > 0
+    ? previousSections.map((s) => `- ${s.title}: ${s.summary}`).join("\n")
+    : "(This is the first section)";
+  return `
+<previous_sections_summary>
+${text}
+</previous_sections_summary>
+`.trim();
+}
+
+function createUserPreferences(userPreference: string): string {
+  return `
+<user_preferences>
+${userPreference}
+</user_preferences>
+`.trim();
+}
+
+function createTask(title: string, summary: string): string {
+  return `
+<task>
+Write the content for section "${title}":
+${summary}
+</task>
+`.trim();
+}
+
+export const draftV1: PromptSpec<DraftInput, void> = {
+  id: "book.chapter.draft",
+  version: "v1",
+  kind: "stream",
+  buildMessages: (input) => {
+    const currentSection = input.chapterOutline[input.sectionIndex];
+    if (!currentSection) throw new Error("Section not found");
+
+    return [
+      {
+        role: "system",
+        content: `${CHAPTER_ROLE}
+
+${createInstructions(input)}`.trim(),
       },
       {
         role: "user",
-        content: `
-${
-  input.plan
-    ? `<book_plan_context>
-Writing Style: ${input.plan.writingStyle}
-Key Themes: ${input.plan.keyThemes.join(", ")}
-Target Audience: ${input.plan.targetAudience}
-</book_plan_context>`
-    : ""
-}
-
-<chapter_context>
-Chapter ${input.chapterNumber}: ${input.chapterTitle}
-</chapter_context>
-
-<chapter_outline>
-${outlineText}
-</chapter_outline>
-
-<previous_sections_summary>
-${previousText}
-</previous_sections_summary>
-
-${
-  input.userPreference
-    ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
-    : ""
-}
-
-<task>
-Write the content for section "${currentSection.title}":
-${currentSection.summary}
-</task>
-`.trim(),
+        content: [
+          input.plan ? createBookPlanContext(input.plan) : "",
+          createChapterContext(input.chapterNumber, input.chapterTitle),
+          createChapterOutline(input.chapterOutline),
+          createPreviousSectionsSummary(input.previousSections),
+          input.userPreference ? createUserPreferences(input.userPreference) : "",
+          createTask(currentSection.title, currentSection.summary),
+        ].filter(Boolean).join("\n\n").trim(),
       },
     ];
   },

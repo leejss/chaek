@@ -42,16 +42,8 @@ Your outlines ensure logical flow, complete coverage, and clear learning progres
 </role>
 `.trim();
 
-export const outlineV1: PromptSpec<OutlineInput, ChapterOutlineOutput> = {
-  id: "book.chapter.outline",
-  version: "v1",
-  kind: "object",
-  schema: ChapterOutlineSchema,
-  buildMessages: (input) => [
-    {
-      role: "system",
-      content: `${OUTLINE_ROLE}
-
+function createOutlineInstructions(input: OutlineInput): string {
+  return `
 <instructions>
 1. Create a detailed outline for the specified chapter.
 2. Break the chapter into 3-6 logical sections.
@@ -63,45 +55,74 @@ export const outlineV1: PromptSpec<OutlineInput, ChapterOutlineOutput> = {
 6. Consider what came before and what comes after this chapter.
 7. The output MUST be in ${input.language}.
 </instructions>
-`.trim(),
+`.trim();
+}
+
+function createTableOfContents(toc: string[]): string {
+  return `
+<table_of_contents>
+${toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+</table_of_contents>
+`.trim();
+}
+
+function createSourceText(sourceText: string): string {
+  return `
+<source_text>
+${sourceText}
+</source_text>
+`.trim();
+}
+
+function createBookPlanContext(plan: PlanOutput, chapterNumber: number): string {
+  return `
+<book_plan_context>
+Target Audience: ${plan.targetAudience}
+Key Themes: ${plan.keyThemes.join(", ")}
+Chapter Guidelines: ${
+    plan.chapterGuidelines.find((g) => g.chapterIndex === chapterNumber - 1)?.guidelines || "N/A"
+  }
+</book_plan_context>
+`.trim();
+}
+
+function createUserPreferences(userPreference: string): string {
+  return `
+<user_preferences>
+${userPreference}
+</user_preferences>
+`.trim();
+}
+
+function createTask(chapterNumber: number, chapterTitle: string): string {
+  return `
+<task>
+Create a detailed outline for CHAPTER ${chapterNumber}: ${chapterTitle}
+</task>
+`.trim();
+}
+
+export const outlineV1: PromptSpec<OutlineInput, ChapterOutlineOutput> = {
+  id: "book.chapter.outline",
+  version: "v1",
+  kind: "object",
+  schema: ChapterOutlineSchema,
+  buildMessages: (input) => [
+    {
+      role: "system",
+      content: `${OUTLINE_ROLE}
+
+${createOutlineInstructions(input)}`.trim(),
     },
     {
       role: "user",
-      content: `
-<table_of_contents>
-${input.toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
-</table_of_contents>
-
-<source_text>
-${input.sourceText}
-</source_text>
-
-${
-  input.plan
-    ? `<book_plan_context>
-Target Audience: ${input.plan.targetAudience}
-Key Themes: ${input.plan.keyThemes.join(", ")}
-Chapter Guidelines: ${
-        input.plan.chapterGuidelines.find(
-          (g) => g.chapterIndex === input.chapterNumber - 1,
-        )?.guidelines || "N/A"
-      }
-</book_plan_context>`
-    : ""
-}
-
-${
-  input.userPreference
-    ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
-    : ""
-}
-
-<task>
-Create a detailed outline for CHAPTER ${input.chapterNumber}: ${
-        input.chapterTitle
-      }
-</task>
-`.trim(),
+      content: [
+        createTableOfContents(input.toc),
+        createSourceText(input.sourceText),
+        input.plan ? createBookPlanContext(input.plan, input.chapterNumber) : "",
+        input.userPreference ? createUserPreferences(input.userPreference) : "",
+        createTask(input.chapterNumber, input.chapterTitle),
+      ].filter(Boolean).join("\n\n").trim(),
     },
   ],
 };

@@ -131,7 +131,7 @@ export async function generateChapterOutline(params: {
   );
 }
 
-export async function streamSectionDraft(params: {
+export async function streamSection(params: {
   chapterNumber: number;
   chapterTitle: string;
   chapterOutline: Array<{ title: string; summary: string }>;
@@ -158,7 +158,7 @@ export async function streamSectionDraft(params: {
   );
 }
 
-export async function streamSectionDraftDev(params: {
+export async function streamSectionDev(params: {
   chapterNumber: number;
   chapterTitle: string;
   chapterOutline: Array<{ title: string; summary: string }>;
@@ -231,8 +231,8 @@ export async function generateChapterSummary(
 
 export const ai = {
   generateChapterOutline,
-  streamSectionDraft,
-  streamSectionDraftDev,
+  streamSectionDraft: streamSection,
+  streamSectionDraftDev: streamSectionDev,
   generateSectionDraftText,
   generateChapterSummary,
 };

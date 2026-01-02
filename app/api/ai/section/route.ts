@@ -1,4 +1,4 @@
-import { ai } from "@/lib/ai/core/ai";
+import { ai, streamSection } from "@/lib/ai/core/ai";
 import { AIProvider, Section } from "@/lib/book/types";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data, sectionRequestSchema);
 
-    const result = await ai.streamSectionDraft({
+    const result = await streamSection({
       chapterNumber,
       chapterTitle,
       chapterOutline: chapterOutline as Section[],

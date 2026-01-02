@@ -33,25 +33,17 @@ Your priorities are: logical progression, accurate scope, and reader-friendly ch
 </role>
 `.trim();
 
-export const tocV1: PromptSpec<TocInput, TocOutput> = {
-  id: "book.toc",
-  version: "v1",
-  kind: "object",
-  schema: TocSchema,
-  buildMessages: (input) => [
-    {
-      role: "system",
-      content: `${TOC_ROLE}
-
+function createTocInstructions(input: TocInput): string {
+  return `
 <instructions>
 1. Analyze the <source_text> to understand its core concepts, key ideas, and information structure.
 2. Create a compelling book title that captures the essence of the content and appeals to the target audience.
 3. Create ${
-        {
-          true: `exactly ${input.minChapters}`,
-          false: `${input.minChapters}-${input.maxChapters}`,
-        }[String(input.minChapters === input.maxChapters) as "true" | "false"]
-      } chapter titles that form a coherent learning path for readers unfamiliar with the topic.
+    {
+      true: `exactly ${input.minChapters}`,
+      false: `${input.minChapters}-${input.maxChapters}`,
+    }[String(input.minChapters === input.maxChapters) as "true" | "false"]
+  } chapter titles that form a coherent learning path for readers unfamiliar with the topic.
    - The output MUST contain exactly the same number of items as requested.
 4. Organize chapters in a logical progression:
    - Start with foundational concepts and definitions (Overview, Introduction, Basics)
@@ -64,21 +56,43 @@ export const tocV1: PromptSpec<TocInput, TocOutput> = {
 8. Ensure the progression is logical and helps readers build understanding step by step.
 9. The output MUST be in ${input.language}.
 </instructions>
-`.trim(),
+`.trim();
+}
+
+function createSourceText(sourceText: string): string {
+  return `
+<source_text>
+${sourceText}
+</source_text>
+`.trim();
+}
+
+function createUserPreferences(userPreference: string): string {
+  return `
+<user_preferences>
+${userPreference}
+</user_preferences>
+`.trim();
+}
+
+export const tocV1: PromptSpec<TocInput, TocOutput> = {
+  id: "book.toc",
+  version: "v1",
+  kind: "object",
+  schema: TocSchema,
+  buildMessages: (input) => [
+    {
+      role: "system",
+      content: `${TOC_ROLE}
+
+${createTocInstructions(input)}`.trim(),
     },
     {
       role: "user",
-      content: `
-<source_text>
-${input.sourceText}
-</source_text>
-
-${
-  input.userPreference
-    ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
-    : ""
-}
-`.trim(),
+      content: [
+        createSourceText(input.sourceText),
+        input.userPreference ? createUserPreferences(input.userPreference) : "",
+      ].filter(Boolean).join("\n\n").trim(),
     },
   ],
 };

@@ -47,6 +47,44 @@ This blueprint will guide the detailed writing of each chapter to ensure consist
 </role>
 `.trim();
 
+function createPlanInstructions(input: PlanInput): string {
+  return `
+<instructions>
+1. Analyze the <source_text> and <table_of_contents>.
+2. Define the Target Audience and Writing Style (Tone/Voice).
+3. Identify Key Themes that should weave through the book.
+4. Provide specific guidelines for EACH chapter in the <table_of_contents> to ensure they cover the necessary breadth and depth without overlapping unnecessarily.
+5. The output MUST be in ${input.language}.
+6. Respond with a VALID JSON object only (no markdown, no CDATA, no prose) matching the schema: { "targetAudience": string, "writingStyle": string, "keyThemes": string[], "chapterGuidelines": [{ "chapterIndex": number, "title": string, "guidelines": string }] }. Arrays must be real arrays, not embedded in strings.
+</instructions>
+`.trim();
+}
+
+function createSourceText(sourceText: string): string {
+  return `
+<source_text>
+${sourceText}
+</source_text>
+`.trim();
+}
+
+function createTableOfContents(toc: string[]): string {
+  return `
+<table_of_contents>
+${toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+</table_of_contents>
+`.trim();
+}
+
+function createRequirements(language: string, tocLength: number): string {
+  return `
+<requirements>
+- Language: ${language}
+- Expected Chapter Guidelines: ${tocLength}
+</requirements>
+`.trim();
+}
+
 export const planV1: PromptSpec<PlanInput, PlanOutput> = {
   id: "book.plan",
   version: "v1",
@@ -57,32 +95,15 @@ export const planV1: PromptSpec<PlanInput, PlanOutput> = {
       role: "system",
       content: `${PLAN_ROLE}
 
-<instructions>
-1. Analyze the <source_text> and <table_of_contents>.
-2. Define the Target Audience and Writing Style (Tone/Voice).
-3. Identify Key Themes that should weave through the book.
-4. Provide specific guidelines for EACH chapter in the <table_of_contents> to ensure they cover the necessary breadth and depth without overlapping unnecessarily.
-5. The output MUST be in ${input.language}.
-6. Respond with a VALID JSON object only (no markdown, no CDATA, no prose) matching the schema: { "targetAudience": string, "writingStyle": string, "keyThemes": string[], "chapterGuidelines": [{ "chapterIndex": number, "title": string, "guidelines": string }] }. Arrays must be real arrays, not embedded in strings.
-</instructions>
-`.trim(),
+${createPlanInstructions(input)}`.trim(),
     },
     {
       role: "user",
-      content: `
-<source_text>
-${input.sourceText}
-</source_text>
-
-<table_of_contents>
-${input.toc.map((t, i) => `${i + 1}. ${t}`).join("\n")}
-</table_of_contents>
-
-<requirements>
-- Language: ${input.language}
-- Expected Chapter Guidelines: ${input.toc.length}
-</requirements>
-`.trim(),
+      content: [
+        createSourceText(input.sourceText),
+        createTableOfContents(input.toc),
+        createRequirements(input.language, input.toc.length),
+      ].join("\n\n").trim(),
     },
   ],
 };

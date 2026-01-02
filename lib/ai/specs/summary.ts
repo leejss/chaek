@@ -31,6 +31,43 @@ declare module "../core/types" {
   }
 }
 
+const SUMMARY_ROLE = `
+<role>
+You are an expert editor specializing in content continuity and summarization.
+</role>
+`.trim();
+
+function createSummaryInstructions(): string {
+  return `
+<instructions>
+1. Summarize the provided <final_text> to help avoid repetition in later chapters.
+2. Capture unique points, decisions, and definitions.
+3. Avoid fluff and maintain conciseness.
+4. Return the result in the specified JSON format only.
+</instructions>
+`.trim();
+}
+
+function createChapterId(chapterId: string): string {
+  return `<chapter_id>${chapterId}</chapter_id>`;
+}
+
+function createTask(): string {
+  return `
+<task>
+Summarize this chapter for continuity control.
+</task>
+`.trim();
+}
+
+function createFinalText(finalText: string): string {
+  return `
+<final_text>
+${finalText}
+</final_text>
+`.trim();
+}
+
 export const summaryV1: PromptSpec<SummaryInput, ChapterSummaryOutput> = {
   id: "book.chapter.summary",
   version: "v1",
@@ -39,32 +76,17 @@ export const summaryV1: PromptSpec<SummaryInput, ChapterSummaryOutput> = {
   buildMessages: ({ chapterId, finalText }) => [
     {
       role: "system",
-      content: `
-<role>
-You are an expert editor specializing in content continuity and summarization.
-</role>
+      content: `${SUMMARY_ROLE}
 
-<instructions>
-1. Summarize the provided <final_text> to help avoid repetition in later chapters.
-2. Capture unique points, decisions, and definitions.
-3. Avoid fluff and maintain conciseness.
-4. Return the result in the specified JSON format only.
-</instructions>
-`.trim(),
+${createSummaryInstructions()}`.trim(),
     },
     {
       role: "user",
-      content: `
-<chapter_id>${chapterId}</chapter_id>
-
-<task>
-Summarize this chapter for continuity control.
-</task>
-
-<final_text>
-${finalText}
-</final_text>
-`.trim(),
+      content: [
+        createChapterId(chapterId),
+        createTask(),
+        createFinalText(finalText),
+      ].join("\n\n").trim(),
     },
   ],
 };
