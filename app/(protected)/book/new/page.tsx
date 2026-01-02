@@ -15,20 +15,12 @@ import TOCReviewStep from "./_components/TOCReviewStep";
 import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import Link from "next/link";
 
-const FLOW_STEPS = [
-  "settings",
-  "draft",
-  "toc_review",
-  "generating",
-  "completed",
-] as const;
+const FLOW_STEPS = ["settings", "draft", "toc_review"] as const;
 
 const STEP_LABELS: Record<(typeof FLOW_STEPS)[number], string> = {
   settings: "Settings",
   draft: "Source Input",
   toc_review: "Review Table of Contents",
-  generating: "Generating Book",
-  completed: "Completed",
 };
 
 function getStepStatus(
@@ -247,10 +239,6 @@ export default function CreateBookPage() {
           />
         )}
         {flowStatus === "toc_review" && <TOCReviewStep />}
-        {isGenerating && generationProgress.phase !== "plan" && (
-          <GenerationStep />
-        )}
-        {flowStatus === "completed" && <CompletedStep />}
       </div>
 
       <StatusOverview />

@@ -9,13 +9,6 @@ import { BookSettings } from "@/lib/book/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
 import { authFetch } from "@/lib/api";
 
-type SaveBookParams = {
-  title: string;
-  content: string;
-  tableOfContents: string[];
-  sourceText?: string;
-};
-
 import { z } from "zod";
 import { ChapterOutlineSchema } from "./specs/outline";
 
@@ -128,25 +121,6 @@ export async function fetchOutline(params: {
 
   const result = await response.json();
   return OutlineResponseSchema.parse(result);
-}
-
-export async function saveBookRequest(params: SaveBookParams) {
-  const response = await authFetch("/api/book/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
-
-  const data = (await response.json()) as {
-    ok?: boolean;
-    bookId?: string;
-    error?: string;
-  };
-  if (!response.ok || !data.ok || !data.bookId) {
-    throw new Error(data.error || "Failed to save book");
-  }
-
-  return data.bookId;
 }
 
 export async function* fetchStreamSection(params: {

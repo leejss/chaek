@@ -112,60 +112,6 @@ export const useBookStore = create(
         return false;
       };
 
-      const saveBook = async () => {
-        const {
-          content,
-          tableOfContents,
-          sourceText,
-          bookTitle,
-          isSavingBook,
-        } = get();
-        if (isSavingBook) return;
-
-        const title = bookTitle?.trim() || "Untitled Book";
-
-        set({ isSavingBook: true, error: null }, false, "book/saveBook_start");
-        try {
-          const res = await authFetch("/api/book/save", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              title,
-              content,
-              tableOfContents,
-              sourceText,
-            }),
-          });
-
-          const json = (await res.json()) as {
-            ok?: boolean;
-            bookId?: string;
-            error?: string;
-          };
-          if (!res.ok || !json.ok || !json.bookId) {
-            throw new Error(json.error || "책 저장에 실패했습니다.");
-          }
-
-          set(
-            { savedBookId: json.bookId, isSavingBook: false },
-            false,
-            "book/saveBook_success",
-          );
-        } catch (error) {
-          console.error("Failed to save book:", error);
-          set(
-            {
-              isSavingBook: false,
-              error: "책 저장 중 오류가 발생했습니다.",
-            },
-            false,
-            "book/saveBook_error",
-          );
-        }
-      };
-
       const actions = {
         startNewBook: () => {
           resolveChapterDecision("cancel");
@@ -499,8 +445,6 @@ export const useBookStore = create(
             "book/completeGeneration",
           );
         },
-
-        saveBook,
       };
 
       return { actions };

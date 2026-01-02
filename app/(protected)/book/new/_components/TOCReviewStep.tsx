@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { useBookStore } from "@/lib/book/bookContext";
-import { authFetch } from "@/lib/api";
+import { saveBook } from "@/lib/db/fetch";
 import { ClaudeModel, GeminiModel } from "@/lib/book/types";
 import {
   FileText,
@@ -33,7 +33,6 @@ export default function TOCReviewStep() {
   const [tempTOC, setTempTOC] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const selectedProvider = aiConfiguration.content.provider;
   const selectedModel = aiConfiguration.content.model;
 
   const handleEditStart = () => {
@@ -73,23 +72,11 @@ export default function TOCReviewStep() {
 
     setIsSaving(true);
     try {
-      const bookId = crypto.randomUUID();
-
-      const res = await authFetch("/api/book/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookId,
-          title: bookTitle || "Untitled Book",
-          tableOfContents,
-          sourceText: sourceText || "",
-        }),
+      const bookId = await saveBook({
+        title: bookTitle || "Untitled Book",
+        tableOfContents,
+        sourceText: sourceText || "",
       });
-
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || "책 저장에 실패했습니다.");
-      }
 
       router.push(`/book/new/${bookId}`);
     } catch (err) {

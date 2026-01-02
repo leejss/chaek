@@ -41,7 +41,7 @@ export default function StatusOverview(props: StatusOverviewProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-end p-4 sm:p-8 pointer-events-none">
+    <div className="fixed inset-0 z-100 flex items-end justify-end p-4 sm:p-8 pointer-events-none">
       <div className="w-full max-w-md bg-background border border-neutral-200 shadow-2xl rounded-2xl flex flex-col max-h-[80vh] pointer-events-auto animate-in slide-in-from-right-4 duration-300">
         <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50 rounded-t-2xl">
           <div className="flex items-center gap-2">
@@ -127,7 +127,10 @@ export default function StatusOverview(props: StatusOverviewProps) {
               {tableOfContents.length > 0 ? (
                 <ul className="space-y-2">
                   {tableOfContents.map((item, idx) => (
-                    <li key={idx} className="text-sm text-neutral-700 flex gap-2">
+                    <li
+                      key={idx}
+                      className="text-sm text-neutral-700 flex gap-2"
+                    >
                       <span className="text-neutral-400 font-mono text-xs mt-0.5">
                         {idx + 1}.
                       </span>

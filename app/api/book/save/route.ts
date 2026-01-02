@@ -1,9 +1,20 @@
 import { db } from "@/db";
 import { books } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
+import {
+  readJson,
+  parseAndValidateBody,
+  normalizeToHttpError,
+  httpErrorToResponse,
+} from "@/utils";
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
+
+const requestSchema = z.object({
+  title: z.string().min(1),
+  tableOfContents: z.array(z.string()).optional().default([]),
+  sourceText: z.string().optional().nullable(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,40 +22,19 @@ export async function POST(req: NextRequest) {
 
     const jsonResult = await readJson(req);
     if (!jsonResult.ok) throw jsonResult.error;
-    const body = jsonResult.data as {
-      bookId?: string;
-      title?: unknown;
-      tableOfContents?: unknown;
-      sourceText?: unknown;
-    };
 
-    const title =
-      typeof body.title === "string" && body.title.trim().length > 0
-        ? body.title.trim()
-        : "Untitled Book";
+    const { title, tableOfContents, sourceText } = parseAndValidateBody(
+      jsonResult.data,
+      requestSchema,
+    );
 
-    const toc =
-      Array.isArray(body.tableOfContents) &&
-      body.tableOfContents.every((t) => typeof t === "string")
-        ? (body.tableOfContents as string[])
-        : [];
-
-    const sourceText =
-      typeof body.sourceText === "string" ? body.sourceText : null;
-
-    const bookId =
-      typeof body.bookId === "string" && body.bookId.trim().length > 0
-        ? body.bookId.trim()
-        : crypto.randomUUID();
-
-    await db
+    const result = await db
       .insert(books)
       .values({
-        id: bookId,
         userId,
         title,
         content: "",
-        tableOfContents: toc,
+        tableOfContents,
         sourceText: sourceText ?? undefined,
         status: "draft",
       })
@@ -52,32 +42,24 @@ export async function POST(req: NextRequest) {
         target: books.id,
         set: {
           title,
-          tableOfContents: toc,
+          tableOfContents,
           sourceText: sourceText ?? undefined,
           updatedAt: new Date(),
         },
-      });
-
-    return NextResponse.json({ ok: true, bookId }, { status: 200 });
-  } catch (error) {
-    console.error("[book/save] error:", error);
-
-    const httpError =
-      error instanceof InvalidJsonError
-        ? new HttpError(400, "Invalid JSON")
-        : error instanceof HttpError
-        ? error
-        : null;
-
-    if (httpError) {
-      return NextResponse.json(
-        { ok: false, error: httpError.publicMessage },
-        { status: httpError.status },
-      );
-    }
+      })
+      .returning({ id: books.id });
 
     return NextResponse.json(
-      { ok: false, error: "Internal server error" },
+      { data: { bookId: result[0].id } },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("[book/save] error:", error);
+    const httpError = normalizeToHttpError(error);
+    if (httpError) return httpErrorToResponse(httpError);
+
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

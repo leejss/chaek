@@ -99,7 +99,6 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
     clearError();
 
     try {
-      // Credit 차감
       await fetchDeductCredits(initialBook.id);
 
       setupGeneration(initialBook.id);
