@@ -1,35 +1,29 @@
 "use client";
 
-import { useBookStore } from "@/lib/book/bookContext";
+import { useGenerationStore } from "@/lib/book/generationContext";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import { Loader2 } from "lucide-react";
 
 export default function ChapterContentDisplay() {
-  // Subscribe individually to minimize re-renders on unrelated state changes
-  const viewingChapterIndex = useBookStore((state) => state.viewingChapterIndex);
-  const currentChapterIndex = useBookStore((state) => state.currentChapterIndex);
-  const chapters = useBookStore((state) => state.chapters);
-  
-  // Only this subscription will trigger high-frequency updates
-  const currentChapterContent = useBookStore((state) => state.currentChapterContent);
-  const awaitingChapterDecision = useBookStore((state) => state.awaitingChapterDecision);
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
+  const chapters = useGenerationStore((state) => state.chapters);
+  const currentChapterContent = useGenerationStore((state) => state.currentChapterContent);
+  const awaitingChapterDecision = useGenerationStore((state) => state.awaitingChapterDecision);
 
   const isViewingCurrentGeneration = currentChapterIndex !== null && viewingChapterIndex === currentChapterIndex;
-  
-  // Determine content to display
+
   let contentToDisplay = "";
   let isStreaming = false;
 
   if (isViewingCurrentGeneration) {
     contentToDisplay = currentChapterContent;
-    // Considered streaming until decision is needed or completed
-    isStreaming = !awaitingChapterDecision; 
+    isStreaming = !awaitingChapterDecision;
   } else if (viewingChapterIndex < chapters.length) {
     contentToDisplay = chapters[viewingChapterIndex].content;
     isStreaming = false;
   }
 
-  // Handle empty state during initialization or transition
   if (!contentToDisplay && isViewingCurrentGeneration) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-neutral-400">

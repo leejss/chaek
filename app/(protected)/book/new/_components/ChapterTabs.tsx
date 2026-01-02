@@ -1,15 +1,18 @@
 "use client";
 
-import { useBookStore, bookStoreActions } from "@/lib/book/bookContext";
+import { useGenerationStore } from "@/lib/book/generationContext";
 import { Check, Lock, Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 export default function ChapterTabs() {
-  const tableOfContents = useBookStore((state) => state.tableOfContents);
-  const viewingChapterIndex = useBookStore((state) => state.viewingChapterIndex);
-  const chapters = useBookStore((state) => state.chapters);
-  const currentChapterIndex = useBookStore((state) => state.currentChapterIndex);
-  
+  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const chapters = useGenerationStore((state) => state.chapters);
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
+  const setViewingChapterIndex = useGenerationStore(
+    (state) => state.actions.setViewingChapterIndex,
+  );
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to active tab
@@ -28,7 +31,7 @@ export default function ChapterTabs() {
 
   return (
     <div className="w-full border-b border-neutral-200 bg-white sticky top-0 z-20">
-      <div 
+      <div
         ref={scrollContainerRef}
         className="flex overflow-x-auto no-scrollbar px-4 gap-2 py-3 snap-x"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -45,14 +48,14 @@ export default function ChapterTabs() {
               key={index}
               onClick={() => {
                 if (!isLocked) {
-                  bookStoreActions.setViewingChapterIndex(index);
+                  setViewingChapterIndex(index);
                 }
               }}
               disabled={isLocked}
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all snap-center border
-                ${isActive 
-                  ? "bg-brand-50 border-brand-200 text-brand-700 shadow-sm ring-1 ring-brand-100" 
+                ${isActive
+                  ? "bg-brand-50 border-brand-200 text-brand-700 shadow-sm ring-1 ring-brand-100"
                   : isLocked
                     ? "bg-neutral-50 border-transparent text-neutral-400 cursor-not-allowed"
                     : "bg-white border-neutral-200 text-neutral-600 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-600"
@@ -72,7 +75,7 @@ export default function ChapterTabs() {
                   <Lock size={12} />
                 </span>
               )}
-              
+
               <span className="truncate max-w-[150px]">
                 {index + 1}. {title}
               </span>
@@ -80,7 +83,7 @@ export default function ChapterTabs() {
           );
         })}
       </div>
-      
+
       {/* Scroll Fade Indicators (Optional visual enhancement) */}
       <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-white to-transparent pointer-events-none" />
       <div className="absolute top-0 right-0 w-4 h-full bg-gradient-to-l from-white to-transparent pointer-events-none" />

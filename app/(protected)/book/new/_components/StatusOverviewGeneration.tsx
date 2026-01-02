@@ -1,33 +1,24 @@
 "use client";
 
-import { useBookStore } from "@/lib/book/bookContext";
-import { useGenerationStore } from "@/lib/book/generationContext";
-import { useSettingsStore } from "@/lib/book/settingsStore";
-import { X, Settings, FileText, List, Sparkles, BookOpen } from "lucide-react";
 import { useState } from "react";
+import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
+import { useGenerationStore } from "@/lib/book/generationContext";
 
-interface StatusOverviewProps {
+interface StatusOverviewGenerationProps {
   onCancel?: () => void;
   isGenerating?: boolean;
 }
 
-export default function StatusOverview(props: StatusOverviewProps) {
+export default function StatusOverviewGeneration(props: StatusOverviewGenerationProps) {
   const { onCancel, isGenerating } = props;
   const [isOpen, setIsOpen] = useState(false);
-  const bookStore = useBookStore();
-  const genStore = useGenerationStore();
 
-  const flowStatus = bookStore.flowStatus;
-  const generationProgress = genStore.generationProgress;
-  const sourceText = bookStore.sourceText;
-  const tableOfContents = bookStore.tableOfContents;
-  const bookPlan = genStore.bookPlan;
-  const aiConfiguration = bookStore.aiConfiguration;
-
-  const language = useSettingsStore((state) => state.language);
-  const chapterCount = useSettingsStore((state) => state.chapterCount);
-  const userPreference = useSettingsStore((state) => state.userPreference);
-  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
+  const bookTitle = useGenerationStore((state) => state.bookTitle);
+  const sourceText = useGenerationStore((state) => state.sourceText);
+  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
+  const bookPlan = useGenerationStore((state) => state.bookPlan);
+  const generationSettings = useGenerationStore((state) => state.generationSettings);
+  const generationProgress = useGenerationStore((state) => state.generationProgress);
 
   if (!isOpen) {
     return (
@@ -65,35 +56,31 @@ export default function StatusOverview(props: StatusOverviewProps) {
             <div className="flex items-center gap-2 mb-3">
               <Settings size={16} className="text-neutral-500" />
               <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-wider">
-                기본 설정 (Settings)
+                생성 설정 (Generation Settings)
               </h3>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-white p-3 rounded-xl border border-neutral-200">
                 <p className="text-xs text-neutral-500 mb-1">언어 (Language)</p>
-                <p className="font-bold text-foreground">{language}</p>
+                <p className="font-bold text-foreground">{generationSettings.language}</p>
               </div>
               <div className="bg-white p-3 rounded-xl border border-neutral-200">
-                <p className="text-xs text-neutral-500 mb-1">
-                  챕터 수 (Chapters)
-                </p>
-                <p className="font-bold text-foreground">{chapterCount}</p>
+                <p className="text-xs text-neutral-500 mb-1">챕터 수 (Chapters)</p>
+                <p className="font-bold text-foreground">{generationSettings.chapterCount}</p>
               </div>
               <div className="bg-white p-3 rounded-xl border border-neutral-200">
-                <p className="text-xs text-neutral-500 mb-1">
-                  검토 모드 (Review Mode)
-                </p>
-                <p className="font-bold text-foreground">
-                  {requireConfirm ? "Review Each" : "Auto-Generate"}
-                </p>
+                <p className="text-xs text-neutral-500 mb-1">Provider</p>
+                <p className="font-bold text-foreground uppercase">{generationSettings.provider}</p>
               </div>
-              {userPreference && (
+              <div className="bg-white p-3 rounded-xl border border-neutral-200">
+                <p className="text-xs text-neutral-500 mb-1">Model</p>
+                <p className="font-bold text-foreground">{generationSettings.model}</p>
+              </div>
+              {generationSettings.userPreference && (
                 <div className="col-span-2 bg-white p-3 rounded-xl border border-neutral-200">
-                  <p className="text-xs text-neutral-500 mb-1">
-                    추가 요청사항 (Preferences)
-                  </p>
+                  <p className="text-xs text-neutral-500 mb-1">추가 요청사항</p>
                   <p className="font-bold text-foreground line-clamp-2">
-                    {userPreference}
+                    {generationSettings.userPreference}
                   </p>
                 </div>
               )}
@@ -113,9 +100,7 @@ export default function StatusOverview(props: StatusOverviewProps) {
                   &quot;{sourceText}&quot;
                 </p>
               ) : (
-                <p className="text-sm text-neutral-500 italic">
-                  입력된 소스가 없습니다.
-                </p>
+                <p className="text-sm text-neutral-500 italic">입력된 소스가 없습니다.</p>
               )}
             </div>
           </section>
@@ -131,10 +116,7 @@ export default function StatusOverview(props: StatusOverviewProps) {
               {tableOfContents.length > 0 ? (
                 <ul className="space-y-2">
                   {tableOfContents.map((item, idx) => (
-                    <li
-                      key={idx}
-                      className="text-sm text-neutral-700 flex gap-2"
-                    >
+                    <li key={idx} className="text-sm text-neutral-700 flex gap-2">
                       <span className="text-neutral-400 font-mono text-xs mt-0.5">
                         {idx + 1}.
                       </span>
@@ -143,47 +125,8 @@ export default function StatusOverview(props: StatusOverviewProps) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-neutral-500 italic">
-                  생성된 차례가 없습니다.
-                </p>
+                <p className="text-sm text-neutral-500 italic">생성된 차례가 없습니다.</p>
               )}
-            </div>
-          </section>
-
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles size={16} className="text-neutral-400" />
-              <h3 className="text-sm font-bold text-neutral-600 uppercase tracking-wider">
-                AI 설정 (AI Config)
-              </h3>
-            </div>
-            <div className="space-y-3">
-              <div className="bg-neutral-50 p-3 rounded border border-neutral-200">
-                <p className="text-xs text-neutral-500 mb-1">
-                  차례 생성 (TOC Generation)
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-neutral-700 uppercase">
-                    {aiConfiguration.toc.provider}
-                  </span>
-                  <span className="text-xs bg-neutral-200 px-2 py-0.5 rounded text-neutral-700 font-mono">
-                    {aiConfiguration.toc.model}
-                  </span>
-                </div>
-              </div>
-              <div className="bg-neutral-50 p-3 rounded border border-neutral-200">
-                <p className="text-xs text-neutral-500 mb-1">
-                  본문 생성 (Content Generation)
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-neutral-700 uppercase">
-                    {aiConfiguration.content.provider}
-                  </span>
-                  <span className="text-xs bg-neutral-200 px-2 py-0.5 rounded text-neutral-700 font-mono">
-                    {aiConfiguration.content.model}
-                  </span>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -197,25 +140,15 @@ export default function StatusOverview(props: StatusOverviewProps) {
               </div>
               <div className="bg-neutral-50 p-3 rounded border border-neutral-200 space-y-3">
                 <div>
-                  <p className="text-xs text-neutral-500 mb-1">
-                    대상 독자 (Target Audience)
-                  </p>
-                  <p className="text-sm text-neutral-700">
-                    {bookPlan.targetAudience}
-                  </p>
+                  <p className="text-xs text-neutral-500 mb-1">대상 독자</p>
+                  <p className="text-sm text-neutral-700">{bookPlan.targetAudience}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500 mb-1">
-                    집필 스타일 (Writing Style)
-                  </p>
-                  <p className="text-sm text-neutral-700">
-                    {bookPlan.writingStyle}
-                  </p>
+                  <p className="text-xs text-neutral-500 mb-1">집필 스타일</p>
+                  <p className="text-sm text-neutral-700">{bookPlan.writingStyle}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500 mb-1">
-                    핵심 테마 (Key Themes)
-                  </p>
+                  <p className="text-xs text-neutral-500 mb-1">핵심 테마</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {bookPlan.keyThemes.map((theme: string, idx: number) => (
                       <span
@@ -234,12 +167,8 @@ export default function StatusOverview(props: StatusOverviewProps) {
 
         <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50 rounded-b-lg flex justify-between items-center">
           <span className="text-xs text-neutral-500">
-            현재 단계:{" "}
-            <span className="text-brand-600 font-bold uppercase">
-              {flowStatus === "generating"
-                ? `GENERATING (${generationProgress.phase})`
-                : flowStatus.replace("_", " ")}
-            </span>
+            책: <span className="text-brand-600 font-bold">{bookTitle || "Untitled Book"}</span>
+            <span className="ml-2 text-neutral-400">({generationProgress.phase})</span>
           </span>
           <div className="flex gap-2">
             {isGenerating && onCancel && (
@@ -262,3 +191,4 @@ export default function StatusOverview(props: StatusOverviewProps) {
     </div>
   );
 }
+

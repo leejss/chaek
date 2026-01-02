@@ -1,53 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import { useSettingsStore } from "@/lib/book/settingsStore";
-import { Book, GeminiModel, ClaudeModel, Section } from "@/lib/book/types";
+import { useRef, useState, useCallback } from "react";
+import { useGenerationStore, useGenerationStoreApi } from "@/lib/book/generationContext";
+import { BookSettings } from "@/lib/book/settings";
+import { ClaudeModel, GeminiModel, Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
 import { updateBookAction } from "@/lib/actions/book";
 import GenerationStep from "../../_components/GenerationStep";
 import Button from "../../../_components/Button";
-import StatusOverview from "../../_components/StatusOverview";
+import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration";
 
-interface GenerationViewProps {
-  initialBook: Book;
-}
-
-export default function GenerationView({ initialBook }: GenerationViewProps) {
-  const store = useBookStore();
-  const settings = useSettingsStore();
+export default function GenerationView() {
+  const storeApi = useGenerationStoreApi();
+  const actions = useGenerationStore((state) => state.actions);
+  const generationProgress = useGenerationStore((state) => state.generationProgress);
+  const bookTitle = useGenerationStore((state) => state.bookTitle);
+  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
+  const sourceText = useGenerationStore((state) => state.sourceText);
+  const generationSettings = useGenerationStore((state) => state.generationSettings);
+  const savedBookId = useGenerationStore((state) => state.savedBookId);
   const abortRef = useRef<AbortController | null>(null);
-
   const [isDeductingCredits, setIsDeductingCredits] = useState(false);
 
-  useEffect(() => {
-    store.actions.initializeFromBook(initialBook);
-  }, [initialBook, store.actions]);
-
   const clearError = useCallback(() => {
-    bookStoreActions.updateGenerationProgress({ error: null });
-  }, []);
+    actions.updateGenerationProgress({ error: null });
+  }, [actions]);
 
   const handleSectionChunk = useCallback(
     (chunk: string) => {
-      const { content, currentChapterContent } = useBookStore.getState();
-      store.actions.updateDraft({
-        content: content + chunk,
+      const { streamingContent, currentChapterContent } = storeApi.getState();
+      actions.updateDraft({
+        streamingContent: streamingContent + chunk,
         currentChapterContent: currentChapterContent + chunk,
       });
     },
-    [store],
+    [actions, storeApi],
   );
 
   const handleStart = async () => {
-    const {
-      tableOfContents,
-      sourceText,
-      actions: { setupGeneration },
-    } = store;
+    if (!savedBookId) {
+      alert("책 ID가 없습니다.");
+      return;
+    }
 
     if (!tableOfContents.length) {
       alert("차례가 없습니다.");
@@ -61,10 +57,10 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
     clearError();
 
     try {
-      await deductCreditsAction(initialBook.id);
+      await deductCreditsAction(savedBookId);
 
-      setupGeneration(initialBook.id);
-      bookStoreActions.updateGenerationProgress({
+      actions.setupGeneration(tableOfContents.length);
+      actions.updateGenerationProgress({
         phase: "planning",
         totalChapters: tableOfContents.length,
         currentChapter: 1,
@@ -72,25 +68,29 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
         totalSections: 0,
       });
 
+      const settings: BookSettings = {
+        language: generationSettings.language,
+        chapterCount: generationSettings.chapterCount,
+        userPreference: generationSettings.userPreference,
+      };
+
       const bookPlan = await generatePlanAction({
-        bookId: initialBook.id,
+        bookId: savedBookId,
         sourceText: sourceText || "",
         toc: tableOfContents,
-        provider: store.aiConfiguration.content.provider,
-        model: store.aiConfiguration.content.model as GeminiModel | ClaudeModel,
+        provider: generationSettings.provider,
+        model: generationSettings.model as GeminiModel | ClaudeModel,
         settings,
       });
 
-      for (
-        let chapterNum = 1;
-        chapterNum <= tableOfContents.length;
-        chapterNum++
-      ) {
+      actions.setBookPlan(bookPlan);
+
+      for (let chapterNum = 1; chapterNum <= tableOfContents.length; chapterNum++) {
         if (abortRef.current?.signal.aborted) {
           throw new Error("생성이 취소되었습니다.");
         }
 
-        bookStoreActions.updateGenerationProgress({
+        actions.updateGenerationProgress({
           phase: "outlining",
           currentChapter: chapterNum,
           currentSection: 0,
@@ -104,30 +104,24 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
           chapterNumber: chapterNum,
           sourceText,
           bookPlan,
-          provider: store.aiConfiguration.content.provider,
-          model: store.aiConfiguration.content.model as
-            | GeminiModel
-            | ClaudeModel,
+          provider: generationSettings.provider,
+          model: generationSettings.model as GeminiModel | ClaudeModel,
           settings,
         });
 
-        bookStoreActions.updateGenerationProgress({
+        actions.updateGenerationProgress({
           phase: "generating_sections",
           currentOutline: chapterOutline,
           totalSections: chapterOutline.sections.length,
           currentSection: 0,
         });
 
-        for (
-          let sectionIndex = 0;
-          sectionIndex < chapterOutline.sections.length;
-          sectionIndex++
-        ) {
+        for (let sectionIndex = 0; sectionIndex < chapterOutline.sections.length; sectionIndex++) {
           if (abortRef.current?.signal.aborted) {
             throw new Error("생성이 취소되었습니다.");
           }
 
-          bookStoreActions.updateGenerationProgress({
+          actions.updateGenerationProgress({
             currentSection: sectionIndex,
           });
 
@@ -144,30 +138,27 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
             toc: tableOfContents,
             sourceText: sourceText || "",
             bookPlan,
-            provider: store.aiConfiguration.content.provider,
-            model: store.aiConfiguration.content.model as
-              | GeminiModel
-              | ClaudeModel,
+            provider: generationSettings.provider,
+            model: generationSettings.model as GeminiModel | ClaudeModel,
             settings,
           })) {
             handleSectionChunk(chunk);
           }
 
-          bookStoreActions.updateGenerationProgress({
+          actions.updateGenerationProgress({
             currentSection: sectionIndex + 1,
           });
         }
 
-        const { currentChapterContent } = useBookStore.getState();
-        bookStoreActions.finishChapter(chapterTitle, currentChapterContent);
-
-        const { content } = useBookStore.getState();
-        await updateBookAction(initialBook.id, {
-          content,
+        const { currentChapterContent, streamingContent } = storeApi.getState();
+        actions.finishChapter(chapterTitle, currentChapterContent);
+        actions.setContent(streamingContent);
+        await updateBookAction(savedBookId, {
+          content: streamingContent,
           status: "generating",
         });
 
-        bookStoreActions.updateGenerationProgress({
+        actions.updateGenerationProgress({
           currentChapter: chapterNum + 1,
           currentSection: 0,
           totalSections: 0,
@@ -175,30 +166,31 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
         });
       }
 
-      const { completeGeneration } = store.actions;
-      const { content } = useBookStore.getState();
-      completeGeneration(content);
-
-      await updateBookAction(initialBook.id, {
-        content,
+      actions.completeGeneration();
+      const { streamingContent } = storeApi.getState();
+      actions.setContent(streamingContent);
+      await updateBookAction(savedBookId, {
+        content: streamingContent,
         status: "completed",
       });
 
-      bookStoreActions.updateGenerationProgress({
+      actions.updateGenerationProgress({
         phase: "completed",
         currentChapter: tableOfContents.length,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "알 수 없는 오류";
-      bookStoreActions.updateGenerationProgress({
+      actions.updateGenerationProgress({
         phase: "error",
         error: message,
       });
-      store.actions.failGeneration(message);
+      actions.failGeneration(message);
 
-      await updateBookAction(initialBook.id, {
+      if (savedBookId) {
+        await updateBookAction(savedBookId, {
         status: "failed",
       });
+      }
     } finally {
       setIsDeductingCredits(false);
       abortRef.current = null;
@@ -210,21 +202,18 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
   }, []);
 
   const isActuallyGenerating =
-    store.generationProgress.phase !== "idle" &&
-    store.generationProgress.phase !== "error" &&
-    store.generationProgress.phase !== "completed";
+    generationProgress.phase !== "idle" &&
+    generationProgress.phase !== "error" &&
+    generationProgress.phase !== "completed";
 
   if (isActuallyGenerating) {
     return (
       <div className="max-w-3xl mx-auto pb-32">
         <GenerationStep />
-        <StatusOverview
-          onCancel={handleCancel}
-          isGenerating={isActuallyGenerating}
-        />
-        {store.generationProgress.error && (
+        <StatusOverviewGeneration onCancel={handleCancel} isGenerating={isActuallyGenerating} />
+        {generationProgress.error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {store.generationProgress.error}
+            {generationProgress.error}
           </div>
         )}
       </div>
@@ -234,24 +223,18 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
   return (
     <div className="max-w-3xl mx-auto pb-32">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-4">
-          {initialBook.title || "Untitled Book"}
-        </h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">{bookTitle || "Untitled Book"}</h1>
       </div>
 
       <div className="bg-background border border-neutral-200 rounded-2xl p-8 mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-6">
-          차례 (Table of Contents)
-        </h3>
+        <h3 className="text-lg font-bold text-foreground mb-6">차례 (Table of Contents)</h3>
         <div className="space-y-3">
-          {initialBook.tableOfContents.map((chapter, idx) => (
+          {tableOfContents.map((chapter, idx) => (
             <div
               key={idx}
               className="flex items-baseline gap-4 text-base p-2 hover:bg-neutral-50 rounded-lg transition-colors"
             >
-              <span className="font-bold text-neutral-400 w-6 text-right">
-                {idx + 1}.
-              </span>
+              <span className="font-bold text-neutral-400 w-6 text-right">{idx + 1}.</span>
               <span className="text-foreground font-medium">{chapter}</span>
             </div>
           ))}
@@ -259,18 +242,14 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
       </div>
 
       <div className="mt-8">
-        <Button
-          onClick={handleStart}
-          disabled={isDeductingCredits}
-          className="w-full h-14 text-lg font-semibold"
-        >
+        <Button onClick={handleStart} disabled={isDeductingCredits} className="w-full h-14 text-lg font-semibold">
           {isDeductingCredits ? "크레딧 차감 중..." : "책 생성 시작하기"}
         </Button>
       </div>
 
-      {store.generationProgress.error && (
+      {generationProgress.error && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {store.generationProgress.error}
+          {generationProgress.error}
         </div>
       )}
     </div>

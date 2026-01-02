@@ -1,6 +1,7 @@
 "use client";
 
 import { useBookStore } from "@/lib/book/bookContext";
+import { useGenerationStore, generationStoreActions } from "@/lib/book/generationContext";
 import { FlowStatus } from "@/lib/book/types";
 import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import { Check, ChevronLeft, Circle } from "lucide-react";
@@ -35,19 +36,17 @@ const BOOK_CREATION_COST = 10;
 
 export default function CreateBookPage() {
   const router = useRouter();
-  const flowStatus = useBookStore((state) => state.flowStatus);
-  const isProcessing = useBookStore((state) => state.isProcessing);
-  const actions = useBookStore((state) => state.actions);
-  const completedSteps = useBookStore((state) => state.completedSteps);
-  const bookGenerationStarted = useBookStore(
-    (state) => state.bookGenerationStarted,
-  );
-  const savedBookId = useBookStore((state) => state.savedBookId);
+  const bookStore = useBookStore();
+  const genStore = useGenerationStore();
 
+  const flowStatus = bookStore.flowStatus;
+  const isProcessing = bookStore.isProcessing;
+  const actions = bookStore.actions;
+  const completedSteps = bookStore.completedSteps;
+  const bookGenerationStarted = genStore.bookGenerationStarted;
+  const savedBookId = genStore.savedBookId;
   const { balance, isLoading: isLoadingBalance } = useCreditBalance();
-
   const isGenerating = flowStatus === "generating";
-  const generationProgress = useBookStore((state) => state.generationProgress);
 
   const currentStepIndex = FLOW_STEPS.indexOf(
     flowStatus as (typeof FLOW_STEPS)[number],
@@ -79,10 +78,9 @@ export default function CreateBookPage() {
         (isProcessing || isGenerating) &&
         !confirm("작업이 진행 중입니다. 정말 나가시겠습니까?")
       ) {
+        router.push("/book");
         return;
       }
-      router.push("/book");
-      return;
     }
 
     if (isProcessing || isGenerating) {
@@ -90,7 +88,7 @@ export default function CreateBookPage() {
         return;
       }
       if (isGenerating) {
-        actions.cancelGeneration();
+        generationStoreActions.cancelGeneration();
       }
 
       if (flowStatus === "generating_toc") {

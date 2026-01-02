@@ -3,12 +3,16 @@
 import Link from "next/link";
 import Button from "../../_components/Button";
 import { useBookStore } from "@/lib/book/bookContext";
+import { useGenerationStore } from "@/lib/book/generationContext";
 
 export default function CompletedStep() {
-  const savedBookId = useBookStore((state) => state.savedBookId);
-  const tableOfContents = useBookStore((state) => state.tableOfContents);
-  const content = useBookStore((state) => state.content);
-  const actions = useBookStore((state) => state.actions);
+  const bookStore = useBookStore();
+  const genStore = useGenerationStore();
+
+  const savedBookId = genStore.savedBookId;
+  const tableOfContents = bookStore.tableOfContents;
+  const content = genStore.content;
+  const actions = bookStore.actions;
 
   const handleNew = () => {
     actions.startNewBook();

@@ -1,7 +1,6 @@
 "use client";
 
-import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import { useSettingsStore } from "@/lib/book/settingsStore";
+import { useGenerationStore } from "@/lib/book/generationContext";
 import { Section } from "@/lib/book/types";
 import { Check, Copy, Download } from "lucide-react";
 import { useState } from "react";
@@ -30,9 +29,15 @@ function getPhaseLabel(
 }
 
 export default function GenerationStep() {
-  const generationProgress = useBookStore(
-    (state) => state.generationProgress || { phase: "idle" },
-  );
+  const generationProgress = useGenerationStore((state) => state.generationProgress) || { phase: "idle" };
+  const chapters = useGenerationStore((state) => state.chapters);
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
+  const awaitingChapterDecision = useGenerationStore((state) => state.awaitingChapterDecision);
+  const currentChapterContent = useGenerationStore((state) => state.currentChapterContent);
+  const cancelGeneration = useGenerationStore((state) => state.actions.cancelGeneration);
+  const confirmChapter = useGenerationStore((state) => state.actions.confirmChapter);
 
   const {
     phase,
@@ -42,20 +47,6 @@ export default function GenerationStep() {
     currentChapter,
     totalChapters,
   } = generationProgress;
-
-  const chapters = useBookStore((state) => state.chapters);
-  const viewingChapterIndex = useBookStore(
-    (state) => state.viewingChapterIndex,
-  );
-  const tableOfContents = useBookStore((state) => state.tableOfContents);
-  const currentChapterIndex = useBookStore(
-    (state) => state.currentChapterIndex,
-  );
-  const awaitingChapterDecision = useBookStore(
-    (state) => state.awaitingChapterDecision,
-  );
-
-  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
   const [isCopied, setIsCopied] = useState(false);
 
@@ -78,7 +69,7 @@ export default function GenerationStep() {
   const handleCopy = async () => {
     let contentToCopy = "";
     if (isViewingCurrentChapter) {
-      contentToCopy = useBookStore.getState().currentChapterContent;
+      contentToCopy = currentChapterContent;
     } else if (viewingChapter) {
       contentToCopy = viewingChapter.content;
     }
@@ -96,7 +87,7 @@ export default function GenerationStep() {
   const handleDownload = () => {
     let contentToDownload = "";
     if (isViewingCurrentChapter) {
-      contentToDownload = useBookStore.getState().currentChapterContent;
+      contentToDownload = currentChapterContent;
     } else if (viewingChapter) {
       contentToDownload = viewingChapter.content;
     }
@@ -242,22 +233,22 @@ export default function GenerationStep() {
         </div>
       </div>
 
-      {isViewingCurrentChapter && awaitingChapterDecision && requireConfirm && (
+      {isViewingCurrentChapter && awaitingChapterDecision && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-50 safe-area-bottom">
           <div className="max-w-xl mx-auto flex gap-3 animate-in slide-in-from-bottom-4 duration-300">
             <Button
               variant="outline"
-              onClick={bookStoreActions.cancelGeneration}
+              onClick={cancelGeneration}
               className="flex-1 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-              disabled={!bookStoreActions.cancelGeneration}
+              disabled={!cancelGeneration}
             >
               Cancel
             </Button>
             <Button
-              onClick={bookStoreActions.confirmChapter}
+              onClick={confirmChapter}
               className="flex-1 bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-lg transition-all"
               disabled={
-                !awaitingChapterDecision || !bookStoreActions.confirmChapter
+                !awaitingChapterDecision || !confirmChapter
               }
             >
               Confirm & Continue

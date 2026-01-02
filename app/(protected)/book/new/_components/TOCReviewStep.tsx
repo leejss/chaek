@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import { ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { createBookAction } from "@/lib/actions/book";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import {
@@ -73,10 +73,17 @@ export default function TOCReviewStep() {
 
     setIsSaving(true);
     try {
+      const provider =
+        aiConfiguration.content.provider ||
+        getProviderByModel(selectedModel) ||
+        AIProvider.ANTHROPIC;
+
       const generationSettings = {
         language,
         chapterCount,
         userPreference,
+        provider,
+        model: selectedModel as GeminiModel | ClaudeModel,
       };
 
       await createBookAction(
