@@ -3,17 +3,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
-import {
-  Book,
-  GeminiModel,
-  ClaudeModel,
-  ChapterOutline,
-  Section,
-  BookContextState,
-} from "@/lib/book/types";
+import { Book, GeminiModel, ClaudeModel, Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
+import { updateBookAction } from "@/lib/actions/book";
 import GenerationStep from "../../_components/GenerationStep";
 import Button from "../../../_components/Button";
 import StatusOverview from "../../_components/StatusOverview";
@@ -33,16 +27,9 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
     store.actions.initializeFromBook(initialBook);
   }, [initialBook, store.actions]);
 
-  const updateProgress = useCallback(
-    (updates: Partial<BookContextState["generationProgress"]>) => {
-      store.actions.updateGenerationProgress(updates);
-    },
-    [store.actions],
-  );
-
   const clearError = useCallback(() => {
-    updateProgress({ error: null });
-  }, [updateProgress]);
+    bookStoreActions.updateGenerationProgress({ error: null });
+  }, []);
 
   const handleSectionChunk = useCallback(
     (chunk: string) => {
@@ -77,7 +64,7 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
       await deductCreditsAction(initialBook.id);
 
       setupGeneration(initialBook.id);
-      updateProgress({
+      bookStoreActions.updateGenerationProgress({
         phase: "planning",
         totalChapters: tableOfContents.length,
         currentChapter: 1,
@@ -102,7 +89,7 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
           throw new Error("생성이 취소되었습니다.");
         }
 
-        updateProgress({
+        bookStoreActions.updateGenerationProgress({
           phase: "outlining",
           currentChapter: chapterNum,
           currentSection: 0,
@@ -123,7 +110,7 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
           settings,
         });
 
-        updateProgress({
+        bookStoreActions.updateGenerationProgress({
           phase: "generating_sections",
           currentOutline: chapterOutline,
           totalSections: chapterOutline.sections.length,
@@ -139,7 +126,9 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
             throw new Error("생성이 취소되었습니다.");
           }
 
-          updateProgress({ currentSection: sectionIndex });
+          bookStoreActions.updateGenerationProgress({
+            currentSection: sectionIndex,
+          });
 
           const previousSections = chapterOutline.sections
             .slice(0, sectionIndex)
@@ -163,13 +152,21 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
             handleSectionChunk(chunk);
           }
 
-          updateProgress({ currentSection: sectionIndex + 1 });
+          bookStoreActions.updateGenerationProgress({
+            currentSection: sectionIndex + 1,
+          });
         }
 
         const { currentChapterContent } = useBookStore.getState();
         bookStoreActions.finishChapter(chapterTitle, currentChapterContent);
 
-        updateProgress({
+        const { content } = useBookStore.getState();
+        await updateBookAction(initialBook.id, {
+          content,
+          status: "generating",
+        });
+
+        bookStoreActions.updateGenerationProgress({
           currentChapter: chapterNum + 1,
           currentSection: 0,
           totalSections: 0,
@@ -181,17 +178,26 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
       const { content } = useBookStore.getState();
       completeGeneration(content);
 
-      updateProgress({
+      await updateBookAction(initialBook.id, {
+        content,
+        status: "completed",
+      });
+
+      bookStoreActions.updateGenerationProgress({
         phase: "completed",
         currentChapter: tableOfContents.length,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "알 수 없는 오류";
-      updateProgress({
+      bookStoreActions.updateGenerationProgress({
         phase: "error",
         error: message,
       });
       store.actions.failGeneration(message);
+
+      await updateBookAction(initialBook.id, {
+        status: "failed",
+      });
     } finally {
       setIsDeductingCredits(false);
       abortRef.current = null;

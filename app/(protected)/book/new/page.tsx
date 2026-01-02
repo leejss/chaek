@@ -230,12 +230,6 @@ export default function CreateBookPage() {
             description="Analyzing your content and creating a table of contents..."
           />
         )}
-        {flowStatus === "generating" && generationProgress.phase === "plan" && (
-          <AILoadingStep
-            title="Building Writing Plan"
-            description="Organizing chapters and preparing the detailed structure..."
-          />
-        )}
         {flowStatus === "toc_review" && <TOCReviewStep />}
       </div>
 

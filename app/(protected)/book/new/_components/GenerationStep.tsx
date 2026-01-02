@@ -1,15 +1,13 @@
 "use client";
 
-import { Copy, Download, Check } from "lucide-react";
-import { useState } from "react";
-import Button from "../../_components/Button";
-import { ChapterOutline, Section } from "@/lib/book/types";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
-import ChapterTabs from "./ChapterTabs";
+import { Section } from "@/lib/book/types";
+import { Check, Copy, Download } from "lucide-react";
+import { useState } from "react";
+import Button from "../../_components/Button";
 import ChapterContentDisplay from "./ChapterContentDisplay";
-
-interface GenerationStepProps {}
+import ChapterTabs from "./ChapterTabs";
 
 function getPhaseLabel(
   phase: string,
@@ -31,7 +29,7 @@ function getPhaseLabel(
   }
 }
 
-export default function GenerationStep(_props: GenerationStepProps) {
+export default function GenerationStep() {
   const generationProgress = useBookStore(
     (state) => state.generationProgress || { phase: "idle" },
   );
@@ -244,7 +242,6 @@ export default function GenerationStep(_props: GenerationStepProps) {
         </div>
       </div>
 
-      {/* Confirmation Footer */}
       {isViewingCurrentChapter && awaitingChapterDecision && requireConfirm && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-50 safe-area-bottom">
           <div className="max-w-xl mx-auto flex gap-3 animate-in slide-in-from-bottom-4 duration-300">
