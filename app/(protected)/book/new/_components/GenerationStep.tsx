@@ -1,11 +1,13 @@
 "use client";
-import { ChevronLeft, ChevronRight, Copy, Download, Check } from "lucide-react";
+
+import { Copy, Download, Check } from "lucide-react";
 import { useState } from "react";
-import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
-import { GenerationProgress, ChapterOutline, Section } from "@/lib/book/types";
+import { ChapterOutline, Section } from "@/lib/book/types";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
+import ChapterTabs from "./ChapterTabs";
+import ChapterContentDisplay from "./ChapterContentDisplay";
 
 interface GenerationStepProps {
   phase?: string;
@@ -16,24 +18,11 @@ interface GenerationStepProps {
   currentOutline?: ChapterOutline | null;
 }
 
-function getPhaseLabelFromProgress(progress: GenerationProgress): string {
-  switch (progress.phase) {
-    case "outline":
-      return "Creating chapter outline...";
-    case "sections":
-      return progress.currentSection && progress.totalSections
-        ? `Writing section ${progress.currentSection} of ${progress.totalSections}...`
-        : "Writing sections...";
-    case "refinement":
-      return "Refining chapter...";
-    case "review":
-      return "Chapter ready for review";
-    default:
-      return "Preparing...";
-  }
-}
-
-function getPhaseLabel(phase: string, currentSection?: number, totalSections?: number): string {
+function getPhaseLabel(
+  phase: string,
+  currentSection?: number,
+  totalSections?: number,
+): string {
   switch (phase) {
     case "planning":
       return "작성 계획 수립중...";
@@ -52,7 +41,6 @@ function getPhaseLabel(phase: string, currentSection?: number, totalSections?: n
 export default function GenerationStep(props: GenerationStepProps) {
   const {
     phase: propsPhase,
-    currentChapter: propsCurrentChapter,
     currentSection: propsCurrentSection,
     totalSections: propsTotalSections,
     currentOutline: propsCurrentOutline,
@@ -63,16 +51,15 @@ export default function GenerationStep(props: GenerationStepProps) {
   );
 
   const phase = propsPhase ?? generationProgress.phase;
-  const currentSection = propsCurrentSection ?? generationProgress.currentSection;
+  const currentSection =
+    propsCurrentSection ?? generationProgress.currentSection;
   const totalSections = propsTotalSections ?? generationProgress.totalSections;
-  const currentOutline = propsCurrentOutline ?? generationProgress.currentOutline;
+  const currentOutline =
+    propsCurrentOutline ?? generationProgress.currentOutline;
 
   const chapters = useBookStore((state) => state.chapters);
   const viewingChapterIndex = useBookStore(
     (state) => state.viewingChapterIndex,
-  );
-  const currentChapterContent = useBookStore(
-    (state) => state.currentChapterContent,
   );
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const currentChapterIndex = useBookStore(
@@ -91,29 +78,24 @@ export default function GenerationStep(props: GenerationStepProps) {
   const isCompleted = phase === "completed";
 
   const isViewingCurrentChapter =
-    currentChapterIndex !== null && viewingChapterIndex === chapters.length;
+    currentChapterIndex !== null && viewingChapterIndex === currentChapterIndex;
 
-  const viewingChapter = isViewingCurrentChapter
-    ? null
-    : chapters[viewingChapterIndex];
-
-  const displayContent = isViewingCurrentChapter
-    ? currentChapterContent
-    : viewingChapter?.content || "";
-
-  const canGoPrev = viewingChapterIndex > 0;
-
-  const maxViewIndex =
-    currentChapterIndex !== null ? chapters.length : chapters.length - 1;
-  const canGoNext = viewingChapterIndex < maxViewIndex;
-
-  const totalPages =
-    currentChapterIndex !== null ? chapters.length + 1 : chapters.length;
+  const viewingChapter =
+    viewingChapterIndex < chapters.length
+      ? chapters[viewingChapterIndex]
+      : null;
 
   const handleCopy = async () => {
-    if (!displayContent) return;
+    let contentToCopy = "";
+    if (isViewingCurrentChapter) {
+      contentToCopy = useBookStore.getState().currentChapterContent;
+    } else if (viewingChapter) {
+      contentToCopy = viewingChapter.content;
+    }
+
+    if (!contentToCopy) return;
     try {
-      await navigator.clipboard.writeText(displayContent);
+      await navigator.clipboard.writeText(contentToCopy);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
@@ -122,7 +104,14 @@ export default function GenerationStep(props: GenerationStepProps) {
   };
 
   const handleDownload = () => {
-    if (!displayContent) return;
+    let contentToDownload = "";
+    if (isViewingCurrentChapter) {
+      contentToDownload = useBookStore.getState().currentChapterContent;
+    } else if (viewingChapter) {
+      contentToDownload = viewingChapter.content;
+    }
+
+    if (!contentToDownload) return;
 
     let title = "chapter";
     if (
@@ -136,7 +125,7 @@ export default function GenerationStep(props: GenerationStepProps) {
     }
 
     const filename = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.md`;
-    const blob = new Blob([displayContent], { type: "text/markdown" });
+    const blob = new Blob([contentToDownload], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -148,153 +137,136 @@ export default function GenerationStep(props: GenerationStepProps) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-32">
-      {isViewingCurrentChapter && (
-        <div className="sticky top-0 bg-background/95 backdrop-bl py-2 border-b border-neutral-200 mb-4 z-10 flex items-center justify-center gap-2 text-brand-600">
-          {!isReview && !isCompleted && (
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-brand-600 border-t-transparent"></div>
-          )}
-          <span className="text-sm font-medium uppercase tracking-widest">
-            {phaseLabel}
-          </span>
-        </div>
-      )}
-
-      {totalPages > 0 && (
-        <div className="flex items-center justify-between mb-4 px-2">
-          <button
-            onClick={bookStoreActions.goToPrevChapter}
-            disabled={!canGoPrev}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-neutral-500 hover:text-brand-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft size={18} />
-            <span>Previous</span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <span
-                key={idx}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  idx === viewingChapterIndex
-                    ? "bg-brand-600"
-                    : idx < chapters.length
-                    ? "bg-green-500"
-                    : "bg-neutral-200"
-                }`}
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={bookStoreActions.goToNextChapter}
-            disabled={!canGoNext}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-neutral-500 hover:text-brand-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <span>Next</span>
-            <ChevronRight size={18} />
-          </button>
-        </div>
-      )}
-
-      {isViewingCurrentChapter &&
-        tableOfContents &&
-        typeof currentChapterIndex === "number" && (
-          <div className="mb-6 bg-neutral-50 border border-neutral-200 rounded-2xl p-4">
-            <div className="text-sm text-neutral-600">
-              {`Chapter ${currentChapterIndex + 1} of ${
-                tableOfContents.length
-              }`}
-            </div>
-            <div className="font-serif text-lg text-foreground mt-1">
-              {tableOfContents[currentChapterIndex]}
-            </div>
-
-            {currentOutline && (
-              <div className="mt-3 pt-3 border-t border-neutral-200">
-                <div className="text-xs text-neutral-600 mb-2">Sections:</div>
-                <div className="flex flex-wrap gap-1">
-                  {currentOutline.sections.map((section: Section, idx: number) => (
-                    <span
-                      key={idx}
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        currentSection && idx < currentSection
-                          ? "bg-green-100 text-green-700"
-                          : currentSection === idx + 1
-                          ? "bg-brand-100 text-brand-700"
-                          : "bg-neutral-100 text-neutral-600"
-                      }`}
-                    >
-                      {section.title}
-                    </span>
-                  ))}
-                </div>
-              </div>
+    <div className="w-full pb-32">
+      {/* Sticky Header with Status and Tabs */}
+      <div className="sticky top-0 bg-background/95 backdrop-blur z-20 border-b border-neutral-200 shadow-sm">
+        {isViewingCurrentChapter && (
+          <div className="py-2 bg-brand-50/50 border-b border-brand-100 flex items-center justify-center gap-2 text-brand-700">
+            {!isReview && !isCompleted && (
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-brand-600 border-t-transparent"></div>
             )}
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              {phaseLabel}
+            </span>
+          </div>
+        )}
+        <ChapterTabs />
+      </div>
+
+      <div className="max-w-3xl mx-auto pt-6 px-4">
+        {/* Chapter Info Card */}
+        {isViewingCurrentChapter &&
+          tableOfContents &&
+          typeof currentChapterIndex === "number" && (
+            <div className="mb-6 bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-medium px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full">
+                  Writing Now
+                </span>
+                <span className="text-sm text-neutral-500">
+                  Chapter {currentChapterIndex + 1} of {tableOfContents.length}
+                </span>
+              </div>
+
+              <div className="font-serif text-xl md:text-2xl text-foreground font-medium">
+                {tableOfContents[currentChapterIndex]}
+              </div>
+
+              {currentOutline && (
+                <div className="mt-4 pt-4 border-t border-neutral-100">
+                  <div className="text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wide">
+                    Sections
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {currentOutline.sections.map(
+                      (section: Section, idx: number) => (
+                        <span
+                          key={idx}
+                          className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                            currentSection && idx < currentSection
+                              ? "bg-green-100 text-green-700 font-medium"
+                              : currentSection === idx + 1
+                              ? "bg-brand-600 text-white font-medium shadow-sm"
+                              : "bg-neutral-100 text-neutral-500"
+                          }`}
+                        >
+                          {section.title}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+        {!isViewingCurrentChapter && viewingChapter && (
+          <div className="mb-6 bg-green-50/50 border border-green-200 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                <Check size={10} strokeWidth={3} />
+                Completed
+              </span>
+              <span className="text-sm text-neutral-500">
+                Chapter {viewingChapter.chapterNumber}
+              </span>
+            </div>
+            <div className="font-serif text-xl md:text-2xl text-foreground font-medium">
+              {viewingChapter.chapterTitle}
+            </div>
           </div>
         )}
 
-      {!isViewingCurrentChapter && viewingChapter && (
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-              Completed
-            </span>
-            <span className="text-sm text-neutral-600">
-              Chapter {viewingChapter.chapterNumber}
-            </span>
-          </div>
-          <div className="font-serif text-lg text-foreground mt-1">
-            {viewingChapter.chapterTitle}
-          </div>
+        {/* Actions */}
+        <div className="flex justify-end gap-2 mb-4">
+          <Button
+            variant="ghost"
+            onClick={handleCopy}
+            className="h-8 px-3 text-xs gap-1.5 text-neutral-500 hover:text-brand-600 hover:bg-brand-50"
+          >
+            {isCopied ? (
+              <Check size={14} className="text-green-600" />
+            ) : (
+              <Copy size={14} />
+            )}
+            {isCopied ? "Copied" : "Copy"}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleDownload}
+            className="h-8 px-3 text-xs gap-1.5 text-neutral-500 hover:text-brand-600 hover:bg-brand-50"
+          >
+            <Download size={14} />
+            Export MD
+          </Button>
         </div>
-      )}
 
-      <div className="flex justify-end gap-2 mb-2 px-2">
-        <Button
-          variant="ghost"
-          onClick={handleCopy}
-          className="px-3 py-1.5 h-auto text-xs gap-2"
-        >
-          {isCopied ? <Check size={14} /> : <Copy size={14} />}
-          {isCopied ? "Copied" : "Copy MD"}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={handleDownload}
-          className="px-3 py-1.5 h-auto text-xs gap-2"
-        >
-          <Download size={14} />
-          Export MD
-        </Button>
+        {/* Content Display (Isolated for Performance) */}
+        <div className="rounded-xl border border-neutral-100 shadow-sm overflow-hidden bg-white">
+          <ChapterContentDisplay />
+        </div>
       </div>
 
-      <div className="bg-background min-h-[500px]">
-        <MarkdownRenderer
-          content={currentChapterContent}
-          isStreaming={isViewingCurrentChapter && !isReview}
-        />
-      </div>
-
+      {/* Confirmation Footer */}
       {isViewingCurrentChapter && awaitingChapterDecision && requireConfirm && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-neutral-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.12)] z-50 safe-area-bottom">
-          <div className="max-w-3xl mx-auto flex gap-3">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-50 safe-area-bottom">
+          <div className="max-w-xl mx-auto flex gap-3 animate-in slide-in-from-bottom-4 duration-300">
             <Button
               variant="outline"
               onClick={bookStoreActions.cancelGeneration}
-              className="flex-1"
+              className="flex-1 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
               disabled={!bookStoreActions.cancelGeneration}
             >
               Cancel
             </Button>
             <Button
               onClick={bookStoreActions.confirmChapter}
-              className="flex-1"
+              className="flex-1 bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-lg transition-all"
               disabled={
                 !awaitingChapterDecision || !bookStoreActions.confirmChapter
               }
             >
-              Confirm Chapter
+              Confirm & Continue
             </Button>
           </div>
         </div>

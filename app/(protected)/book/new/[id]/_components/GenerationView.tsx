@@ -10,14 +10,13 @@ import {
   ChapterOutline,
   Section,
 } from "@/lib/book/types";
-import { fetchPlan, fetchOutline, fetchStreamSection } from "@/lib/ai/fetch";
-import { fetchDeductCredits } from "@/lib/db/fetch";
+import { fetchStreamSection } from "@/lib/ai/fetch";
+import { deductCreditsAction } from "@/lib/actions/credits";
+import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
 import { PlanOutput } from "@/lib/ai/specs/plan";
 import GenerationStep from "../../_components/GenerationStep";
 import Button from "../../../_components/Button";
 import StatusOverview from "../../_components/StatusOverview";
-import { Play } from "lucide-react";
-
 interface GenerationViewProps {
   initialBook: Book;
 }
@@ -99,7 +98,7 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
     clearError();
 
     try {
-      await fetchDeductCredits(initialBook.id);
+      await deductCreditsAction(initialBook.id);
 
       setupGeneration(initialBook.id);
       setGenerationState((prev) => ({
@@ -111,16 +110,13 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
         totalSections: 0,
       }));
 
-      const planRes = await fetchPlan(
-        sourceText || "",
-        tableOfContents,
-        store.aiConfiguration.content.provider,
-        store.aiConfiguration.content.model as GeminiModel | ClaudeModel,
+      const bookPlan = await generatePlanAction({
+        sourceText: sourceText || "",
+        toc: tableOfContents,
+        provider: store.aiConfiguration.content.provider,
+        model: store.aiConfiguration.content.model as GeminiModel | ClaudeModel,
         settings,
-      );
-
-      const bookPlan: PlanOutput = planRes.data.plan;
-      store.actions.updateDraft({});
+      });
 
       for (
         let chapterNum = 1;
@@ -139,10 +135,11 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
         });
 
         const chapterTitle = tableOfContents[chapterNum - 1];
-        const outlineRes = await fetchOutline({
+
+        const chapterOutline = await generateOutlineAction({
           toc: tableOfContents,
           chapterNumber: chapterNum,
-          sourceText: sourceText || "",
+          sourceText,
           bookPlan,
           provider: store.aiConfiguration.content.provider,
           model: store.aiConfiguration.content.model as
@@ -151,7 +148,6 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
           settings,
         });
 
-        const chapterOutline = outlineRes.data.outline;
         updateProgress({
           phase: "generating_sections",
           currentOutline: chapterOutline,
@@ -265,64 +261,35 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
         <h1 className="text-3xl font-bold text-foreground mb-4">
           {initialBook.title || "Untitled Book"}
         </h1>
-        <p className="text-neutral-600">
-          {initialBook.tableOfContents.length}개 챕터가 준비되었습니다.
-        </p>
       </div>
 
       <div className="bg-background border border-neutral-200 rounded-2xl p-8 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-foreground">책 생성</h2>
-          <span className="text-sm text-neutral-500">
-            {settings.language} •{" "}
-            {settings.requireConfirm ? "Review Each" : "Auto-Generate"}
-          </span>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-neutral-600">챕터 수</span>
-            <span className="font-medium">
-              {initialBook.tableOfContents.length}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-neutral-600">AI 모델</span>
-            <span className="font-medium">
-              {store.aiConfiguration.content.provider} /{" "}
-              {store.aiConfiguration.content.model}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-neutral-600">출력 언어</span>
-            <span className="font-medium">{settings.language}</span>
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <Button
-            onClick={handleStart}
-            disabled={isDeductingCredits}
-            className="w-full h-12 text-lg gap-2"
-          >
-            <Play size={18} />
-            {isDeductingCredits ? "크레딧 차감 중..." : "책 생성 시작하기"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="border-t border-neutral-200 pt-6">
-        <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-4">
+        <h3 className="text-lg font-bold text-foreground mb-6">
           차례 (Table of Contents)
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {initialBook.tableOfContents.map((chapter, idx) => (
-            <div key={idx} className="flex items-baseline gap-3 text-sm">
-              <span className="font-bold text-neutral-400 w-5">{idx + 1}.</span>
-              <span className="text-foreground">{chapter}</span>
+            <div
+              key={idx}
+              className="flex items-baseline gap-4 text-base p-2 hover:bg-neutral-50 rounded-lg transition-colors"
+            >
+              <span className="font-bold text-neutral-400 w-6 text-right">
+                {idx + 1}.
+              </span>
+              <span className="text-foreground font-medium">{chapter}</span>
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="mt-8">
+        <Button
+          onClick={handleStart}
+          disabled={isDeductingCredits}
+          className="w-full h-14 text-lg font-semibold"
+        >
+          {isDeductingCredits ? "크레딧 차감 중..." : "책 생성 시작하기"}
+        </Button>
       </div>
 
       {generationState.error && (

@@ -45,3 +45,5 @@ export const useSettingsStore = create<SettingsStore>()(
     },
   ),
 );
+
+export const settingsStoreActions = useSettingsStore.getState().actions;
