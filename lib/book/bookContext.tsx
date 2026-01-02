@@ -1,7 +1,7 @@
 "use client";
 
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
-import { fetchTOC } from "@/lib/ai/fetch";
+import { fetchTableOfContent } from "@/lib/ai/fetch";
 import {
   AIProvider,
   Book,
@@ -268,17 +268,18 @@ export const useBookStore = create(
           try {
             const { aiConfiguration } = get();
             const settings = useSettingsStore.getState();
-            const { title, toc } = await fetchTOC(
+            const { data } = await fetchTableOfContent(
               sourceText,
               aiConfiguration.toc.provider,
               aiConfiguration.toc.model,
               settings,
             );
+            const { title, chapters } = data;
             set(
               {
                 flowStatus: "toc_review",
                 bookTitle: title,
-                tableOfContents: toc,
+                tableOfContents: chapters,
                 completedSteps: new Set([
                   ...get().completedSteps,
                   "toc_review",

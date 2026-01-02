@@ -1,4 +1,3 @@
-import { ChapterCount } from "@/lib/book/settings";
 import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { serverEnv } from "@/lib/env";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -13,10 +12,10 @@ import { tocV1 } from "../specs/toc";
 import { registry } from "./registry";
 
 export interface GenerationSettings {
-  provider?: AIProvider;
-  model?: string;
-  language?: string;
-  chapterCount?: ChapterCount;
+  provider: AIProvider;
+  model: string;
+  language: string;
+  chapterCount?: number | "Auto";
   userPreference?: string;
 }
 
@@ -31,7 +30,10 @@ registry.register(summaryV1);
 const google = createGoogleGenerativeAI({ apiKey: serverEnv.GEMINI_API_KEY });
 const anthropic = createAnthropic({ apiKey: serverEnv.ANTHROPIC_API_KEY });
 
-function getModel(provider: AIProvider | undefined, modelName: string | undefined) {
+function getModel(
+  provider: AIProvider | undefined,
+  modelName: string | undefined,
+) {
   if (provider === AIProvider.ANTHROPIC) {
     return anthropic(modelName || ClaudeModel.HAIKU);
   }
@@ -43,63 +45,93 @@ function getModel(provider: AIProvider | undefined, modelName: string | undefine
   throw new Error(`Unknown provider: ${provider}`);
 }
 
-async function generateTOC(sourceText: string, settings: GenerationSettings) {
-  const model = getModel(settings.provider, settings.model);
+export async function generateTableOfContent(params: {
+  sourceText: string;
+  language: string;
+  chapterCount: number | "Auto";
+  userPreference?: string;
+  provider: AIProvider;
+  model: string;
+}) {
+  const model = getModel(params.provider, params.model);
   return registry.runSpec(
     "book.toc@v1",
     {
-      sourceText,
-      language: settings.language || "Korean",
+      sourceText: params.sourceText,
+      language: params.language,
       minChapters:
-        settings.chapterCount === "Auto" ? 5 : settings.chapterCount || 5,
+        params.chapterCount === "Auto" ? 5 : params.chapterCount || 5,
       maxChapters:
-        settings.chapterCount === "Auto" ? 10 : settings.chapterCount || 10,
-      userPreference: settings.userPreference || "",
+        params.chapterCount === "Auto" ? 10 : params.chapterCount || 10,
+      userPreference: params.userPreference || "",
     },
     model,
     "object",
   );
 }
 
-async function generatePlan(
-  sourceText: string,
-  toc: string[],
-  settings: GenerationSettings,
-) {
-  const model = getModel(settings.provider, settings.model);
+export async function generatePlan(params: {
+  sourceText: string;
+  toc: string[];
+  language: string;
+  provider: AIProvider;
+  model: string;
+}) {
+  const { sourceText, toc, language, provider, model } = params;
+  const languageModel = getModel(provider, model);
   return registry.runSpec(
     "book.plan@v1",
     {
       sourceText,
       toc,
-      language: settings.language || "Korean",
+      language,
     },
-    model,
+    languageModel,
     "object",
   );
 }
 
-async function generateChapterOutline(params: {
+export async function generateChapterOutline(params: {
   toc: string[];
   chapterTitle: string;
   chapterNumber: number;
   sourceText: string;
-  bookPlan: PlanOutput;
-  settings: GenerationSettings;
+  plan: PlanOutput;
+  provider: AIProvider;
+  model: string;
+  language: string;
+  userPreference?: string;
 }) {
-  const model = getModel(params.settings.provider, params.settings.model);
+  const {
+    toc,
+    chapterTitle,
+    chapterNumber,
+    sourceText,
+    plan,
+    provider,
+    model,
+    language,
+    userPreference,
+  } = params;
+
+  const languageModel = getModel(provider, model);
   return registry.runSpec(
     "book.chapter.outline@v1",
     {
-      ...params,
-      language: params.settings.language || "Korean",
+      toc,
+      chapterTitle,
+      chapterNumber,
+      sourceText,
+      plan,
+      language,
+      userPreference,
     },
-    model,
+    languageModel,
     "object",
   );
 }
 
-async function streamSectionDraft(params: {
+export async function streamSectionDraft(params: {
   chapterNumber: number;
   chapterTitle: string;
   chapterOutline: Array<{ title: string; summary: string }>;
@@ -126,7 +158,7 @@ async function streamSectionDraft(params: {
   );
 }
 
-async function streamSectionDraftDev(params: {
+export async function streamSectionDraftDev(params: {
   chapterNumber: number;
   chapterTitle: string;
   chapterOutline: Array<{ title: string; summary: string }>;
@@ -153,7 +185,7 @@ async function streamSectionDraftDev(params: {
   );
 }
 
-async function generateSectionDraftText(params: {
+export async function generateSectionDraftText(params: {
   chapterNumber: number;
   chapterTitle: string;
   chapterOutline: Array<{ title: string; summary: string }>;
@@ -180,7 +212,7 @@ async function generateSectionDraftText(params: {
   );
 }
 
-async function generateChapterSummary(
+export async function generateChapterSummary(
   chapterId: string,
   finalText: string,
   settings: GenerationSettings,
@@ -198,12 +230,9 @@ async function generateChapterSummary(
 }
 
 export const ai = {
-  generateTOC,
-  generatePlan,
   generateChapterOutline,
   streamSectionDraft,
   streamSectionDraftDev,
   generateSectionDraftText,
   generateChapterSummary,
 };
-

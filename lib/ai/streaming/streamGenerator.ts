@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
-import { ai } from "@/lib/ai/core/ai";
+import { ai, generatePlan } from "@/lib/ai/core/ai";
 import { PlanOutput } from "@/lib/ai/specs/plan";
 import { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
 import { AIProvider } from "@/lib/book/types";
@@ -137,11 +137,12 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
         if (savedPlan) {
           bookPlan = savedPlan;
         } else {
-          bookPlan = await ai.generatePlan(sourceText, toc, {
+          bookPlan = await generatePlan({
+            sourceText,
+            toc,
             provider: provider as AIProvider,
             model,
             language,
-            userPreference,
           });
 
           await db
@@ -282,8 +283,11 @@ async function* streamChapter(
     chapterTitle,
     chapterNumber,
     sourceText,
-    bookPlan,
-    settings,
+    plan: bookPlan,
+    provider: settings.provider,
+    model: settings.model,
+    language: settings.language,
+    userPreference: settings.userPreference,
   });
 
   yield {

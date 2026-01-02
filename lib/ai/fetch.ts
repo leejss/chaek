@@ -1,7 +1,6 @@
 import {
   AIProvider,
   Book,
-  ChapterOutline,
   ClaudeModel,
   GeminiModel,
   Section,
@@ -17,12 +16,19 @@ type SaveBookParams = {
   sourceText?: string;
 };
 
-export type TocResponse = {
-  title: string;
-  toc: string[];
-};
+import { z } from "zod";
+import { ChapterOutlineSchema } from "./specs/outline";
 
-export async function fetchTOC(
+const TocResponseSchema = z.object({
+  data: z.object({
+    title: z.string(),
+    chapters: z.array(z.string()),
+  }),
+});
+
+export type TocResponse = z.infer<typeof TocResponseSchema>;
+
+export async function fetchTableOfContent(
   sourceText: string,
   provider?: AIProvider,
   model?: GeminiModel | ClaudeModel,
@@ -46,9 +52,17 @@ export async function fetchTOC(
     throw new Error(error.error || "Failed to generate TOC");
   }
 
-  const data = await response.json();
-  return { title: data.title, toc: data.toc };
+  const result = await response.json();
+  return TocResponseSchema.parse(result);
 }
+
+const PlanResponseSchema = z.object({
+  data: z.object({
+    plan: PlanSchema,
+  }),
+});
+
+export type PlanResponse = z.infer<typeof PlanResponseSchema>;
 
 export async function fetchPlan(
   sourceText: string,
@@ -56,7 +70,7 @@ export async function fetchPlan(
   provider?: AIProvider,
   model?: GeminiModel | ClaudeModel,
   settings?: BookSettings,
-): Promise<PlanOutput> {
+): Promise<PlanResponse> {
   const response = await authFetch("/api/ai/plan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -75,9 +89,17 @@ export async function fetchPlan(
     throw new Error(error.error || "Failed to generate Plan");
   }
 
-  const data = await response.json();
-  return PlanSchema.parse(data.plan);
+  const result = await response.json();
+  return PlanResponseSchema.parse(result);
 }
+
+const OutlineResponseSchema = z.object({
+  data: z.object({
+    outline: ChapterOutlineSchema,
+  }),
+});
+
+export type OutlineResponse = z.infer<typeof OutlineResponseSchema>;
 
 export async function fetchOutline(params: {
   toc: string[];
@@ -87,7 +109,7 @@ export async function fetchOutline(params: {
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
   settings?: BookSettings;
-}): Promise<ChapterOutline> {
+}): Promise<OutlineResponse> {
   const { settings, ...rest } = params;
   const response = await authFetch("/api/ai/outline", {
     method: "POST",
@@ -104,8 +126,8 @@ export async function fetchOutline(params: {
     throw new Error(error.error || "Failed to generate outline");
   }
 
-  const data = await response.json();
-  return data.outline as ChapterOutline;
+  const result = await response.json();
+  return OutlineResponseSchema.parse(result);
 }
 
 export async function saveBookRequest(params: SaveBookParams) {

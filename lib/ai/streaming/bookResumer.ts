@@ -25,18 +25,29 @@ async function* streamChapter(
     chapterTitle,
     chapterNumber,
     sourceText: "",
-    bookPlan,
-    settings,
+    plan: bookPlan,
+    provider: settings.provider,
+    model: settings.model,
+    language: settings.language,
+    userPreference: settings.userPreference,
   });
 
   yield {
     type: "chapter_start",
-    data: { chapterNumber, title: chapterTitle, totalSections: outline.sections.length },
+    data: {
+      chapterNumber,
+      title: chapterTitle,
+      totalSections: outline.sections.length,
+    },
   };
 
   let chapterContent = `## ${chapterTitle}\n\n`;
 
-  for (let sectionIndex = 0; sectionIndex < outline.sections.length; sectionIndex++) {
+  for (
+    let sectionIndex = 0;
+    sectionIndex < outline.sections.length;
+    sectionIndex++
+  ) {
     const section = outline.sections[sectionIndex];
 
     yield {
@@ -64,7 +75,10 @@ async function* streamChapter(
     let sectionText = "";
     for await (const chunk of result.textStream) {
       sectionText += chunk;
-      yield { type: "chunk", data: { chapterNumber, sectionIndex, content: chunk } };
+      yield {
+        type: "chunk",
+        data: { chapterNumber, sectionIndex, content: chunk },
+      };
     }
 
     chapterContent += sectionText + "\n\n";
@@ -166,26 +180,46 @@ export async function resumeBook(config: ResumeConfig): Promise<Response> {
 
     const resumeFrom = startFromChapter || (completedChapters.length || 0) + 1;
 
-    const settings = bookData.generationSettings as {
-      provider: AIProvider;
-      model: string;
-      language: string;
-      userPreference: string;
-    } | null | undefined;
+    const settings = bookData.generationSettings as
+      | {
+          provider: AIProvider;
+          model: string;
+          language: string;
+          userPreference: string;
+        }
+      | null
+      | undefined;
 
-    const events = (async function* (): AsyncGenerator<SSEEvent, void, unknown> {
+    const events = (async function* (): AsyncGenerator<
+      SSEEvent,
+      void,
+      unknown
+    > {
       yield {
         type: "progress",
-        data: { phase: "resuming", message: `${resumeFrom}챕터부터 재개 중...` },
+        data: {
+          phase: "resuming",
+          message: `${resumeFrom}챕터부터 재개 중...`,
+        },
       };
 
-      for (let chapterNum = resumeFrom; chapterNum <= toc.length; chapterNum++) {
-        yield* streamChapter(bookId, chapterNum, toc[chapterNum - 1], bookPlan, {
-          provider: (settings?.provider ?? "google") as AIProvider,
-          model: settings?.model ?? "gemini-3-flash-preview",
-          language: settings?.language ?? "Korean",
-          userPreference: settings?.userPreference ?? "",
-        });
+      for (
+        let chapterNum = resumeFrom;
+        chapterNum <= toc.length;
+        chapterNum++
+      ) {
+        yield* streamChapter(
+          bookId,
+          chapterNum,
+          toc[chapterNum - 1],
+          bookPlan,
+          {
+            provider: (settings?.provider ?? "google") as AIProvider,
+            model: settings?.model ?? "gemini-3-flash-preview",
+            language: settings?.language ?? "Korean",
+            userPreference: settings?.userPreference ?? "",
+          },
+        );
       }
 
       const chapterRows = await db
@@ -220,7 +254,9 @@ export async function resumeBook(config: ResumeConfig): Promise<Response> {
     return createSSEResponse(events);
   } catch (error) {
     const httpError = error instanceof HttpError ? error : null;
-    const errorMessage = httpError?.publicMessage ?? (error instanceof Error ? error.message : "Unknown error");
+    const errorMessage =
+      httpError?.publicMessage ??
+      (error instanceof Error ? error.message : "Unknown error");
 
     return new NextResponse(
       JSON.stringify({ ok: false, error: errorMessage }),

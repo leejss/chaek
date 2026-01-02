@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { GenerateBookJob } from "@/lib/ai/jobs/types";
-import { ai } from "@/lib/ai/core/ai";
+import { ai, generatePlan } from "@/lib/ai/core/ai";
 import { PlanOutput } from "@/lib/ai/specs/plan";
 import { BookSettings } from "@/lib/book/settings";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
@@ -82,11 +82,12 @@ async function initGeneration(job: GenerateBookJob) {
   const existingPlan = book.bookPlan as PlanOutput | null | undefined;
 
   if (!existingPlan) {
-    const plan = await ai.generatePlan(book.sourceText, toc, {
+    const plan = await generatePlan({
+      sourceText: book.sourceText,
+      toc,
       provider: job.provider,
       model: job.model,
       language: settings.language,
-      userPreference: settings.userPreference,
     });
 
     await db
@@ -179,13 +180,11 @@ async function generateChapter(job: GenerateBookJob) {
     chapterTitle,
     chapterNumber,
     sourceText: book.sourceText,
-    bookPlan: plan,
-    settings: {
-      provider: job.provider,
-      model: job.model,
-      language: job.language,
-      userPreference: job.userPreference ?? "",
-    },
+    plan: plan,
+    provider: job.provider,
+    model: job.model,
+    language: job.language,
+    userPreference: job.userPreference ?? "",
   });
 
   let chapterContent = `## ${chapterTitle}\n\n`;
