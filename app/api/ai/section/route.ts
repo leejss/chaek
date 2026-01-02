@@ -1,4 +1,4 @@
-import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { ai } from "@/lib/ai/core/ai";
 import { AIProvider, Section } from "@/lib/book/types";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    const result = await orchestrator.streamSectionDraft({
+    const result = await ai.streamSectionDraft({
       chapterNumber,
       chapterTitle,
       chapterOutline: chapterOutline as Section[],

@@ -9,6 +9,8 @@ import { cookies } from "next/headers";
 import ReactMarkdown from "react-markdown";
 import BookView from "./_components/BookView";
 import { Book } from "@/lib/book/types";
+import type { ReactNode } from "react";
+import type { Components } from "react-markdown";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -50,8 +52,14 @@ export default async function BookDetailPage({ params }: PageProps) {
 
   const headings = extractTOC(book.content);
 
+  type MarkdownProps = {
+    children?: ReactNode;
+    className?: string;
+    [key: string]: unknown;
+  };
+
   const components = {
-    h1: ({ children, ...props }: any) => {
+    h1: ({ children, ...props }: MarkdownProps) => {
       const text = typeof children === "string" ? children : String(children);
       return (
         <h1
@@ -64,7 +72,7 @@ export default async function BookDetailPage({ params }: PageProps) {
         </h1>
       );
     },
-    h2: ({ children, ...props }: any) => {
+    h2: ({ children, ...props }: MarkdownProps) => {
       const text = typeof children === "string" ? children : String(children);
       return (
         <h2
@@ -77,7 +85,7 @@ export default async function BookDetailPage({ params }: PageProps) {
         </h2>
       );
     },
-    h3: ({ children, ...props }: any) => {
+    h3: ({ children, ...props }: MarkdownProps) => {
       const text = typeof children === "string" ? children : String(children);
       return (
         <h3
@@ -90,34 +98,34 @@ export default async function BookDetailPage({ params }: PageProps) {
         </h3>
       );
     },
-    h4: ({ ...props }: any) => (
+    h4: ({ ...props }: MarkdownProps) => (
       <h4
         className="text-lg font-semibold mt-6 mb-2 text-ink-800"
         {...props}
       />
     ),
-    h5: ({ ...props }: any) => (
+    h5: ({ ...props }: MarkdownProps) => (
       <h5
         className="text-base font-bold mt-4 mb-2 text-ink-700 uppercase tracking-wide"
         {...props}
       />
     ),
-    p: ({ ...props }: any) => (
+    p: ({ ...props }: MarkdownProps) => (
       <p className="leading-loose mb-4 text-lg" {...props} />
     ),
-    ul: ({ ...props }: any) => (
+    ul: ({ ...props }: MarkdownProps) => (
       <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />
     ),
-    ol: ({ ...props }: any) => (
+    ol: ({ ...props }: MarkdownProps) => (
       <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />
     ),
-    blockquote: ({ ...props }: any) => (
+    blockquote: ({ ...props }: MarkdownProps) => (
       <blockquote
         className="border-l-4 border-accent-500 pl-4 italic text-ink-400 my-6"
         {...props}
       />
     ),
-    code: async ({ className, children, ...props }: any) => {
+    code: async ({ className, children, ...props }: MarkdownProps) => {
       const content = String(children).replace(/\n$/, "");
       const match = /language-(\w+)/.exec(className || "");
 
@@ -148,12 +156,12 @@ export default async function BookDetailPage({ params }: PageProps) {
         </div>
       );
     },
-    pre: ({ children }: any) => <>{children}</>,
-  };
+    pre: ({ children }: MarkdownProps) => <>{children}</>,
+  } as unknown as Components;
 
   const markdownHtml = (
     <div className="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:font-medium prose-p:leading-relaxed prose-p:text-stone-700">
-      <ReactMarkdown components={components as any}>{book.content}</ReactMarkdown>
+      <ReactMarkdown components={components}>{book.content}</ReactMarkdown>
     </div>
   );
 

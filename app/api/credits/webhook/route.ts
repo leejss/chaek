@@ -3,6 +3,20 @@ import crypto from "crypto";
 import { addCredits, refundCredits } from "@/lib/credits/operations";
 import { serverEnv } from "@/lib/env";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getRecord(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) return null;
+  return value;
+}
+
+function getString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  return value;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -24,9 +38,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    const event = JSON.parse(rawBody);
+    const event: unknown = JSON.parse(rawBody);
+    const eventRecord = getRecord(event);
+    if (!eventRecord) {
+      console.error("Invalid webhook event shape");
+      return NextResponse.json({ error: "Invalid event" }, { status: 400 });
+    }
 
-    switch (event.meta.event_name) {
+    const meta = getRecord(eventRecord.meta);
+    const eventName = getString(meta?.event_name);
+    if (!eventName) {
+      console.error("Missing event_name");
+      return NextResponse.json({ error: "Invalid event" }, { status: 400 });
+    }
+
+    switch (eventName) {
       case "order_created":
         await handleOrderCreated(event);
         break;
@@ -34,7 +60,7 @@ export async function POST(req: NextRequest) {
         await handleOrderRefunded(event);
         break;
       default:
-        console.log(`Unhandled event type: ${event.meta.event_name}`);
+        console.log(`Unhandled event type: ${eventName}`);
     }
 
     return NextResponse.json({ received: true });
@@ -47,55 +73,85 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function handleOrderCreated(event: any) {
-  const customData = event.meta.custom_data;
-  const orderId = event.data.id;
+async function handleOrderCreated(event: unknown) {
+  const eventRecord = getRecord(event);
+  const meta = getRecord(eventRecord?.meta);
+  const customData = getRecord(meta?.custom_data);
 
-  if (!customData?.user_id || !customData?.credits) {
+  const data = getRecord(eventRecord?.data);
+  const orderId = getString(data?.id);
+
+  const userId = getString(customData?.user_id);
+  const creditsRaw = getString(customData?.credits);
+  if (!orderId || !userId || !creditsRaw) {
     console.error("Missing custom data in order:", orderId);
     return;
   }
 
-  const creditAmount = parseInt(customData.credits, 10);
+  const creditAmount = parseInt(creditsRaw, 10);
+  if (!Number.isFinite(creditAmount)) {
+    console.error("Invalid credits in order:", orderId);
+    return;
+  }
+
+  const packageId = getString(customData?.package_id);
+  const attributes = getRecord(data?.attributes);
+  const orderNumber = attributes?.order_number;
+  const total = attributes?.total;
+  const currency = attributes?.currency;
 
   await addCredits({
-    userId: customData.user_id,
+    userId,
     amount: creditAmount,
     type: "purchase",
     lemonSqueezyOrderId: orderId,
     metadata: {
-      packageId: customData.package_id,
-      orderNumber: event.data.attributes.order_number,
-      total: event.data.attributes.total,
-      currency: event.data.attributes.currency,
+      packageId,
+      orderNumber,
+      total,
+      currency,
     },
   });
 
-  console.log(`Credits added for user ${customData.user_id}: ${creditAmount}`);
+  console.log(`Credits added for user ${userId}: ${creditAmount}`);
 }
 
-async function handleOrderRefunded(event: any) {
-  const customData = event.meta.custom_data;
-  const orderId = event.data.id;
+async function handleOrderRefunded(event: unknown) {
+  const eventRecord = getRecord(event);
+  const meta = getRecord(eventRecord?.meta);
+  const customData = getRecord(meta?.custom_data);
 
-  if (!customData?.user_id || !customData?.credits) {
+  const data = getRecord(eventRecord?.data);
+  const orderId = getString(data?.id);
+
+  const userId = getString(customData?.user_id);
+  const creditsRaw = getString(customData?.credits);
+  if (!orderId || !userId || !creditsRaw) {
     console.error("Missing custom data in refund:", orderId);
     return;
   }
 
-  const creditAmount = parseInt(customData.credits, 10);
+  const creditAmount = parseInt(creditsRaw, 10);
+  if (!Number.isFinite(creditAmount)) {
+    console.error("Invalid credits in refund:", orderId);
+    return;
+  }
+
+  const attributes = getRecord(data?.attributes);
+  const refundedAt = attributes?.refunded_at;
+  const orderNumber = attributes?.order_number;
 
   await refundCredits({
-    userId: customData.user_id,
+    userId,
     amount: creditAmount,
     lemonSqueezyOrderId: orderId,
     metadata: {
-      refundedAt: event.data.attributes.refunded_at,
-      orderNumber: event.data.attributes.order_number,
+      refundedAt,
+      orderNumber,
     },
   });
 
   console.log(
-    `Credits refunded for user ${customData.user_id}: ${creditAmount}`,
+    `Credits refunded for user ${userId}: ${creditAmount}`,
   );
 }

@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { GenerateBookJob } from "@/lib/ai/jobs/types";
-import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { ai } from "@/lib/ai/core/ai";
 import { PlanOutput } from "@/lib/ai/specs/plan";
 import { BookSettings } from "@/lib/book/settings";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
@@ -82,7 +82,7 @@ async function initGeneration(job: GenerateBookJob) {
   const existingPlan = book.bookPlan as PlanOutput | null | undefined;
 
   if (!existingPlan) {
-    const plan = await orchestrator.generatePlan(book.sourceText, toc, {
+    const plan = await ai.generatePlan(book.sourceText, toc, {
       provider: job.provider,
       model: job.model,
       language: settings.language,
@@ -174,7 +174,7 @@ async function generateChapter(job: GenerateBookJob) {
   const plan = book.bookPlan as PlanOutput | null | undefined;
   if (!plan) throw new Error("Book plan missing");
 
-  const outline = await orchestrator.generateChapterOutline({
+  const outline = await ai.generateChapterOutline({
     toc,
     chapterTitle,
     chapterNumber,
@@ -196,7 +196,7 @@ async function generateChapter(job: GenerateBookJob) {
     sectionIndex < outline.sections.length;
     sectionIndex++
   ) {
-    const sectionText = await orchestrator.generateSectionDraftText({
+    const sectionText = await ai.generateSectionDraftText({
       chapterNumber,
       chapterTitle,
       chapterOutline: outline.sections,

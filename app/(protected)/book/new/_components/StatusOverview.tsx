@@ -104,7 +104,7 @@ export default function StatusOverview() {
             <div className="bg-white p-3 rounded-xl border border-neutral-200">
               {sourceText ? (
                 <p className="text-sm text-neutral-700 line-clamp-4 leading-relaxed italic">
-                  "{sourceText}"
+                  &quot;{sourceText}&quot;
                 </p>
               ) : (
                 <p className="text-sm text-neutral-500 italic">

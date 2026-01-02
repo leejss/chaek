@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { ai } from "@/lib/ai/core/ai";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data);
 
-    const toc = await orchestrator.generateTOC(sourceText, {
+    const toc = await ai.generateTOC(sourceText, {
       provider,
       model: model as GeminiModel | ClaudeModel,
       language: language as Language,

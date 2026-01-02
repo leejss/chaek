@@ -1,4 +1,4 @@
-import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { ai } from "@/lib/ai/core/ai";
 import { AIProvider } from "@/lib/book/types";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     const chapterTitle = toc[chapterNumber - 1];
     if (!chapterTitle) throw new Error("Chapter title not found in TOC");
 
-    const outline = await orchestrator.generateChapterOutline({
+    const outline = await ai.generateChapterOutline({
       toc,
       chapterTitle,
       chapterNumber,

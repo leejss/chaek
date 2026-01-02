@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { ai } from "@/lib/ai/core/ai";
 import { AIProvider } from "@/lib/book/types";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const { sourceText, toc, provider, model, language, userPreference } =
       parseAndValidateBody(jsonResult.data);
 
-    const plan = await orchestrator.generatePlan(sourceText, toc, {
+    const plan = await ai.generatePlan(sourceText, toc, {
       provider,
       model,
       language,

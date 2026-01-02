@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
-import { orchestrator } from "@/lib/ai/core/orchestrator";
+import { ai } from "@/lib/ai/core/ai";
 import { PlanOutput } from "@/lib/ai/specs/plan";
 import { SSEEvent, ResumeConfig } from "@/lib/ai/types/streaming";
 import { AIProvider } from "@/lib/book/types";
@@ -20,7 +20,7 @@ async function* streamChapter(
     userPreference: string;
   },
 ): AsyncGenerator<SSEEvent, void, unknown> {
-  const outline = await orchestrator.generateChapterOutline({
+  const outline = await ai.generateChapterOutline({
     toc: [],
     chapterTitle,
     chapterNumber,
@@ -51,7 +51,7 @@ async function* streamChapter(
         summary: s.summary,
       }));
 
-    const result = await orchestrator.streamSectionDraft({
+    const result = await ai.streamSectionDraft({
       chapterNumber,
       chapterTitle,
       chapterOutline: outline.sections,
