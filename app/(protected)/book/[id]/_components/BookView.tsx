@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Download, List, AlignLeft } from "lucide-react";
+import { ChevronLeft, Download, List, AlignLeft, Play } from "lucide-react";
 import Button from "@/app/(protected)/book/_components/Button";
 import { Book } from "@/lib/book/types";
+import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 
 interface TOCItem {
   id: string;
@@ -24,6 +26,7 @@ export default function BookView({
   markdownHtml,
   status,
 }: BookViewProps) {
+  const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeText, setActiveText] = useState<string>("");
   const [showMobileTOC, setShowMobileTOC] = useState(false);
@@ -131,6 +134,15 @@ export default function BookView({
         </div>
 
         <div className="flex items-center gap-2">
+          {(status === "failed" || status === "generating") && (
+            <Button
+              onClick={() => router.push(`/book/new/${book.id}`)}
+              className="text-xs h-8 px-3 bg-brand-600 hover:bg-brand-700 text-white border-transparent"
+            >
+              <Play size={14} className="mr-2" />
+              Resume Generation
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleDownloadMarkdown}
@@ -211,16 +223,10 @@ export default function BookView({
                 {status && (
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      status === "generating"
-                        ? "bg-amber-100 text-amber-700"
-                        : status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : status === "failed"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-gray-100 text-gray-700"
+                      STATUS_COLORS[status] || STATUS_COLORS.draft
                     }`}
                   >
-                    {status}
+                    {STATUS_LABELS[status] || status}
                   </span>
                 )}
               </div>

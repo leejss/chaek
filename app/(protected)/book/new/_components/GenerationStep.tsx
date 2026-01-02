@@ -29,15 +29,29 @@ function getPhaseLabel(
 }
 
 export default function GenerationStep() {
-  const generationProgress = useGenerationStore((state) => state.generationProgress) || { phase: "idle" };
+  const generationProgress = useGenerationStore(
+    (state) => state.generationProgress,
+  ) || { phase: "idle" };
   const chapters = useGenerationStore((state) => state.chapters);
-  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const viewingChapterIndex = useGenerationStore(
+    (state) => state.viewingChapterIndex,
+  );
   const tableOfContents = useGenerationStore((state) => state.tableOfContents);
-  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
-  const awaitingChapterDecision = useGenerationStore((state) => state.awaitingChapterDecision);
-  const currentChapterContent = useGenerationStore((state) => state.currentChapterContent);
-  const cancelGeneration = useGenerationStore((state) => state.actions.cancelGeneration);
-  const confirmChapter = useGenerationStore((state) => state.actions.confirmChapter);
+  const currentChapterIndex = useGenerationStore(
+    (state) => state.currentChapterIndex,
+  );
+  const awaitingChapterDecision = useGenerationStore(
+    (state) => state.awaitingChapterDecision,
+  );
+  const currentChapterContent = useGenerationStore(
+    (state) => state.currentChapterContent,
+  );
+  const cancelGeneration = useGenerationStore(
+    (state) => state.actions.cancelGeneration,
+  );
+  const confirmChapter = useGenerationStore(
+    (state) => state.actions.confirmChapter,
+  );
 
   const {
     phase,
@@ -119,32 +133,13 @@ export default function GenerationStep() {
 
   return (
     <div className="w-full pb-32">
-      {/* Sticky Header with Status and Tabs */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur z-20 border-b border-neutral-200 shadow-sm">
-        {isViewingCurrentChapter && (
-          <div className="py-2 bg-brand-50/50 border-b border-brand-100 flex items-center justify-center gap-2 text-brand-700">
-            {!isReview && !isCompleted && (
-              <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-brand-600 border-t-transparent"></div>
-            )}
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              {phaseLabel}
-              {currentChapter && totalChapters && (
-                <span className="ml-2 opacity-70">
-                  Chapter {currentChapter} / {totalChapters}
-                </span>
-              )}
-            </span>
-          </div>
-        )}
-        <ChapterTabs />
-      </div>
-
+      <ChapterTabs />
       <div className="max-w-3xl mx-auto pt-6 px-4">
         {/* Chapter Info Card */}
         {isViewingCurrentChapter &&
           tableOfContents &&
           typeof currentChapterIndex === "number" && (
-            <div className="mb-6 bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
+            <div className="mb-6 bg-white border border-neutral-200 p-5 ">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-medium px-2 py-0.5 bg-brand-100 text-brand-700 rounded-full">
                   Writing Now
@@ -247,9 +242,7 @@ export default function GenerationStep() {
             <Button
               onClick={confirmChapter}
               className="flex-1 bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-lg transition-all"
-              disabled={
-                !awaitingChapterDecision || !confirmChapter
-              }
+              disabled={!awaitingChapterDecision || !confirmChapter}
             >
               Confirm & Continue
             </Button>
