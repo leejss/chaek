@@ -9,14 +9,7 @@ import { useSettingsStore } from "@/lib/book/settingsStore";
 import ChapterTabs from "./ChapterTabs";
 import ChapterContentDisplay from "./ChapterContentDisplay";
 
-interface GenerationStepProps {
-  phase?: string;
-  currentChapter?: number;
-  totalChapters?: number;
-  currentSection?: number;
-  totalSections?: number;
-  currentOutline?: ChapterOutline | null;
-}
+interface GenerationStepProps {}
 
 function getPhaseLabel(
   phase: string,
@@ -38,24 +31,19 @@ function getPhaseLabel(
   }
 }
 
-export default function GenerationStep(props: GenerationStepProps) {
-  const {
-    phase: propsPhase,
-    currentSection: propsCurrentSection,
-    totalSections: propsTotalSections,
-    currentOutline: propsCurrentOutline,
-  } = props;
-
+export default function GenerationStep(_props: GenerationStepProps) {
   const generationProgress = useBookStore(
     (state) => state.generationProgress || { phase: "idle" },
   );
 
-  const phase = propsPhase ?? generationProgress.phase;
-  const currentSection =
-    propsCurrentSection ?? generationProgress.currentSection;
-  const totalSections = propsTotalSections ?? generationProgress.totalSections;
-  const currentOutline =
-    propsCurrentOutline ?? generationProgress.currentOutline;
+  const {
+    phase,
+    currentSection,
+    totalSections,
+    currentOutline,
+    currentChapter,
+    totalChapters,
+  } = generationProgress;
 
   const chapters = useBookStore((state) => state.chapters);
   const viewingChapterIndex = useBookStore(
@@ -73,7 +61,11 @@ export default function GenerationStep(props: GenerationStepProps) {
 
   const [isCopied, setIsCopied] = useState(false);
 
-  const phaseLabel = getPhaseLabel(phase, currentSection, totalSections);
+  const phaseLabel = getPhaseLabel(
+    phase || "idle",
+    currentSection,
+    totalSections,
+  );
   const isReview = phase === "review";
   const isCompleted = phase === "completed";
 
@@ -147,6 +139,11 @@ export default function GenerationStep(props: GenerationStepProps) {
             )}
             <span className="text-xs font-semibold uppercase tracking-wider">
               {phaseLabel}
+              {currentChapter && totalChapters && (
+                <span className="ml-2 opacity-70">
+                  Chapter {currentChapter} / {totalChapters}
+                </span>
+              )}
             </span>
           </div>
         )}

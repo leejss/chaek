@@ -85,18 +85,6 @@ export async function* fetchStreamSection(params: {
   }
 }
 
-export async function fetchBooks(): Promise<Book[]> {
-  const response = await authFetch("/api/books");
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to fetch books");
-  }
-
-  const data = await response.json();
-  return data.books as Book[];
-}
-
 export async function fetchBookById(id: string): Promise<Book> {
   const response = await authFetch(`/api/books/${id}`);
 

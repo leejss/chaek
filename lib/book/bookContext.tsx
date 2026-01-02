@@ -153,6 +153,21 @@ export const useBookStore = create(
           set(draft, false, "book/updateDraft");
         },
 
+        updateGenerationProgress: (
+          progress: Partial<BookContextState["generationProgress"]>,
+        ) => {
+          set(
+            (state) => ({
+              generationProgress: {
+                ...state.generationProgress,
+                ...progress,
+              },
+            }),
+            false,
+            "book/updateGenerationProgress",
+          );
+        },
+
         setActiveBook: (book: Book) => {
           set(
             {
@@ -378,7 +393,14 @@ export const useBookStore = create(
             {
               savedBookId: bookId,
               error: null,
-              generationProgress: { phase: "sections" },
+              generationProgress: {
+                phase: "deducting_credits",
+                currentChapter: 1,
+                totalChapters: get().tableOfContents.length,
+                currentSection: 0,
+                totalSections: 0,
+                currentOutline: undefined,
+              },
               bookGenerationStarted: true,
               generationCancelled: false,
               flowStatus: "generating",
@@ -408,7 +430,11 @@ export const useBookStore = create(
               streamingContent,
               viewingChapterIndex: chapters.length,
               currentChapterIndex,
-              generationProgress: { phase: "sections" },
+              generationProgress: {
+                phase: "generating_sections",
+                currentChapter: (currentChapterIndex || 0) + 1,
+                totalChapters: get().tableOfContents.length,
+              },
             },
             false,
             "book/syncGenerationProgress",
@@ -422,7 +448,7 @@ export const useBookStore = create(
               awaitingChapterDecision: false,
               currentChapterIndex: null,
               flowStatus: "toc_review",
-              generationProgress: { phase: "idle" },
+              generationProgress: { phase: "error", error },
               bookGenerationStarted: false,
             },
             false,
@@ -439,12 +465,33 @@ export const useBookStore = create(
               currentChapterIndex: null,
               currentChapterContent: "",
               awaitingChapterDecision: false,
-              generationProgress: { phase: "idle" },
+              generationProgress: { phase: "completed" },
               bookGenerationStarted: false,
               completedSteps: new Set([...completedSteps, "completed"]),
             },
             false,
             "book/completeGeneration",
+          );
+        },
+
+        finishChapter: (title: string, content: string) => {
+          const state = get();
+          const newChapter = {
+            chapterNumber: (state.currentChapterIndex || 0) + 1,
+            chapterTitle: title,
+            content: content,
+            isComplete: true,
+          };
+
+          set(
+            {
+              chapters: [...state.chapters, newChapter],
+              currentChapterContent: "",
+              currentChapterIndex: (state.currentChapterIndex || 0) + 1,
+              viewingChapterIndex: state.chapters.length + 1, // Auto-advance view to next
+            },
+            false,
+            "book/finishChapter",
           );
         },
       };

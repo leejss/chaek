@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useBookStore } from "@/lib/book/bookContext";
+import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import {
   Book,
@@ -9,35 +9,17 @@ import {
   ClaudeModel,
   ChapterOutline,
   Section,
+  BookContextState,
 } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
-import { PlanOutput } from "@/lib/ai/specs/plan";
 import GenerationStep from "../../_components/GenerationStep";
 import Button from "../../../_components/Button";
 import StatusOverview from "../../_components/StatusOverview";
+
 interface GenerationViewProps {
   initialBook: Book;
-}
-
-type GenerationPhase =
-  | "idle"
-  | "deducting_credits"
-  | "planning"
-  | "outlining"
-  | "generating_sections"
-  | "completed"
-  | "error";
-
-interface GenerationState {
-  phase: GenerationPhase;
-  currentChapter: number;
-  totalChapters: number;
-  currentSection: number;
-  totalSections: number;
-  currentOutline: ChapterOutline | null;
-  error: string | null;
 }
 
 export default function GenerationView({ initialBook }: GenerationViewProps) {
@@ -46,23 +28,17 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
   const abortRef = useRef<AbortController | null>(null);
 
   const [isDeductingCredits, setIsDeductingCredits] = useState(false);
-  const [generationState, setGenerationState] = useState<GenerationState>({
-    phase: "idle",
-    currentChapter: 0,
-    totalChapters: initialBook.tableOfContents.length,
-    currentSection: 0,
-    totalSections: 0,
-    currentOutline: null,
-    error: null,
-  });
 
   useEffect(() => {
     store.actions.initializeFromBook(initialBook);
   }, [initialBook, store.actions]);
 
-  const updateProgress = useCallback((updates: Partial<GenerationState>) => {
-    setGenerationState((prev) => ({ ...prev, ...updates }));
-  }, []);
+  const updateProgress = useCallback(
+    (updates: Partial<BookContextState["generationProgress"]>) => {
+      store.actions.updateGenerationProgress(updates);
+    },
+    [store.actions],
+  );
 
   const clearError = useCallback(() => {
     updateProgress({ error: null });
@@ -101,14 +77,13 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
       await deductCreditsAction(initialBook.id);
 
       setupGeneration(initialBook.id);
-      setGenerationState((prev) => ({
-        ...prev,
+      updateProgress({
         phase: "planning",
         totalChapters: tableOfContents.length,
         currentChapter: 1,
         currentSection: 0,
         totalSections: 0,
-      }));
+      });
 
       const bookPlan = await generatePlanAction({
         sourceText: sourceText || "",
@@ -131,7 +106,7 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
           phase: "outlining",
           currentChapter: chapterNum,
           currentSection: 0,
-          currentOutline: null,
+          currentOutline: undefined,
         });
 
         const chapterTitle = tableOfContents[chapterNum - 1];
@@ -191,30 +166,31 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
           updateProgress({ currentSection: sectionIndex + 1 });
         }
 
-        const { completeGeneration } = store.actions;
-        const { content } = useBookStore.getState();
-        completeGeneration(content);
+        const { currentChapterContent } = useBookStore.getState();
+        bookStoreActions.finishChapter(chapterTitle, currentChapterContent);
 
         updateProgress({
           currentChapter: chapterNum + 1,
           currentSection: 0,
           totalSections: 0,
-          currentOutline: null,
+          currentOutline: undefined,
         });
       }
 
-      setGenerationState((prev) => ({
-        ...prev,
+      const { completeGeneration } = store.actions;
+      const { content } = useBookStore.getState();
+      completeGeneration(content);
+
+      updateProgress({
         phase: "completed",
         currentChapter: tableOfContents.length,
-      }));
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "알 수 없는 오류";
-      setGenerationState((prev) => ({
-        ...prev,
+      updateProgress({
         phase: "error",
         error: message,
-      }));
+      });
       store.actions.failGeneration(message);
     } finally {
       setIsDeductingCredits(false);
@@ -227,28 +203,21 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
   }, []);
 
   const isActuallyGenerating =
-    generationState.phase !== "idle" &&
-    generationState.phase !== "error" &&
-    generationState.phase !== "completed";
+    store.generationProgress.phase !== "idle" &&
+    store.generationProgress.phase !== "error" &&
+    store.generationProgress.phase !== "completed";
 
   if (isActuallyGenerating) {
     return (
       <div className="max-w-3xl mx-auto pb-32">
-        <GenerationStep
-          phase={generationState.phase}
-          currentChapter={generationState.currentChapter}
-          totalChapters={generationState.totalChapters}
-          currentSection={generationState.currentSection}
-          totalSections={generationState.totalSections}
-          currentOutline={generationState.currentOutline}
-        />
+        <GenerationStep />
         <StatusOverview
           onCancel={handleCancel}
           isGenerating={isActuallyGenerating}
         />
-        {generationState.error && (
+        {store.generationProgress.error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {generationState.error}
+            {store.generationProgress.error}
           </div>
         )}
       </div>
@@ -292,9 +261,9 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
         </Button>
       </div>
 
-      {generationState.error && (
+      {store.generationProgress.error && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {generationState.error}
+          {store.generationProgress.error}
         </div>
       )}
     </div>

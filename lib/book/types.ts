@@ -81,17 +81,22 @@ export type AIConfiguration = {
 
 export type GenerationPhase =
   | "idle"
-  | "plan"
-  | "outline"
-  | "sections"
-  | "refinement"
-  | "review";
+  | "deducting_credits"
+  | "planning"
+  | "outlining"
+  | "generating_sections"
+  | "review"
+  | "completed"
+  | "error";
 
 export type GenerationProgress = {
   phase: GenerationPhase;
+  currentChapter?: number;
+  totalChapters?: number;
   currentSection?: number;
   totalSections?: number;
   currentOutline?: ChapterOutline;
+  error?: string | null;
 };
 
 export type ChapterContent = {
