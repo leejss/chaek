@@ -1,14 +1,16 @@
-import { z } from "zod";
-import { ai } from "@/lib/ai/core/ai";
-import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
+import { getProviderByModel, isValidModel } from "@/lib/ai/config";
+import { generateTableOfContent } from "@/lib/ai/core/ai";
+import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+import {
+  readJson,
+  normalizeToHttpError,
+  httpErrorToResponse,
+  parseAndValidateBody,
+} from "@/utils";
 import { NextResponse } from "next/server";
-import { isValidModel, getProviderByModel } from "@/lib/ai/config";
-import { Language } from "@/lib/book/settings";
-import { TocSchema } from "@/lib/ai/specs/toc";
+import { z } from "zod";
 
-const tocRequestSchema = z
+const requestSchema = z
   .object({
     sourceText: z.string().min(1, "Must be a non-empty string"),
     provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
@@ -18,7 +20,9 @@ const tocRequestSchema = z
       .refine(isValidModel, {
         message: "Unknown model",
       }),
-    language: z.string().default("Korean"),
+    language: z
+      .enum(["Korean", "English", "Japanese", "Chinese", "Auto"])
+      .default("Korean"),
     chapterCount: z
       .union([z.number().int().min(3).max(10), z.literal("Auto")])
       .default("Auto"),
@@ -35,36 +39,6 @@ const tocRequestSchema = z
     },
   );
 
-function parseAndValidateBody(body: unknown) {
-  const result = tocRequestSchema.safeParse(body);
-
-  if (!result.success) {
-    throw new HttpError(400, "Invalid request body");
-  }
-
-  return result.data;
-}
-
-function normalizeToHttpError(error: unknown): HttpError | null {
-  if (error instanceof InvalidJsonError) {
-    return new HttpError(400, "Invalid JSON");
-  }
-  if (error instanceof HttpError) {
-    return error;
-  }
-  return null;
-}
-
-function httpErrorToResponse(httpError: HttpError) {
-  return NextResponse.json(
-    {
-      error: httpError.publicMessage,
-      ok: false,
-    },
-    { status: httpError.status },
-  );
-}
-
 export async function POST(req: Request) {
   try {
     const jsonResult = await readJson(req);
@@ -77,17 +51,17 @@ export async function POST(req: Request) {
       language,
       chapterCount,
       userPreference,
-    } = parseAndValidateBody(jsonResult.data);
+    } = parseAndValidateBody(jsonResult.data, requestSchema);
 
-    const toc = await ai.generateTOC(sourceText, {
+    const { title, chapters } = await generateTableOfContent({
+      sourceText,
       provider,
-      model: model as GeminiModel | ClaudeModel,
-      language: language as Language,
+      model,
+      language,
       chapterCount,
       userPreference,
     });
-
-    return NextResponse.json({ title: toc.title, toc: toc.chapters });
+    return NextResponse.json({ data: { title, chapters } });
   } catch (error) {
     console.error("TOC generation API error:", error);
 

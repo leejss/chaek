@@ -2,8 +2,8 @@ import { db } from "@/db";
 import { books, creditTransactions } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
 import { enqueueGenerateBookJob } from "@/lib/ai/worker/bookGenerationQueue";
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
+import { HttpError } from "@/lib/errors";
+import { readJson, normalizeToHttpError } from "@/utils";
 import { and, eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
@@ -26,14 +26,6 @@ const requestSchema = z.object({
     .default("Korean"),
   userPreference: z.string().default(""),
 });
-
-function normalizeToHttpError(error: unknown): HttpError | null {
-  if (error == null) return new HttpError(500, "Internal server error");
-  if (error instanceof InvalidJsonError)
-    return new HttpError(400, "Invalid JSON");
-  if (error instanceof HttpError) return error;
-  return null;
-}
 
 export async function POST(
   req: NextRequest,

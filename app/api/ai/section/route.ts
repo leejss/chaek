@@ -1,8 +1,7 @@
 import { ai } from "@/lib/ai/core/ai";
 import { AIProvider, Section } from "@/lib/book/types";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
+import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -36,22 +35,6 @@ const sectionRequestSchema = z
     path: ["sectionIndex"],
   });
 
-function parseAndValidateBody(body: unknown) {
-  const result = sectionRequestSchema.safeParse(body);
-  if (!result.success) {
-    throw new HttpError(400, "Invalid request body");
-  }
-  return result.data;
-}
-
-function normalizeToHttpError(error: unknown): HttpError | null {
-  if (error == null) return new HttpError(500, "Internal server error");
-  if (error instanceof InvalidJsonError)
-    return new HttpError(400, "Invalid JSON");
-  if (error instanceof HttpError) return error;
-  return null;
-}
-
 export async function POST(req: Request) {
   try {
     const jsonResult = await readJson(req);
@@ -68,7 +51,7 @@ export async function POST(req: Request) {
       model,
       language,
       userPreference,
-    } = parseAndValidateBody(jsonResult.data);
+    } = parseAndValidateBody(jsonResult.data, sectionRequestSchema);
 
     const result = await ai.streamSectionDraft({
       chapterNumber,

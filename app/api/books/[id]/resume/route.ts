@@ -1,22 +1,14 @@
 import { resumeBook } from "@/lib/ai/streaming/bookResumer";
 import { ResumeConfig } from "@/lib/ai/types/streaming";
 import { authenticate } from "@/lib/auth";
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
+import { HttpError } from "@/lib/errors";
+import { readJson, normalizeToHttpError } from "@/utils";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const resumeRequestSchema = z.object({
   startFromChapter: z.number().int().min(1),
 });
-
-function normalizeToHttpError(error: unknown): HttpError | null {
-  if (error == null) return new HttpError(500, "Internal server error");
-  if (error instanceof InvalidJsonError)
-    return new HttpError(400, "Invalid JSON");
-  if (error instanceof HttpError) return error;
-  return null;
-}
 
 export async function POST(
   req: NextRequest,
