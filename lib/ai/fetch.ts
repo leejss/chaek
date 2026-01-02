@@ -6,11 +6,10 @@ import {
   Section,
 } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
-import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
+import { PlanOutput } from "@/lib/ai/specs/plan";
 import { authFetch } from "@/lib/api";
 
 import { z } from "zod";
-import { ChapterOutlineSchema } from "./specs/outline";
 
 const TocResponseSchema = z.object({
   data: z.object({
@@ -47,80 +46,6 @@ export async function fetchTableOfContent(
 
   const result = await response.json();
   return TocResponseSchema.parse(result);
-}
-
-const PlanResponseSchema = z.object({
-  data: z.object({
-    plan: PlanSchema,
-  }),
-});
-
-export type PlanResponse = z.infer<typeof PlanResponseSchema>;
-
-export async function fetchPlan(
-  sourceText: string,
-  toc: string[],
-  provider?: AIProvider,
-  model?: GeminiModel | ClaudeModel,
-  settings?: BookSettings,
-): Promise<PlanResponse> {
-  const response = await authFetch("/api/ai/plan", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sourceText,
-      toc,
-      provider,
-      model,
-      language: settings?.language,
-      userPreference: settings?.userPreference,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to generate Plan");
-  }
-
-  const result = await response.json();
-  return PlanResponseSchema.parse(result);
-}
-
-const OutlineResponseSchema = z.object({
-  data: z.object({
-    outline: ChapterOutlineSchema,
-  }),
-});
-
-export type OutlineResponse = z.infer<typeof OutlineResponseSchema>;
-
-export async function fetchOutline(params: {
-  toc: string[];
-  chapterNumber: number;
-  sourceText: string;
-  bookPlan?: PlanOutput;
-  provider: AIProvider;
-  model: GeminiModel | ClaudeModel;
-  settings?: BookSettings;
-}): Promise<OutlineResponse> {
-  const { settings, ...rest } = params;
-  const response = await authFetch("/api/ai/outline", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...rest,
-      language: settings?.language,
-      userPreference: settings?.userPreference,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to generate outline");
-  }
-
-  const result = await response.json();
-  return OutlineResponseSchema.parse(result);
 }
 
 export async function* fetchStreamSection(params: {

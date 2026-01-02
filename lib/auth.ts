@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { HttpError } from "@/lib/errors";
 import { isString } from "@/lib/typeGuards";
 import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
@@ -89,4 +90,16 @@ export async function authenticate(req: NextRequest) {
 
   const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
   return await verifyAccessJWT(accessToken, secret);
+}
+
+export async function getUserId() {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(accessTokenConfig.name)?.value;
+  if (!accessToken) {
+    throw new HttpError(401, "Missing access token");
+  }
+
+  const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
+  const { userId } = await verifyAccessJWT(accessToken, secret);
+  return userId;
 }
