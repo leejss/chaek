@@ -3,7 +3,7 @@
 import useSWRMutation from "swr/mutation";
 import { authFetch } from "@/lib/api";
 import { useBookStore } from "@/lib/book/bookContext";
-import { useGenerationStore, generationStoreActions } from "@/lib/book/generationContext";
+import { useGenerationStore } from "@/lib/book/generationContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 import { fetchBookById } from "@/lib/ai/fetch";
@@ -15,26 +15,22 @@ interface GenerateParams {
 
 export function useBookGeneration() {
   const bookStore = useBookStore();
-  const genStore = useGenerationStore();
+  const genStore = useGenerationStore((state) => state);
   const settings = useSettingsStore();
 
   const { trigger, isMutating, error } = useSWRMutation(
     "book-generation",
     async (_key: string, { arg }: { arg: GenerateParams }) => {
       const { provider, model } = arg;
-      const {
-        tableOfContents,
-        sourceText,
-        bookTitle,
-      } = bookStore;
+      const { tableOfContents, sourceText, bookTitle } = bookStore;
 
       if (!tableOfContents.length) {
         throw new Error("차례가 없습니다. 먼저 TOC를 생성하세요.");
       }
 
       const bookId = genStore.savedBookId || crypto.randomUUID();
-      generationStoreActions.setSavedBookId(bookId);
-      generationStoreActions.setupGeneration(tableOfContents.length);
+      genStore.actions.setSavedBookId(bookId);
+      genStore.actions.setupGeneration(tableOfContents.length);
       const startRes = await authFetch(`/api/books/${bookId}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,27 +106,27 @@ export function useBookGeneration() {
 
         const fullContent = chapterContents.map((c) => c.content).join("\n\n");
 
-        generationStoreActions.syncGenerationProgress({
+        genStore.actions.syncGenerationProgress({
           chapters: chapterContents,
           streamingContent: fullContent,
           currentChapterIndex: currentIndex,
         });
 
         if (statusJson.status === "completed") {
-          generationStoreActions.setContent(fullContent);
-          generationStoreActions.completeGeneration();
+          genStore.actions.setContent(fullContent);
+          genStore.actions.completeGeneration();
           return;
         }
 
         await sleep(2500);
       }
 
-      generationStoreActions.failGeneration("생성이 취소되었습니다.");
+      genStore.actions.failGeneration("생성이 취소되었습니다.");
     },
   );
 
   const cancel = () => {
-    generationStoreActions.cancelGeneration();
+    genStore.actions.cancelGeneration();
   };
 
   return {

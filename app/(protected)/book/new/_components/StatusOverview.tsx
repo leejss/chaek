@@ -1,9 +1,8 @@
 "use client";
 
 import { useBookStore } from "@/lib/book/bookContext";
-import { useGenerationStore } from "@/lib/book/generationContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
-import { X, Settings, FileText, List, Sparkles, BookOpen } from "lucide-react";
+import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 interface StatusOverviewProps {
@@ -15,13 +14,9 @@ export default function StatusOverview(props: StatusOverviewProps) {
   const { onCancel, isGenerating } = props;
   const [isOpen, setIsOpen] = useState(false);
   const bookStore = useBookStore();
-  const genStore = useGenerationStore();
 
-  const flowStatus = bookStore.flowStatus;
-  const generationProgress = genStore.generationProgress;
   const sourceText = bookStore.sourceText;
   const tableOfContents = bookStore.tableOfContents;
-  const bookPlan = genStore.bookPlan;
   const aiConfiguration = bookStore.aiConfiguration;
 
   const language = useSettingsStore((state) => state.language);
@@ -186,61 +181,9 @@ export default function StatusOverview(props: StatusOverviewProps) {
               </div>
             </div>
           </section>
-
-          {bookPlan && (
-            <section>
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles size={16} className="text-neutral-400" />
-                <h3 className="text-sm font-bold text-neutral-600 uppercase tracking-wider">
-                  책 기획 (Book Plan)
-                </h3>
-              </div>
-              <div className="bg-neutral-50 p-3 rounded border border-neutral-200 space-y-3">
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">
-                    대상 독자 (Target Audience)
-                  </p>
-                  <p className="text-sm text-neutral-700">
-                    {bookPlan.targetAudience}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">
-                    집필 스타일 (Writing Style)
-                  </p>
-                  <p className="text-sm text-neutral-700">
-                    {bookPlan.writingStyle}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">
-                    핵심 테마 (Key Themes)
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {bookPlan.keyThemes.map((theme: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] bg-white border border-neutral-200 px-2 py-0.5 rounded text-neutral-600"
-                      >
-                        #{theme}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
         </div>
 
         <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50 rounded-b-lg flex justify-between items-center">
-          <span className="text-xs text-neutral-500">
-            현재 단계:{" "}
-            <span className="text-brand-600 font-bold uppercase">
-              {flowStatus === "generating"
-                ? `GENERATING (${generationProgress.phase})`
-                : flowStatus.replace("_", " ")}
-            </span>
-          </span>
           <div className="flex gap-2">
             {isGenerating && onCancel && (
               <button

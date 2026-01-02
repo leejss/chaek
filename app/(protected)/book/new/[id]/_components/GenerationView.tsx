@@ -1,7 +1,10 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import { useGenerationStore, useGenerationStoreApi } from "@/lib/book/generationContext";
+import {
+  useGenerationStore,
+  useGenerationStoreApi,
+} from "@/lib/book/generationContext";
 import { BookSettings } from "@/lib/book/settings";
 import { ClaudeModel, GeminiModel, Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
@@ -15,11 +18,15 @@ import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration
 export default function GenerationView() {
   const storeApi = useGenerationStoreApi();
   const actions = useGenerationStore((state) => state.actions);
-  const generationProgress = useGenerationStore((state) => state.generationProgress);
+  const generationProgress = useGenerationStore(
+    (state) => state.generationProgress,
+  );
   const bookTitle = useGenerationStore((state) => state.bookTitle);
   const tableOfContents = useGenerationStore((state) => state.tableOfContents);
   const sourceText = useGenerationStore((state) => state.sourceText);
-  const generationSettings = useGenerationStore((state) => state.generationSettings);
+  const generationSettings = useGenerationStore(
+    (state) => state.generationSettings,
+  );
   const savedBookId = useGenerationStore((state) => state.savedBookId);
   const abortRef = useRef<AbortController | null>(null);
   const [isDeductingCredits, setIsDeductingCredits] = useState(false);
@@ -85,7 +92,11 @@ export default function GenerationView() {
 
       actions.setBookPlan(bookPlan);
 
-      for (let chapterNum = 1; chapterNum <= tableOfContents.length; chapterNum++) {
+      for (
+        let chapterNum = 1;
+        chapterNum <= tableOfContents.length;
+        chapterNum++
+      ) {
         if (abortRef.current?.signal.aborted) {
           throw new Error("생성이 취소되었습니다.");
         }
@@ -109,6 +120,16 @@ export default function GenerationView() {
           settings,
         });
 
+        {
+          const { streamingContent, currentChapterContent } =
+            storeApi.getState();
+          const chapterHeader = `\n\n## ${chapterTitle}\n\n`;
+          actions.updateDraft({
+            streamingContent: streamingContent + chapterHeader,
+            currentChapterContent: currentChapterContent + chapterHeader,
+          });
+        }
+
         actions.updateGenerationProgress({
           phase: "generating_sections",
           currentOutline: chapterOutline,
@@ -116,7 +137,11 @@ export default function GenerationView() {
           currentSection: 0,
         });
 
-        for (let sectionIndex = 0; sectionIndex < chapterOutline.sections.length; sectionIndex++) {
+        for (
+          let sectionIndex = 0;
+          sectionIndex < chapterOutline.sections.length;
+          sectionIndex++
+        ) {
           if (abortRef.current?.signal.aborted) {
             throw new Error("생성이 취소되었습니다.");
           }
@@ -188,8 +213,8 @@ export default function GenerationView() {
 
       if (savedBookId) {
         await updateBookAction(savedBookId, {
-        status: "failed",
-      });
+          status: "failed",
+        });
       }
     } finally {
       setIsDeductingCredits(false);
@@ -206,11 +231,65 @@ export default function GenerationView() {
     generationProgress.phase !== "error" &&
     generationProgress.phase !== "completed";
 
+  const isCompleted = generationProgress.phase === "completed";
+
+  if (isCompleted) {
+    return (
+      <div className="max-w-3xl mx-auto pb-32">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6">
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-4">
+            책 생성 완료!
+          </h1>
+          <p className="text-neutral-500 mb-8">
+            “{bookTitle || "Untitled Book"}”이(가) 성공적으로 생성되었습니다.
+          </p>
+          <a
+            href={`/book/${savedBookId}`}
+            className="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold h-14 px-8 rounded-xl text-lg transition-colors"
+          >
+            책 보러가기
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (isActuallyGenerating) {
     return (
       <div className="max-w-3xl mx-auto pb-32">
         <GenerationStep />
-        <StatusOverviewGeneration onCancel={handleCancel} isGenerating={isActuallyGenerating} />
+        <StatusOverviewGeneration
+          onCancel={handleCancel}
+          isGenerating={isActuallyGenerating}
+        />
         {generationProgress.error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             {generationProgress.error}
@@ -223,18 +302,24 @@ export default function GenerationView() {
   return (
     <div className="max-w-3xl mx-auto pb-32">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-4">{bookTitle || "Untitled Book"}</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">
+          {bookTitle || "Untitled Book"}
+        </h1>
       </div>
 
       <div className="bg-background border border-neutral-200 rounded-2xl p-8 mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-6">차례 (Table of Contents)</h3>
+        <h3 className="text-lg font-bold text-foreground mb-6">
+          차례 (Table of Contents)
+        </h3>
         <div className="space-y-3">
           {tableOfContents.map((chapter, idx) => (
             <div
               key={idx}
               className="flex items-baseline gap-4 text-base p-2 hover:bg-neutral-50 rounded-lg transition-colors"
             >
-              <span className="font-bold text-neutral-400 w-6 text-right">{idx + 1}.</span>
+              <span className="font-bold text-neutral-400 w-6 text-right">
+                {idx + 1}.
+              </span>
               <span className="text-foreground font-medium">{chapter}</span>
             </div>
           ))}
@@ -242,7 +327,11 @@ export default function GenerationView() {
       </div>
 
       <div className="mt-8">
-        <Button onClick={handleStart} disabled={isDeductingCredits} className="w-full h-14 text-lg font-semibold">
+        <Button
+          onClick={handleStart}
+          disabled={isDeductingCredits}
+          className="w-full h-14 text-lg font-semibold"
+        >
           {isDeductingCredits ? "크레딧 차감 중..." : "책 생성 시작하기"}
         </Button>
       </div>

@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback } from "react";
 import { authFetch } from "@/lib/api";
 import { useBookStore } from "@/lib/book/bookContext";
-import { useGenerationStore, generationStoreActions } from "@/lib/book/generationContext";
+import { useGenerationStore } from "@/lib/book/generationContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 
@@ -21,7 +21,7 @@ interface SSEEvent {
 
 export function useBookStreaming() {
   const bookStore = useBookStore();
-  const genStore = useGenerationStore();
+  const genStore = useGenerationStore((state) => state);
   const settings = useSettingsStore();
   const abortRef = useRef<AbortController | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -50,7 +50,7 @@ export function useBookStreaming() {
         case "chapter_start": {
           const totalChapters = bookStore.tableOfContents.length;
           genStore.actions.setSavedBookId(genStore.savedBookId);
-          generationStoreActions.setupGeneration(totalChapters);
+          genStore.actions.setupGeneration(totalChapters);
           break;
         }
         case "chunk": {
@@ -60,7 +60,7 @@ export function useBookStreaming() {
             content: string;
           };
           const { streamingContent, currentChapterContent } = genStore;
-          generationStoreActions.updateDraft({
+          genStore.actions.updateDraft({
             streamingContent: streamingContent + data.content,
             currentChapterContent: currentChapterContent + data.content,
           });
@@ -70,12 +70,12 @@ export function useBookStreaming() {
           break;
         }
         case "book_complete": {
-          generationStoreActions.completeGeneration();
+          genStore.actions.completeGeneration();
           break;
         }
         case "error": {
           const data = event.data as { message: string };
-          generationStoreActions.failGeneration(data.message);
+          genStore.actions.failGeneration(data.message);
           setError(data.message);
           break;
         }
@@ -88,11 +88,7 @@ export function useBookStreaming() {
     async (params: StreamingParams) => {
       if (isGenerating) return;
 
-      const {
-        tableOfContents,
-        sourceText,
-        bookTitle,
-      } = bookStore;
+      const { tableOfContents, sourceText, bookTitle } = bookStore;
 
       if (!tableOfContents.length) {
         const err = "차례가 없습니다. 먼저 TOC를 생성하세요.";
@@ -107,8 +103,8 @@ export function useBookStreaming() {
       setError(null);
 
       try {
-        generationStoreActions.setSavedBookId(bookId);
-        generationStoreActions.setupGeneration(tableOfContents.length);
+        genStore.actions.setSavedBookId(bookId);
+        genStore.actions.setupGeneration(tableOfContents.length);
 
         const response = await authFetch(`/api/books/${bookId}/stream`, {
           method: "POST",
@@ -171,11 +167,11 @@ export function useBookStreaming() {
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
-          generationStoreActions.failGeneration("생성이 취소되었습니다.");
+          genStore.actions.failGeneration("생성이 취소되었습니다.");
         } else {
           const message =
             err instanceof Error ? err.message : "알 수 없는 오류";
-          generationStoreActions.failGeneration(message);
+          genStore.actions.failGeneration(message);
           setError(message);
         }
       } finally {

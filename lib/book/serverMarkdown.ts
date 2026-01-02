@@ -50,11 +50,11 @@ export async function highlightCode(content: string, language: string) {
 
 export function extractTOC(markdown: string): TOCItem[] {
   const extracted: TOCItem[] = [];
-  const regex = /^(#{1,3})\s+(.+)$/gm;
+  const regex = /^\s*(#{2,3})\s+(.+)$/gm;
   let match;
 
   while ((match = regex.exec(markdown)) !== null) {
-    const text = match[2];
+    const text = match[2].trim();
     extracted.push({
       level: match[1].length,
       text,

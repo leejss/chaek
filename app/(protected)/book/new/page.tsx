@@ -1,7 +1,6 @@
 "use client";
 
 import { useBookStore } from "@/lib/book/bookContext";
-import { useGenerationStore, generationStoreActions } from "@/lib/book/generationContext";
 import { FlowStatus } from "@/lib/book/types";
 import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import { Check, ChevronLeft, Circle } from "lucide-react";
@@ -37,14 +36,11 @@ const BOOK_CREATION_COST = 10;
 export default function CreateBookPage() {
   const router = useRouter();
   const bookStore = useBookStore();
-  const genStore = useGenerationStore();
 
   const flowStatus = bookStore.flowStatus;
   const isProcessing = bookStore.isProcessing;
   const actions = bookStore.actions;
   const completedSteps = bookStore.completedSteps;
-  const bookGenerationStarted = genStore.bookGenerationStarted;
-  const savedBookId = genStore.savedBookId;
   const { balance, isLoading: isLoadingBalance } = useCreditBalance();
   const isGenerating = flowStatus === "generating";
 
@@ -54,12 +50,6 @@ export default function CreateBookPage() {
 
   const hasInsufficientCredits =
     balance !== null && balance < BOOK_CREATION_COST;
-
-  useEffect(() => {
-    if (flowStatus === "generating" && savedBookId) {
-      router.replace(`/new/${savedBookId}`);
-    }
-  }, [flowStatus, savedBookId, router]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -86,9 +76,6 @@ export default function CreateBookPage() {
     if (isProcessing || isGenerating) {
       if (!confirm("진행 중인 작업을 중단하고 이전 단계로 돌아가시겠습니까?")) {
         return;
-      }
-      if (isGenerating) {
-        generationStoreActions.cancelGeneration();
       }
 
       if (flowStatus === "generating_toc") {
@@ -178,12 +165,7 @@ export default function CreateBookPage() {
                 <button
                   key={step}
                   onClick={() => isClickable && actions.goToStep(step)}
-                  disabled={
-                    !isClickable ||
-                    (bookGenerationStarted &&
-                      step !== "settings" &&
-                      step !== "toc_review")
-                  }
+                  disabled={!isClickable}
                   className={`
                     flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
                     ${
