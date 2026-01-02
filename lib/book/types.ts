@@ -112,26 +112,32 @@ export type StreamingStatus = {
   lastUpdated: string;
 };
 
-export type BookContextState = {
+export type BookWorkflowState = {
   sourceText: string;
   bookTitle: string;
   tableOfContents: string[];
-  bookPlan?: PlanOutput;
-  content: string;
   aiConfiguration: AIConfiguration;
   flowStatus: FlowStatus;
+  isProcessing: boolean;
+  error: string | null;
+  completedSteps: Set<FlowStatus>;
+};
+
+export type BookContextState = BookWorkflowState & {
+  savedBookId: string | null;
+  isSavingBook: boolean;
+};
+
+export type GenerationState = {
+  content: string;
+  bookPlan?: PlanOutput;
   chapters: ChapterContent[];
   viewingChapterIndex: number;
   streamingContent: string;
   currentChapterIndex: number | null;
   currentChapterContent: string;
   awaitingChapterDecision: boolean;
-  isProcessing: boolean;
-  isSavingBook: boolean;
-  savedBookId: string | null;
-  error: string | null;
   generationProgress: GenerationProgress;
-  completedSteps: Set<FlowStatus>;
   bookGenerationStarted: boolean;
   generationCancelled: boolean;
 };
