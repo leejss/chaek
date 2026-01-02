@@ -1,5 +1,6 @@
+"use client";
+
 import { useRef, useState, useCallback } from "react";
-import { Play } from "lucide-react";
 import {
   useGenerationStore,
   useGenerationStoreApi,
@@ -71,7 +72,7 @@ export default function GenerationView() {
         setIsDeductingCredits(true);
         await deductCreditsAction(savedBookId);
         setIsDeductingCredits(false);
-        
+
         actions.setupGeneration(tableOfContents.length);
       } else {
         // Prepare for resume: update progress phase
@@ -193,18 +194,18 @@ export default function GenerationView() {
 
         // 3c. Finish and Save Chapter to DB
         const { currentChapterContent } = storeApi.getState();
-        
+
         // Save to DB immediately after each chapter
         await saveChapterAction(
           savedBookId,
           chapterNum,
           chapterTitle,
-          currentChapterContent
+          currentChapterContent,
         );
 
         // Update local store
         actions.finishChapter(chapterTitle, currentChapterContent);
-        
+
         const { streamingContent } = storeApi.getState();
         actions.setContent(streamingContent);
 
@@ -338,7 +339,9 @@ export default function GenerationView() {
         </h3>
         <div className="space-y-3">
           {tableOfContents.map((chapter, idx) => {
-            const isFinished = chapters.some(c => c.chapterNumber === idx + 1);
+            const isFinished = chapters.some(
+              (c) => c.chapterNumber === idx + 1,
+            );
             return (
               <div
                 key={idx}
@@ -346,10 +349,18 @@ export default function GenerationView() {
                   isFinished ? "bg-green-50/50" : "hover:bg-neutral-50"
                 }`}
               >
-                <span className={`font-bold w-6 text-right ${isFinished ? "text-green-500" : "text-neutral-400"}`}>
+                <span
+                  className={`font-bold w-6 text-right ${
+                    isFinished ? "text-green-500" : "text-neutral-400"
+                  }`}
+                >
                   {isFinished ? "✓" : `${idx + 1}.`}
                 </span>
-                <span className={`font-medium ${isFinished ? "text-green-700" : "text-foreground"}`}>
+                <span
+                  className={`font-medium ${
+                    isFinished ? "text-green-700" : "text-foreground"
+                  }`}
+                >
                   {chapter}
                 </span>
               </div>
@@ -366,13 +377,13 @@ export default function GenerationView() {
             isResumable ? "bg-brand-600 hover:bg-brand-700 text-white" : ""
           }`}
         >
-          {isDeductingCredits 
-            ? "크레딧 차감 중..." 
-            : isProcessing 
-              ? "처리 중..." 
-              : isResumable 
-                ? "생성 재개하기" 
-                : "책 생성 시작하기"}
+          {isDeductingCredits
+            ? "크레딧 차감 중..."
+            : isProcessing
+            ? "처리 중..."
+            : isResumable
+            ? "생성 재개하기"
+            : "책 생성 시작하기"}
         </Button>
       </div>
 
