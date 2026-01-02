@@ -5,7 +5,13 @@ import { useSettingsStore } from "@/lib/book/settingsStore";
 import { X, Settings, FileText, List, Sparkles, BookOpen } from "lucide-react";
 import { useState } from "react";
 
-export default function StatusOverview() {
+interface StatusOverviewProps {
+  onCancel?: () => void;
+  isGenerating?: boolean;
+}
+
+export default function StatusOverview(props: StatusOverviewProps) {
+  const { onCancel, isGenerating } = props;
   const [isOpen, setIsOpen] = useState(false);
   const flowStatus = useBookStore((state) => state.flowStatus);
   const generationProgress = useBookStore((state) => state.generationProgress);
@@ -37,7 +43,6 @@ export default function StatusOverview() {
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-end p-4 sm:p-8 pointer-events-none">
       <div className="w-full max-w-md bg-background border border-neutral-200 shadow-2xl rounded-2xl flex flex-col max-h-[80vh] pointer-events-auto animate-in slide-in-from-right-4 duration-300">
-        {/* Header */}
         <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <BookOpen size={18} className="text-brand-600" />
@@ -51,9 +56,7 @@ export default function StatusOverview() {
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          {/* 1. 기본 설정 */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <Settings size={16} className="text-neutral-500" />
@@ -93,7 +96,6 @@ export default function StatusOverview() {
             </div>
           </section>
 
-          {/* 2. 원문 소스 */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <FileText size={16} className="text-neutral-500" />
@@ -114,7 +116,6 @@ export default function StatusOverview() {
             </div>
           </section>
 
-          {/* 3. 차례 (TOC) */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <List size={16} className="text-neutral-400" />
@@ -142,7 +143,6 @@ export default function StatusOverview() {
             </div>
           </section>
 
-          {/* 4. AI 설정 */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <Sparkles size={16} className="text-neutral-400" />
@@ -180,7 +180,6 @@ export default function StatusOverview() {
             </div>
           </section>
 
-          {/* 5. 책 기획 (Plan) - 있는 경우에만 표시 */}
           {bookPlan && (
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -226,7 +225,6 @@ export default function StatusOverview() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50 rounded-b-lg flex justify-between items-center">
           <span className="text-xs text-neutral-500">
             현재 단계:{" "}
@@ -236,12 +234,22 @@ export default function StatusOverview() {
                 : flowStatus.replace("_", " ")}
             </span>
           </span>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-xs font-bold text-neutral-600 hover:text-neutral-900 transition-colors uppercase tracking-widest"
-          >
-            닫기
-          </button>
+          <div className="flex gap-2">
+            {isGenerating && onCancel && (
+              <button
+                onClick={onCancel}
+                className="text-xs font-bold text-red-600 hover:text-red-800 transition-colors uppercase tracking-widest mr-4"
+              >
+                취소
+              </button>
+            )}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-bold text-neutral-600 hover:text-neutral-900 transition-colors uppercase tracking-widest"
+            >
+              닫기
+            </button>
+          </div>
         </div>
       </div>
     </div>

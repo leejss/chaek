@@ -3,11 +3,20 @@ import { ChevronLeft, ChevronRight, Copy, Download, Check } from "lucide-react";
 import { useState } from "react";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import Button from "../../_components/Button";
-import { GenerationProgress } from "@/lib/book/types";
+import { GenerationProgress, ChapterOutline, Section } from "@/lib/book/types";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 
-function getPhaseLabel(progress: GenerationProgress): string {
+interface GenerationStepProps {
+  phase?: string;
+  currentChapter?: number;
+  totalChapters?: number;
+  currentSection?: number;
+  totalSections?: number;
+  currentOutline?: ChapterOutline | null;
+}
+
+function getPhaseLabelFromProgress(progress: GenerationProgress): string {
   switch (progress.phase) {
     case "outline":
       return "Creating chapter outline...";
@@ -24,7 +33,40 @@ function getPhaseLabel(progress: GenerationProgress): string {
   }
 }
 
-export default function GenerationStep() {
+function getPhaseLabel(phase: string, currentSection?: number, totalSections?: number): string {
+  switch (phase) {
+    case "planning":
+      return "작성 계획 수립중...";
+    case "outlining":
+      return "챕터 개요 생성중...";
+    case "generating_sections":
+      if (currentSection && totalSections) {
+        return `섹션 ${currentSection} / ${totalSections} 작성중...`;
+      }
+      return "섹션 작성중...";
+    default:
+      return "준비중...";
+  }
+}
+
+export default function GenerationStep(props: GenerationStepProps) {
+  const {
+    phase: propsPhase,
+    currentChapter: propsCurrentChapter,
+    currentSection: propsCurrentSection,
+    totalSections: propsTotalSections,
+    currentOutline: propsCurrentOutline,
+  } = props;
+
+  const generationProgress = useBookStore(
+    (state) => state.generationProgress || { phase: "idle" },
+  );
+
+  const phase = propsPhase ?? generationProgress.phase;
+  const currentSection = propsCurrentSection ?? generationProgress.currentSection;
+  const totalSections = propsTotalSections ?? generationProgress.totalSections;
+  const currentOutline = propsCurrentOutline ?? generationProgress.currentOutline;
+
   const chapters = useBookStore((state) => state.chapters);
   const viewingChapterIndex = useBookStore(
     (state) => state.viewingChapterIndex,
@@ -36,9 +78,6 @@ export default function GenerationStep() {
   const currentChapterIndex = useBookStore(
     (state) => state.currentChapterIndex,
   );
-  const generationProgress = useBookStore(
-    (state) => state.generationProgress || { phase: "idle" },
-  );
   const awaitingChapterDecision = useBookStore(
     (state) => state.awaitingChapterDecision,
   );
@@ -47,8 +86,9 @@ export default function GenerationStep() {
 
   const [isCopied, setIsCopied] = useState(false);
 
-  const phaseLabel = getPhaseLabel(generationProgress);
-  const isReview = generationProgress.phase === "review";
+  const phaseLabel = getPhaseLabel(phase, currentSection, totalSections);
+  const isReview = phase === "review";
+  const isCompleted = phase === "completed";
 
   const isViewingCurrentChapter =
     currentChapterIndex !== null && viewingChapterIndex === chapters.length;
@@ -107,13 +147,11 @@ export default function GenerationStep() {
     URL.revokeObjectURL(url);
   };
 
-  console.log("currentChapterContent", currentChapterContent);
   return (
     <div className="max-w-3xl mx-auto pb-32">
-      {/* Header with status */}
       {isViewingCurrentChapter && (
-        <div className="sticky top-0 bg-background/95 backdrop-blur py-2 border-b border-neutral-200 mb-4 z-10 flex items-center justify-center gap-2 text-brand-600">
-          {!isReview && (
+        <div className="sticky top-0 bg-background/95 backdrop-bl py-2 border-b border-neutral-200 mb-4 z-10 flex items-center justify-center gap-2 text-brand-600">
+          {!isReview && !isCompleted && (
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-brand-600 border-t-transparent"></div>
           )}
           <span className="text-sm font-medium uppercase tracking-widest">
@@ -122,7 +160,6 @@ export default function GenerationStep() {
         </div>
       )}
 
-      {/* Chapter Navigation */}
       {totalPages > 0 && (
         <div className="flex items-center justify-between mb-4 px-2">
           <button
@@ -160,7 +197,6 @@ export default function GenerationStep() {
         </div>
       )}
 
-      {/* Current generating chapter info */}
       {isViewingCurrentChapter &&
         tableOfContents &&
         typeof currentChapterIndex === "number" && (
@@ -174,34 +210,30 @@ export default function GenerationStep() {
               {tableOfContents[currentChapterIndex]}
             </div>
 
-            {generationProgress.currentOutline && (
+            {currentOutline && (
               <div className="mt-3 pt-3 border-t border-neutral-200">
                 <div className="text-xs text-neutral-600 mb-2">Sections:</div>
                 <div className="flex flex-wrap gap-1">
-                  {generationProgress.currentOutline.sections.map(
-                    (section, idx) => (
-                      <span
-                        key={idx}
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          generationProgress.currentSection &&
-                          idx < generationProgress.currentSection
-                            ? "bg-green-100 text-green-700"
-                            : generationProgress.currentSection === idx + 1
-                            ? "bg-brand-100 text-brand-700"
-                            : "bg-neutral-100 text-neutral-600"
-                        }`}
-                      >
-                        {section.title}
-                      </span>
-                    ),
-                  )}
+                  {currentOutline.sections.map((section: Section, idx: number) => (
+                    <span
+                      key={idx}
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        currentSection && idx < currentSection
+                          ? "bg-green-100 text-green-700"
+                          : currentSection === idx + 1
+                          ? "bg-brand-100 text-brand-700"
+                          : "bg-neutral-100 text-neutral-600"
+                      }`}
+                    >
+                      {section.title}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
           </div>
         )}
 
-      {/* Viewing completed chapter header */}
       {!isViewingCurrentChapter && viewingChapter && (
         <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-4">
           <div className="flex items-center gap-2">
@@ -218,7 +250,6 @@ export default function GenerationStep() {
         </div>
       )}
 
-      {/* Content Actions Toolbar */}
       <div className="flex justify-end gap-2 mb-2 px-2">
         <Button
           variant="ghost"
@@ -238,7 +269,6 @@ export default function GenerationStep() {
         </Button>
       </div>
 
-      {/* Content */}
       <div className="bg-background min-h-[500px]">
         <MarkdownRenderer
           content={currentChapterContent}
@@ -246,7 +276,6 @@ export default function GenerationStep() {
         />
       </div>
 
-      {/* Fixed Bottom Action Bar */}
       {isViewingCurrentChapter && awaitingChapterDecision && requireConfirm && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-neutral-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.12)] z-50 safe-area-bottom">
           <div className="max-w-3xl mx-auto flex gap-3">
