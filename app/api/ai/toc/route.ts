@@ -1,11 +1,11 @@
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { generateTableOfContent } from "@/lib/ai/core/ai";
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { AIProvider } from "@/lib/book/types";
 import {
-  readJson,
-  normalizeToHttpError,
   httpErrorToResponse,
+  normalizeToHttpError,
   parseAndValidateBody,
+  readJson,
 } from "@/utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";

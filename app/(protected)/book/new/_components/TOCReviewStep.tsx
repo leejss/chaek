@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
-import { useBookStore } from "@/lib/book/bookContext";
-import { saveBook } from "@/lib/db/fetch";
+import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { createBookAction } from "@/lib/actions/book";
 import {
   FileText,
   RefreshCw,
@@ -18,15 +17,13 @@ import {
 import Button from "../../_components/Button";
 
 export default function TOCReviewStep() {
-  const router = useRouter();
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const bookTitle = useBookStore((state) => state.bookTitle);
   const sourceText = useBookStore((state) => state.sourceText);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
-  const { setSelectedModel, regenerateTOC, updateDraft } = useBookStore(
-    (state) => state.actions,
-  );
+
+  const { setSelectedModel, regenerateTOC, updateDraft } = bookStoreActions;
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
@@ -72,16 +69,11 @@ export default function TOCReviewStep() {
 
     setIsSaving(true);
     try {
-      const bookId = await saveBook({
-        title: bookTitle || "Untitled Book",
+      await createBookAction(
+        bookTitle || "Untitled Book",
         tableOfContents,
-        sourceText: sourceText || "",
-      });
-
-      router.push(`/book/new/${bookId}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "알 수 없는 오류";
-      alert(`오류: ${message}`);
+        sourceText || undefined,
+      );
     } finally {
       setIsSaving(false);
     }

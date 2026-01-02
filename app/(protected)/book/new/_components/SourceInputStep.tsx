@@ -1,23 +1,20 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-import { useBookStore } from "@/lib/book/bookContext";
+import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import Button from "../../_components/Button";
 
 export default function SourceInputStep() {
   const sourceText = useBookStore((state) => state.sourceText);
   const isProcessing = useBookStore((state) => state.isProcessing);
-  const { updateDraft, generateTOC } = useBookStore((state) => state.actions);
+  const { updateDraft, generateTOC } = bookStoreActions;
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-foreground mb-3">
-          Source Material
-        </h2>
+        <h2 className="text-3xl font-bold text-foreground mb-3">Source Text</h2>
         <p className="text-neutral-600">
-          Paste your notes, transcript, or outline below. <br />
-          The AI will organize this into a coherent book structure.
+          Paste your source text below. The AI will organize this into a
+          coherent book structure.
         </p>
       </div>
 
@@ -40,7 +37,6 @@ export default function SourceInputStep() {
           isLoading={isProcessing}
           className="w-full md:w-auto h-12 px-10 text-lg"
         >
-          <Sparkles size={18} className="mr-2" />
           Generate Book Structure
         </Button>
       </div>

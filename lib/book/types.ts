@@ -53,7 +53,7 @@ export enum AIProvider {
 
 export type FlowStatus =
   | "settings"
-  | "draft"
+  | "source_input"
   | "generating_toc"
   | "toc_review"
   | "generating"

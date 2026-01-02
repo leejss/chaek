@@ -14,11 +14,10 @@ import {
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
-import { authFetch } from "@/lib/api";
 
 const FLOW_STEPS = [
   "settings",
-  "draft",
+  "source_input",
   "toc_review",
   "generating",
   "completed",
@@ -96,7 +95,7 @@ export const useBookStore = create(
 
         if (targetIndex === currentIndex + 1) {
           switch (step) {
-            case "draft":
+            case "source_input":
               return true;
             case "toc_review":
               return state.tableOfContents.length > 0;
@@ -205,7 +204,10 @@ export const useBookStore = create(
               flowStatus: "generating_toc",
               sourceText,
               bookPlan: undefined,
-              completedSteps: new Set([...get().completedSteps, "draft"]),
+              completedSteps: new Set([
+                ...get().completedSteps,
+                "source_input",
+              ]),
             },
             false,
             "book/generateTOC_start",
@@ -239,7 +241,7 @@ export const useBookStore = create(
             set(
               {
                 error: "TOC 생성에 실패했습니다. 다시 시도해 주세요.",
-                flowStatus: "draft",
+                flowStatus: "source_input",
               },
               false,
               "book/generateTOC_error",

@@ -2,24 +2,22 @@
 
 import { useBookStore } from "@/lib/book/bookContext";
 import { FlowStatus } from "@/lib/book/types";
+import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import { Check, ChevronLeft, Circle } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import AILoadingStep from "./_components/AILoadingStep";
-import CompletedStep from "./_components/CompletedStep";
-import GenerationStep from "./_components/GenerationStep";
 import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import StatusOverview from "./_components/StatusOverview";
 import TOCReviewStep from "./_components/TOCReviewStep";
-import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
-import Link from "next/link";
 
-const FLOW_STEPS = ["settings", "draft", "toc_review"] as const;
+const FLOW_STEPS = ["settings", "source_input", "toc_review"] as const;
 
 const STEP_LABELS: Record<(typeof FLOW_STEPS)[number], string> = {
   settings: "Settings",
-  draft: "Source Input",
+  source_input: "Source Input",
   toc_review: "Review Table of Contents",
 };
 
@@ -96,7 +94,7 @@ export default function CreateBookPage() {
       }
 
       if (flowStatus === "generating_toc") {
-        actions.setFlowStatus("draft");
+        actions.setFlowStatus("source_input");
       } else {
         actions.setFlowStatus("toc_review");
       }
@@ -225,7 +223,7 @@ export default function CreateBookPage() {
       {/* Content Area */}
       <div className="flex-1 p-8 md:p-12 overflow-y-auto">
         {flowStatus === "settings" && <SettingsStep />}
-        {flowStatus === "draft" && <SourceInputStep />}
+        {flowStatus === "source_input" && <SourceInputStep />}
         {flowStatus === "generating_toc" && (
           <AILoadingStep
             title="Generating Book Structure"
