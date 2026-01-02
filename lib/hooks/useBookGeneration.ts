@@ -3,6 +3,7 @@
 import useSWRMutation from "swr/mutation";
 import { authFetch } from "@/lib/api";
 import { useBookStore } from "@/lib/book/bookContext";
+import { useGenerationStore, generationStoreActions } from "@/lib/book/generationContext";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 import { fetchBookById } from "@/lib/ai/fetch";
@@ -13,7 +14,8 @@ interface GenerateParams {
 }
 
 export function useBookGeneration() {
-  const store = useBookStore();
+  const bookStore = useBookStore();
+  const genStore = useGenerationStore();
   const settings = useSettingsStore();
 
   const { trigger, isMutating, error } = useSWRMutation(
@@ -24,20 +26,15 @@ export function useBookGeneration() {
         tableOfContents,
         sourceText,
         bookTitle,
-        actions: {
-          setupGeneration,
-          syncGenerationProgress,
-          failGeneration,
-          completeGeneration,
-        },
-      } = store;
+      } = bookStore;
 
       if (!tableOfContents.length) {
         throw new Error("차례가 없습니다. 먼저 TOC를 생성하세요.");
       }
 
-      const bookId = crypto.randomUUID();
-      setupGeneration(bookId);
+      const bookId = genStore.savedBookId || crypto.randomUUID();
+      generationStoreActions.setSavedBookId(bookId);
+      generationStoreActions.setupGeneration(tableOfContents.length);
       const startRes = await authFetch(`/api/books/${bookId}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,8 +62,7 @@ export function useBookGeneration() {
         new Promise((resolve) => setTimeout(resolve, ms));
 
       while (true) {
-        // Check cancellation from store
-        if (useBookStore.getState().generationCancelled) {
+        if (genStore.generationCancelled) {
           break;
         }
 
@@ -114,28 +110,27 @@ export function useBookGeneration() {
 
         const fullContent = chapterContents.map((c) => c.content).join("\n\n");
 
-        syncGenerationProgress({
+        generationStoreActions.syncGenerationProgress({
           chapters: chapterContents,
           streamingContent: fullContent,
           currentChapterIndex: currentIndex,
         });
 
         if (statusJson.status === "completed") {
-          const book = await fetchBookById(bookId);
-          completeGeneration(book.content || fullContent);
+          generationStoreActions.setContent(fullContent);
+          generationStoreActions.completeGeneration();
           return;
         }
 
         await sleep(2500);
       }
 
-      // If cancelled
-      failGeneration("생성이 취소되었습니다.");
+      generationStoreActions.failGeneration("생성이 취소되었습니다.");
     },
   );
 
   const cancel = () => {
-    store.actions.cancelGeneration();
+    generationStoreActions.cancelGeneration();
   };
 
   return {
