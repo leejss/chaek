@@ -48,6 +48,7 @@ export default async function BookDetailPage({ params }: PageProps) {
     tableOfContents: bookData.tableOfContents || [],
     sourceText: bookData.sourceText || undefined,
     createdAt: bookData.createdAt.toISOString(),
+    status: bookData.status,
   };
 
   const headings = extractTOC(book.content);
@@ -165,5 +166,5 @@ export default async function BookDetailPage({ params }: PageProps) {
     </div>
   );
 
-  return <BookView book={book} headings={headings} markdownHtml={markdownHtml} />;
+  return <BookView book={book} headings={headings} markdownHtml={markdownHtml} status={book.status} />;
 }

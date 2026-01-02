@@ -28,6 +28,7 @@ export interface Book {
   outlines?: ChapterOutline[];
   chapters?: GeneratedChapter[];
   content: string;
+  status?: string;
 }
 
 export interface User {

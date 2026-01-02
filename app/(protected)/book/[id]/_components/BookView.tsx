@@ -15,12 +15,14 @@ interface BookViewProps {
   book: Book;
   headings: TOCItem[];
   markdownHtml: React.ReactNode;
+  status?: string;
 }
 
 export default function BookView({
   book,
   headings,
   markdownHtml,
+  status,
 }: BookViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeText, setActiveText] = useState<string>("");
@@ -205,6 +207,23 @@ export default function BookView({
         >
           <div className="max-w-3xl mx-auto px-8 py-12 md:py-20">
             <div className="mb-12 text-center border-b border-neutral-200 pb-10">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                {status && (
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      status === "generating"
+                        ? "bg-amber-100 text-amber-700"
+                        : status === "completed"
+                        ? "bg-green-100 text-green-700"
+                        : status === "failed"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {status}
+                  </span>
+                )}
+              </div>
               <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight tracking-tight">
                 {book.title}
               </h1>

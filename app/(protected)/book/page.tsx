@@ -1,12 +1,26 @@
-import { cookies } from "next/headers";
-import Link from "next/link";
-import { Library, Plus, ChevronLeft } from "lucide-react";
 import { db } from "@/db";
 import { books } from "@/db/schema";
-import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
+import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
-import { eq, desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import { Library, Plus } from "lucide-react";
+import { cookies } from "next/headers";
+import Link from "next/link";
 import Button from "./_components/Button";
+
+const STATUS_LABELS: Record<string, string> = {
+  completed: "완성",
+  generating: "작성중",
+  draft: "초안",
+  failed: "실패",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  completed: "bg-green-100 text-green-700",
+  generating: "bg-amber-100 text-amber-700",
+  draft: "bg-gray-100 text-gray-700",
+  failed: "bg-red-100 text-red-700",
+};
 
 export default async function LibraryPage() {
   const cookieStore = await cookies();
@@ -36,6 +50,7 @@ export default async function LibraryPage() {
     createdAt: book.createdAt.toISOString(),
     tableOfContents: book.tableOfContents || [],
     sourceText: book.sourceText || undefined,
+    status: book.status,
   }));
 
   return (
@@ -77,6 +92,15 @@ export default async function LibraryPage() {
               href={`/book/${book.id}`}
               className="group bg-background border border-neutral-200 p-6 rounded-2xl hover:bg-neutral-50 transition-all cursor-pointer relative"
             >
+              <div className="flex items-center gap-2 mb-2">
+                {book.status && (
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[book.status] || STATUS_COLORS.draft}`}
+                  >
+                    {STATUS_LABELS[book.status] || book.status}
+                  </span>
+                )}
+              </div>
               <h3 className="text-xl font-bold text-foreground mb-2 truncate group-hover:underline decoration-neutral-600 underline-offset-4">
                 {book.title}
               </h3>
