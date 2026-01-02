@@ -5,6 +5,7 @@ import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { createBookAction } from "@/lib/actions/book";
+import { useSettingsStore } from "@/lib/book/settingsStore";
 import {
   FileText,
   RefreshCw,
@@ -22,6 +23,9 @@ export default function TOCReviewStep() {
   const sourceText = useBookStore((state) => state.sourceText);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
   const isProcessing = useBookStore((state) => state.isProcessing);
+  const language = useSettingsStore((state) => state.language);
+  const chapterCount = useSettingsStore((state) => state.chapterCount);
+  const userPreference = useSettingsStore((state) => state.userPreference);
 
   const { setSelectedModel, regenerateTOC, updateDraft } = bookStoreActions;
 
@@ -69,10 +73,17 @@ export default function TOCReviewStep() {
 
     setIsSaving(true);
     try {
+      const generationSettings = {
+        language,
+        chapterCount,
+        userPreference,
+      };
+
       await createBookAction(
         bookTitle || "Untitled Book",
         tableOfContents,
         sourceText || undefined,
+        generationSettings,
       );
     } finally {
       setIsSaving(false);

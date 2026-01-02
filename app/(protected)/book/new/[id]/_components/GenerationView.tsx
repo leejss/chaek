@@ -73,6 +73,7 @@ export default function GenerationView({ initialBook }: GenerationViewProps) {
       });
 
       const bookPlan = await generatePlanAction({
+        bookId: initialBook.id,
         sourceText: sourceText || "",
         toc: tableOfContents,
         provider: store.aiConfiguration.content.provider,

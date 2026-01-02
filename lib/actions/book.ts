@@ -5,11 +5,13 @@ import { db } from "@/db";
 import { books } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
+import { BookSettings } from "@/lib/book/settings";
 
 export async function createBookAction(
   title: string,
   tableOfContents: string[],
   sourceText?: string,
+  generationSettings?: BookSettings,
 ) {
   const userId = await getUserId();
 
@@ -22,6 +24,7 @@ export async function createBookAction(
       tableOfContents,
       sourceText: sourceText ?? undefined,
       status: "draft",
+      generationSettings: generationSettings ?? undefined,
     })
     .returning({ id: books.id });
 

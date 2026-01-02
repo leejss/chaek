@@ -6,6 +6,9 @@ import {
   generateTableOfContent,
   generateChapterSummary,
 } from "@/lib/ai/core/ai";
+import { db } from "@/db";
+import { books } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
@@ -55,6 +58,7 @@ export async function generateTocAction(
 }
 
 export interface GeneratePlanParams {
+  bookId: string;
   sourceText: string;
   toc: string[];
   provider: AIProvider;
@@ -65,7 +69,7 @@ export interface GeneratePlanParams {
 export async function generatePlanAction(
   params: GeneratePlanParams,
 ): Promise<PlanOutput> {
-  const { sourceText, toc, provider, model, settings } = params;
+  const { sourceText, toc, provider, model, settings, bookId } = params;
 
   const planResult = await generatePlan({
     sourceText,
@@ -79,7 +83,14 @@ export async function generatePlanAction(
     throw new Error("Failed to generate plan");
   }
 
-  return PlanSchema.parse(planResult);
+  const parsedPlan = PlanSchema.parse(planResult);
+
+  await db
+    .update(books)
+    .set({ bookPlan: parsedPlan })
+    .where(eq(books.id, bookId));
+
+  return parsedPlan;
 }
 
 export interface GenerateOutlineParams {
