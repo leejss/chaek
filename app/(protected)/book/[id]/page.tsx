@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { books, chapters } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { extractTOC } from "@/lib/book/serverMarkdown";
 import type { Book } from "@/lib/book/types";
@@ -39,10 +39,26 @@ export default async function BookDetailPage({ params }: PageProps) {
 
   const bookData = foundBooks[0];
 
+  let content = bookData.content;
+
+  // If the book is not completed, we construct the content from chapters
+  // This allows us to show partial progress and avoids giant updates to the main book record
+  if (bookData.status !== "completed") {
+    const bookChapters = await db
+      .select()
+      .from(chapters)
+      .where(eq(chapters.bookId, bookData.id))
+      .orderBy(asc(chapters.chapterNumber));
+
+    if (bookChapters.length > 0) {
+      content = bookChapters.map((c) => c.content).join("\n\n");
+    }
+  }
+
   const book: Book = {
     id: bookData.id,
     title: bookData.title,
-    content: bookData.content,
+    content: content,
     tableOfContents: bookData.tableOfContents || [],
     sourceText: bookData.sourceText || undefined,
     createdAt: bookData.createdAt.toISOString(),

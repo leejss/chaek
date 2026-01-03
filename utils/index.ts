@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { NextResponse } from "next/server";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export function generateRandomToken(byteLength = 32): string {
   const bytes = new Uint8Array(byteLength);

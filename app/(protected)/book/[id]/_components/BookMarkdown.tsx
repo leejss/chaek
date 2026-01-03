@@ -22,7 +22,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h1
           id={`heading-${text}`}
           data-heading-text={text}
-          className="text-4xl font-bold mt-8 mb-6 text-brand-900 border-b border-brand-100 pb-4 scroll-mt-24"
+          className="text-5xl font-extrabold tracking-tight mt-12 mb-8 text-brand-900 border-b-2 border-brand-100 pb-6 scroll-mt-24"
           {...props}
         >
           {children}
@@ -35,7 +35,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h2
           id={`heading-${text}`}
           data-heading-text={text}
-          className="text-2xl font-semibold mt-8 mb-4 text-ink-900 scroll-mt-24"
+          className="text-4xl font-bold mt-10 mb-6 text-brand-700 border-l-4 border-brand-500 pl-4 scroll-mt-24"
           {...props}
         >
           {children}
@@ -48,7 +48,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h3
           id={`heading-${text}`}
           data-heading-text={text}
-          className="text-xl font-medium mt-6 mb-3 text-ink-800 scroll-mt-24"
+          className="text-2xl font-bold mt-8 mb-4 text-ink-900 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-brand-400 before:rounded-full scroll-mt-24"
           {...props}
         >
           {children}
@@ -56,16 +56,19 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
       );
     },
     h4: ({ ...props }: MarkdownProps) => (
-      <h4 className="text-lg font-semibold mt-6 mb-2 text-ink-800" {...props} />
+      <h4
+        className="text-xl font-bold mt-6 mb-3 text-ink-800 decoration-stone-300 underline-offset-4"
+        {...props}
+      />
     ),
     h5: ({ ...props }: MarkdownProps) => (
       <h5
-        className="text-base font-bold mt-4 mb-2 text-ink-700 uppercase tracking-wide"
+        className="text-lg font-bold mt-6 mb-2 text-brand-600 uppercase tracking-widest border-b border-stone-200 pb-1 inline-block"
         {...props}
       />
     ),
     p: ({ ...props }: MarkdownProps) => (
-      <p className="leading-loose mb-4 text-lg" {...props} />
+      <p className="leading-loose mb-4 text-base" {...props} />
     ),
     ul: ({ ...props }: MarkdownProps) => (
       <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />

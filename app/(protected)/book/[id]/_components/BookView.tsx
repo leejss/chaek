@@ -234,15 +234,11 @@ export default function BookView({
                 {book.title}
               </h1>
               <div className="flex items-center justify-center gap-2 text-neutral-500 text-xs uppercase tracking-widest font-medium">
-                <span>Generated Book</span>
-                <span>•</span>
-                <span>
-                  {new Date(book.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                  })}
-                </span>
+                {new Date(book.createdAt).toLocaleDateString("ko-KR", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                })}
               </div>
             </div>
 

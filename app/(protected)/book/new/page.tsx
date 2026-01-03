@@ -4,6 +4,7 @@ import { useBookStore } from "@/lib/book/bookContext";
 import { FlowStatus } from "@/lib/book/types";
 import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import { Check, ChevronLeft, Circle } from "lucide-react";
+import { cn } from "@/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -32,6 +33,39 @@ function getStepStatus(
 }
 
 const BOOK_CREATION_COST = 10;
+
+interface StepButtonProps {
+  step: (typeof FLOW_STEPS)[number];
+  status: "completed" | "current" | "disabled" | "available";
+  onClick: () => void;
+}
+
+const StepButton: React.FC<StepButtonProps> = ({ step, status, onClick }) => {
+  const isClickable = status === "completed" || status === "available";
+  const isCurrent = status === "current";
+
+  return (
+    <button
+      onClick={() => isClickable && onClick()}
+      disabled={!isClickable}
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+        isCurrent && "bg-brand-600 text-white",
+        status === "completed" && "bg-green-50 text-green-700 border border-green-200",
+        status === "disabled" && "bg-neutral-100 text-neutral-500",
+        isClickable && !isCurrent && "hover:bg-neutral-200 hover:text-neutral-700",
+        !isClickable && "cursor-not-allowed opacity-60"
+      )}
+    >
+      {status === "completed" ? (
+        <Check size={12} className="shrink-0" />
+      ) : (
+        <Circle size={8} className="shrink-0" />
+      )}
+      <span className="hidden sm:inline">{STEP_LABELS[step]}</span>
+    </button>
+  );
+};
 
 export default function CreateBookPage() {
   const router = useRouter();
@@ -151,52 +185,15 @@ export default function CreateBookPage() {
           </div>
 
           <div className="flex items-center gap-1">
-            {FLOW_STEPS.map((step) => {
-              const stepStatus = getStepStatus(
-                step,
-                flowStatus,
-                completedSteps,
-              );
-              const isClickable =
-                stepStatus === "completed" || stepStatus === "available";
-              const isCurrent = stepStatus === "current";
-
-              return (
-                <button
-                  key={step}
-                  onClick={() => isClickable && actions.goToStep(step)}
-                  disabled={!isClickable}
-                  className={`
-                    flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                    ${
-                      isCurrent
-                        ? "bg-brand-600 text-white"
-                        : stepStatus === "completed"
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : "bg-neutral-100 text-neutral-500"
-                    }
-                    ${
-                      isClickable && !isCurrent
-                        ? "hover:bg-neutral-200 hover:text-neutral-700"
-                        : ""
-                    }
-                    ${!isClickable ? "cursor-not-allowed opacity-60" : ""}
-                  `}
-                >
-                  {stepStatus === "completed" ? (
-                    <Check size={12} className="shrink-0" />
-                  ) : isCurrent ? (
-                    <Circle size={8} className="shrink-0" />
-                  ) : (
-                    <Circle size={8} className="shrink-0" />
-                  )}
-                  <span className="hidden sm:inline">{STEP_LABELS[step]}</span>
-                </button>
-              );
-            })}
+            {FLOW_STEPS.map((step) => (
+              <StepButton
+                key={step}
+                step={step}
+                status={getStepStatus(step, flowStatus, completedSteps)}
+                onClick={() => actions.goToStep(step)}
+              />
+            ))}
           </div>
-
-          <div className="w-16" />
         </div>
       </div>
 
@@ -213,7 +210,7 @@ export default function CreateBookPage() {
         {flowStatus === "toc_review" && <TOCReviewStep />}
       </div>
 
-      <StatusOverview />
+      {/* <StatusOverview /> */}
     </div>
   );
 }
