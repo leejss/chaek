@@ -2,7 +2,7 @@
 
 import { useGenerationStore } from "@/lib/book/generationContext";
 import { Section } from "@/lib/book/types";
-import { Check, Copy, Download, Loader2, BookOpen } from "lucide-react";
+import { BookOpen, Check, Copy, Download } from "lucide-react";
 import { useState } from "react";
 import Button from "../../_components/Button";
 import ChapterContentDisplay from "./ChapterContentDisplay";

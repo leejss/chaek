@@ -8,6 +8,7 @@ import {
 import { BookSettings } from "@/lib/book/settings";
 import { ClaudeModel, GeminiModel, Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
+import { cn } from "@/utils";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
 import { updateBookAction, saveChapterAction } from "@/lib/actions/book";
@@ -192,7 +193,6 @@ export default function GenerationView() {
           });
         }
 
-        // 3c. Finish and Save Chapter to DB
         const { currentChapterContent } = storeApi.getState();
 
         // Save to DB immediately after each chapter
@@ -220,8 +220,10 @@ export default function GenerationView() {
 
       // 4. Finalize Book
       actions.completeGeneration();
+      const { streamingContent } = storeApi.getState();
       await updateBookAction(savedBookId, {
         status: "completed",
+        content: streamingContent,
       });
 
       actions.updateGenerationProgress({
@@ -348,21 +350,24 @@ export default function GenerationView() {
             return (
               <div
                 key={idx}
-                className={`flex items-baseline gap-4 text-base p-3 rounded-lg transition-colors ${
-                  isFinished ? "bg-green-50" : "hover:bg-neutral-50"
-                }`}
+                className={cn(
+                  "flex items-baseline gap-4 text-base p-3 rounded-lg transition-colors",
+                  isFinished ? "bg-green-50" : "hover:bg-neutral-50",
+                )}
               >
                 <span
-                  className={`font-mono text-sm font-bold w-8 text-right ${
-                    isFinished ? "text-green-600" : "text-neutral-400"
-                  }`}
+                  className={cn(
+                    "font-mono text-sm font-bold w-8 text-right",
+                    isFinished ? "text-green-600" : "text-neutral-400",
+                  )}
                 >
                   {isFinished ? "✓" : `${String(idx + 1).padStart(2, "0")}.`}
                 </span>
                 <span
-                  className={`font-bold ${
-                    isFinished ? "text-green-800" : "text-black"
-                  }`}
+                  className={cn(
+                    "font-bold",
+                    isFinished ? "text-green-800" : "text-black",
+                  )}
                 >
                   {chapter}
                 </span>
@@ -376,12 +381,13 @@ export default function GenerationView() {
         <Button
           onClick={handleStart}
           disabled={isProcessing}
-          className={`w-full h-16 text-lg font-bold rounded-full ${
-            isResumable ? "bg-black hover:bg-neutral-800 text-white" : ""
-          }`}
+          className={cn(
+            "w-full h-16 text-lg font-bold rounded-full",
+            isResumable && "bg-black hover:bg-neutral-800 text-white",
+          )}
         >
           {isDeductingCredits
-            ? "DEDUCTING CREDITS..."
+            ? "PROCESSING..."
             : isProcessing
             ? "PROCESSING..."
             : isResumable

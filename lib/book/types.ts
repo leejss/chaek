@@ -3,7 +3,6 @@ import { PlanOutput } from "@/lib/ai/specs/plan";
 export interface Section {
   title: string;
   summary: string;
-  content?: string;
 }
 
 export interface ChapterOutline {

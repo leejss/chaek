@@ -141,6 +141,7 @@ export async function streamSection(params: {
   settings: GenerationSettings;
 }) {
   const model = getModel(params.settings.provider, params.settings.model);
+
   return registry.runSpec(
     "book.chapter.draft@v1",
     {

@@ -63,7 +63,10 @@ Target Audience: ${plan.targetAudience}
 `.trim();
 }
 
-function createChapterContext(chapterNumber: number, chapterTitle: string): string {
+function createChapterContext(
+  chapterNumber: number,
+  chapterTitle: string,
+): string {
   return `
 <chapter_context>
 Chapter ${chapterNumber}: ${chapterTitle}
@@ -80,9 +83,10 @@ ${outline.map((s, i) => `${i + 1}. ${s.title}: ${s.summary}`).join("\n")}
 }
 
 function createPreviousSectionsSummary(previousSections: Section[]): string {
-  const text = previousSections.length > 0
-    ? previousSections.map((s) => `- ${s.title}: ${s.summary}`).join("\n")
-    : "(This is the first section)";
+  const text =
+    previousSections.length > 0
+      ? previousSections.map((s) => `- ${s.title}: ${s.summary}`).join("\n")
+      : "(This is the first section)";
   return `
 <previous_sections_summary>
 ${text}
@@ -119,19 +123,23 @@ export const draftV1: PromptSpec<DraftInput, void> = {
       {
         role: "system",
         content: `${CHAPTER_ROLE}
-
 ${createInstructions(input)}`.trim(),
       },
       {
         role: "user",
         content: [
-          input.plan ? createBookPlanContext(input.plan) : "",
+          createBookPlanContext(input.plan),
           createChapterContext(input.chapterNumber, input.chapterTitle),
           createChapterOutline(input.chapterOutline),
           createPreviousSectionsSummary(input.previousSections),
-          input.userPreference ? createUserPreferences(input.userPreference) : "",
+          input.userPreference
+            ? createUserPreferences(input.userPreference)
+            : "",
           createTask(currentSection.title, currentSection.summary),
-        ].filter(Boolean).join("\n\n").trim(),
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+          .trim(),
       },
     ];
   },
