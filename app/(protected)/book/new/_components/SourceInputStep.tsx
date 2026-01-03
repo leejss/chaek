@@ -9,10 +9,12 @@ export default function SourceInputStep() {
   const { updateDraft, generateTOC } = bookStoreActions;
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-foreground mb-3">Source Text</h2>
-        <p className="text-neutral-600">
+    <div className="space-y-10 max-w-3xl mx-auto">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-extrabold text-black mb-4 tracking-tight uppercase">
+          Source Text
+        </h2>
+        <p className="text-neutral-500 font-medium">
           Paste your source text below. The AI will organize this into a
           coherent book structure.
         </p>
@@ -20,24 +22,24 @@ export default function SourceInputStep() {
 
       <div className="relative">
         <textarea
-          className="w-full h-96 p-6 bg-background border border-neutral-300 rounded-2xl focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-all text-lg leading-relaxed resize-none placeholder:text-neutral-500 placeholder:italic shadow-inner text-foreground"
-          placeholder="Paste your source text here..."
+          className="w-full h-96 p-6 bg-white border-2 border-neutral-200 rounded-xl focus:border-black focus:ring-0 transition-all text-lg leading-relaxed resize-none placeholder:text-neutral-400 font-medium text-black shadow-none"
+          placeholder="PASTE YOUR SOURCE TEXT HERE..."
           value={sourceText || ""}
           onChange={(e) => updateDraft({ sourceText: e.target.value })}
         />
-        <div className="absolute bottom-4 right-4 text-xs text-neutral-600 bg-white/80 px-2 py-1 rounded border border-neutral-200">
+        <div className="absolute bottom-4 right-4 text-xs font-bold text-black bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200 uppercase tracking-wide">
           {sourceText?.length || 0} chars
         </div>
       </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end pt-6">
         <Button
           onClick={() => generateTOC(sourceText || "")}
           disabled={!sourceText}
           isLoading={isProcessing}
-          className="w-full md:w-auto h-12 px-10 text-lg"
+          className="w-full md:w-auto h-14 px-12 text-lg font-bold rounded-full"
         >
-          Generate Book Structure
+          GENERATE STRUCTURE
         </Button>
       </div>
     </div>

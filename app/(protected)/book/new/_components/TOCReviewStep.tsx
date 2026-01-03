@@ -98,23 +98,23 @@ export default function TOCReviewStep() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 text-foreground">
-      <div className="space-y-8">
+    <div className="max-w-3xl mx-auto px-4 py-12 text-black">
+      <div className="space-y-10">
         {/* Header Section */}
-        <div className="text-center space-y-3">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Review Table of Contents
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-extrabold tracking-tight text-black uppercase">
+            Review Structure
           </h1>
-          <p className="text-sm text-neutral-500 font-sans max-w-md mx-auto">
+          <p className="text-neutral-500 font-medium max-w-md mx-auto">
             Review and refine the book structure. You can edit chapter titles or
             regenerate the entire outline.
           </p>
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-background border border-neutral-200 shadow-sm rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500 font-sans">
+        <div className="bg-white border-2 border-neutral-200 rounded-xl overflow-hidden">
+          <div className="p-6 border-b-2 border-neutral-200 flex items-center justify-between bg-white">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-black">
               Chapters Outline
             </h2>
             <div className="flex items-center gap-2">
@@ -123,27 +123,27 @@ export default function TOCReviewStep() {
                   <Button
                     variant="ghost"
                     onClick={handleCancel}
-                    className="h-8 px-3 text-xs"
+                    className="h-8 px-4 text-xs font-bold"
                   >
-                    Cancel
+                    CANCEL
                   </Button>
                   <Button
                     variant="primary"
                     onClick={handleSave}
-                    className="h-8 px-4 text-xs gap-1.5"
+                    className="h-8 px-4 text-xs gap-2 font-bold"
                   >
-                    <Check size={14} />
-                    Save Changes
+                    <Check size={14} strokeWidth={3} />
+                    SAVE CHANGES
                   </Button>
                 </>
               ) : (
                 <Button
                   variant="outline"
                   onClick={handleEditStart}
-                  className="h-8 px-3 text-xs gap-1.5 bg-background border-neutral-300 text-foreground hover:bg-neutral-50 rounded-full"
+                  className="h-8 px-4 text-xs gap-2 font-bold bg-white border-neutral-300 text-black hover:bg-neutral-50 rounded-full"
                 >
-                  <Edit2 size={13} />
-                  Edit List
+                  <Edit2 size={12} strokeWidth={3} />
+                  EDIT LIST
                 </Button>
               )}
             </div>
@@ -151,75 +151,75 @@ export default function TOCReviewStep() {
 
           <div className="p-8 md:p-10">
             {isEditing ? (
-              <div className="space-y-6">
-                <div className="pb-4 border-b border-neutral-200">
-                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 font-sans mb-2">
+              <div className="space-y-8">
+                <div className="pb-6 border-b border-neutral-200">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-black mb-3">
                     Book Title
                   </label>
                   <input
                     type="text"
                     value={tempTitle}
                     onChange={(e) => setTempTitle(e.target.value)}
-                    placeholder="Enter book title..."
-                    className="w-full text-2xl font-bold leading-relaxed text-foreground bg-transparent border-b-2 border-neutral-200 focus:outline-none focus:border-brand-600 py-2 transition-colors"
+                    placeholder="ENTER BOOK TITLE..."
+                    className="w-full text-2xl font-bold text-black bg-transparent border-b-2 border-neutral-200 focus:outline-none focus:border-black py-2 transition-colors placeholder:text-neutral-300"
                   />
                 </div>
                 <div className="space-y-4">
                   {tempTOC.map((chapter, idx) => (
-                    <div key={idx} className="flex items-center gap-3 group">
-                      <span className="font-bold w-6 text-neutral-400 font-sans">
-                        {idx + 1}
+                    <div key={idx} className="flex items-center gap-4 group">
+                      <span className="font-bold w-6 text-neutral-400">
+                        {String(idx + 1).padStart(2, "0")}
                       </span>
                       <input
                         type="text"
                         value={chapter}
                         onChange={(e) => updateChapter(idx, e.target.value)}
-                        placeholder={`Chapter ${idx + 1} title...`}
-                        className="flex-1 text-lg leading-relaxed text-foreground bg-transparent border-b border-neutral-200 focus:outline-none focus:border-brand-600 py-1 transition-colors"
+                        placeholder={`CHAPTER ${idx + 1} TITLE...`}
+                        className="flex-1 text-lg font-medium text-black bg-transparent border-b border-neutral-200 focus:outline-none focus:border-black py-2 transition-colors placeholder:text-neutral-300"
                       />
                       <button
                         onClick={() => removeChapter(idx)}
-                        className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
+                        className="p-2 text-neutral-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
                         title="Remove chapter"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} strokeWidth={2.5} />
                       </button>
                     </div>
                   ))}
                   <button
                     onClick={addChapter}
-                    className="w-full py-3 mt-4 border border-dashed border-neutral-200 rounded-xl flex items-center justify-center gap-2 text-neutral-600 hover:text-brand-600 hover:border-brand-600 hover:bg-neutral-50 transition-all font-sans text-xs uppercase tracking-wider"
+                    className="w-full py-4 mt-6 border-2 border-dashed border-neutral-200 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-black hover:border-black transition-all font-bold text-xs uppercase tracking-widest"
                   >
-                    <Plus size={14} />
+                    <Plus size={16} strokeWidth={3} />
                     Add Chapter
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="pb-4 border-b border-neutral-200 text-center">
-                  <h2 className="text-2xl font-bold text-foreground">
+              <div className="space-y-8">
+                <div className="pb-6 border-b border-neutral-200 text-center">
+                  <h2 className="text-3xl font-extrabold text-black tracking-tight">
                     {bookTitle || "Untitled Book"}
                   </h2>
                 </div>
                 {tableOfContents?.length > 0 ? (
-                  <div className="space-y-5">
+                  <div className="space-y-6">
                     {tableOfContents.map((chapter, idx) => (
                       <div
                         key={idx}
-                        className="flex items-baseline gap-4 group"
+                        className="flex items-baseline gap-5 group"
                       >
-                        <span className="font-bold text-neutral-400 font-sans w-5">
-                          {idx + 1}
+                        <span className="font-mono font-bold text-neutral-400 text-sm">
+                          {String(idx + 1).padStart(2, "0")}
                         </span>
-                        <span className="text-lg leading-relaxed text-foreground">
+                        <span className="text-lg font-bold text-black leading-relaxed">
                           {chapter}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-12 text-center text-neutral-500 italic font-sans text-sm">
+                  <div className="py-16 text-center text-neutral-400 font-medium italic">
                     No chapters generated yet.
                   </div>
                 )}
@@ -230,15 +230,15 @@ export default function TOCReviewStep() {
 
         {/* Bottom Actions Section */}
         {!isEditing && (
-          <div className="pt-4 space-y-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 bg-neutral-50 border border-neutral-200 rounded-2xl">
-              <div className="space-y-1.5 text-center md:text-left">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 font-sans">
+          <div className="pt-6 space-y-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 bg-white border-2 border-neutral-200 rounded-xl">
+              <div className="space-y-2 text-center md:text-left w-full md:w-auto">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-black">
                   Intelligence Engine
                 </h3>
-                <div className="relative inline-block">
+                <div className="relative inline-block w-full md:w-auto">
                   <select
-                    className="appearance-none bg-transparent py-1 pl-0 pr-6 text-sm font-medium text-foreground focus:outline-none cursor-pointer hover:text-brand-600 transition-colors font-sans"
+                    className="appearance-none bg-transparent py-2 pl-0 pr-8 text-base font-bold text-black focus:outline-none cursor-pointer hover:text-neutral-600 transition-colors w-full md:w-auto border-b border-neutral-200 focus:border-black"
                     value={selectedModel}
                     onChange={(e) => {
                       const modelId = e.target.value;
@@ -261,21 +261,22 @@ export default function TOCReviewStep() {
                       </optgroup>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-neutral-500">
-                    <ChevronDown size={14} />
+                  <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-black">
+                    <ChevronDown size={16} strokeWidth={3} />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <Button
                   variant="outline"
                   onClick={regenerateTOC}
                   disabled={isProcessing}
-                  className="flex-1 md:flex-none gap-2 px-6 bg-background border-neutral-300 text-foreground hover:bg-neutral-50 rounded-full"
+                  className="w-full sm:w-auto gap-2 px-6 h-12 bg-white border-2 border-neutral-200 text-black hover:border-black hover:bg-white rounded-full font-bold uppercase tracking-wide text-xs"
                 >
                   <RefreshCw
-                    size={16}
+                    size={14}
+                    strokeWidth={3}
                     className={isProcessing ? "animate-spin" : ""}
                   />
                   Regenerate
@@ -286,17 +287,17 @@ export default function TOCReviewStep() {
                   disabled={
                     isProcessing || isSaving || tableOfContents.length === 0
                   }
-                  className="flex-1 md:flex-none gap-2 px-8 shadow-lg shadow-brand-900/10 rounded-full"
+                  className="w-full sm:w-auto gap-2 px-8 h-12 rounded-full font-bold uppercase tracking-wide text-xs shadow-none"
                 >
-                  <FileText size={16} />
-                  {isSaving ? "저장 중..." : "Start Writing"}
+                  <FileText size={14} strokeWidth={3} />
+                  {isSaving ? "SAVING..." : "START WRITING"}
                 </Button>
               </div>
             </div>
 
-            <p className="text-[11px] text-neutral-600 text-center font-sans">
-              Click <strong>Start Writing</strong> to begin generating the full
-              content for each chapter.
+            <p className="text-[11px] font-bold text-neutral-400 text-center uppercase tracking-wide">
+              Click <span className="text-black">Start Writing</span> to begin
+              generating the full content for each chapter.
             </p>
           </div>
         )}
