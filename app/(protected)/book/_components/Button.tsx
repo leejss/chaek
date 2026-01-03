@@ -23,13 +23,13 @@ const Button: React.FC<ButtonProps> = ({
 
   const variants = {
     primary:
-      "bg-brand-600 text-white hover:bg-brand-700 shadow-sm focus:ring-brand-600 rounded-full",
+      "bg-black text-white hover:bg-neutral-800 focus:ring-neutral-500 rounded-full",
     secondary:
-      "bg-neutral-100 text-foreground hover:bg-neutral-200 focus:ring-neutral-400 rounded-full",
+      "bg-neutral-100 text-black hover:bg-neutral-200 focus:ring-neutral-400 rounded-full",
     outline:
-      "border border-neutral-300 text-foreground hover:bg-neutral-50 focus:ring-neutral-400 bg-transparent rounded-full",
+      "border border-neutral-200 text-black hover:bg-neutral-50 focus:ring-neutral-400 bg-white rounded-full",
     ghost:
-      "text-neutral-600 hover:text-brand-700 hover:bg-brand-50 rounded-full",
+      "text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-full",
   };
 
   const Component = asChild ? Slot : "button";

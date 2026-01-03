@@ -79,11 +79,11 @@ const ShikiCodeBlock: React.FC<{
 
   return (
     <div className="relative my-6 group">
-      <div className="absolute right-3 top-3 text-xs text-stone-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+      <div className="absolute right-3 top-3 text-xs text-neutral-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity uppercase">
         {language}
       </div>
       <div
-        className="rounded-lg border border-stone-200 bg-stone-50 overflow-hidden text-sm"
+        className="rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden text-sm"
         dangerouslySetInnerHTML={{
           __html: htmlToRender,
         }}
@@ -105,10 +105,9 @@ function escapeHtml(unsafe: string) {
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   isStreaming,
-  onHeadingRender,
 }) => {
   return (
-    <div className="prose prose-lg prose-stone max-w-none font-serif text-ink-800">
+    <div className="prose prose-lg prose-neutral max-w-none font-sans text-black">
       <ReactMarkdown
         components={{
           h1: ({ children, ...props }) => {
@@ -118,7 +117,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               <h1
                 id={`heading-${text}`}
                 data-heading-text={text}
-                className="text-4xl font-bold mt-8 mb-6 text-brand-900 border-b border-brand-100 pb-4 scroll-mt-24"
+                className="text-4xl font-extrabold mt-8 mb-6 text-black border-b border-neutral-200 pb-4 scroll-mt-24 tracking-tight"
                 {...props}
               >
                 {children}
@@ -132,7 +131,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               <h2
                 id={`heading-${text}`}
                 data-heading-text={text}
-                className="text-2xl font-semibold mt-8 mb-4 text-ink-900 scroll-mt-24"
+                className="text-2xl font-bold mt-8 mb-4 text-black scroll-mt-24 tracking-tight"
                 {...props}
               >
                 {children}
@@ -146,7 +145,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               <h3
                 id={`heading-${text}`}
                 data-heading-text={text}
-                className="text-xl font-medium mt-6 mb-3 text-ink-800 scroll-mt-24"
+                className="text-xl font-bold mt-6 mb-3 text-black scroll-mt-24"
                 {...props}
               >
                 {children}
@@ -154,29 +153,32 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             );
           },
           h4: ({ ...props }) => (
-            <h4
-              className="text-lg font-semibold mt-6 mb-2 text-ink-800"
-              {...props}
-            />
+            <h4 className="text-lg font-bold mt-6 mb-2 text-black" {...props} />
           ),
           h5: ({ ...props }) => (
             <h5
-              className="text-base font-bold mt-4 mb-2 text-ink-700 uppercase tracking-wide"
+              className="text-base font-bold mt-4 mb-2 text-neutral-600 uppercase tracking-wide"
               {...props}
             />
           ),
           p: ({ ...props }) => (
-            <p className="leading-loose mb-4 text-lg" {...props} />
+            <p className="leading-loose mb-4 text-lg text-black" {...props} />
           ),
           ul: ({ ...props }) => (
-            <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />
+            <ul
+              className="list-disc pl-6 mb-4 space-y-2 text-black"
+              {...props}
+            />
           ),
           ol: ({ ...props }) => (
-            <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />
+            <ol
+              className="list-decimal pl-6 mb-4 space-y-2 text-black"
+              {...props}
+            />
           ),
           blockquote: ({ ...props }) => (
             <blockquote
-              className="border-l-4 border-accent-500 pl-4 italic text-ink-400 my-6"
+              className="border-l-4 border-black pl-4 italic text-neutral-600 my-6"
               {...props}
             />
           ),
@@ -187,7 +189,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             if (!match && !content.includes("\n")) {
               return (
                 <code
-                  className="px-1.5 py-0.5 rounded bg-stone-100 text-rose-600 font-mono text-[0.9em] border border-stone-200"
+                  className="px-1.5 py-0.5 rounded bg-neutral-100 text-black font-mono text-[0.9em] border border-neutral-200"
                   {...props}
                 >
                   {children}
