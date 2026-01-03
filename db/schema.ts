@@ -109,6 +109,7 @@ export const chapters = pgTable(
     chapterNumber: integer("chapter_number").notNull(),
     title: text("title").notNull(),
     content: text("content").notNull().default(""),
+    outline: jsonb("outline"),
     status: chapterStatusEnum("status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

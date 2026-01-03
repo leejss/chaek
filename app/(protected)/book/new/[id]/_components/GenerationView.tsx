@@ -125,8 +125,8 @@ export default function GenerationView() {
 
         const chapterTitle = tableOfContents[chapterNum - 1];
 
-        // 3a. Generate Outline
         const chapterOutline = await generateOutlineAction({
+          bookId: savedBookId,
           toc: tableOfContents,
           chapterNumber: chapterNum,
           sourceText,
@@ -153,12 +153,12 @@ export default function GenerationView() {
           currentSection: 0,
         });
 
-        // 3b. Generate Sections
         for (
           let sectionIndex = 0;
           sectionIndex < chapterOutline.sections.length;
           sectionIndex++
         ) {
+          console.log("Generating section", sectionIndex);
           if (abortRef.current?.signal.aborted) {
             throw new Error("생성이 취소되었습니다.");
           }
@@ -201,6 +201,7 @@ export default function GenerationView() {
           chapterNum,
           chapterTitle,
           currentChapterContent,
+          chapterOutline,
         );
 
         // Update local store

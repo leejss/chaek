@@ -128,10 +128,6 @@ export default function GenerationStep() {
 
                 {currentOutline && (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-widest">
-                      <Loader2 size={12} className="animate-spin text-black" />
-                      Progress
-                    </div>
                     <div className="flex flex-wrap gap-2">
                       {currentOutline.sections.map(
                         (section: Section, idx: number) => {
@@ -152,7 +148,9 @@ export default function GenerationStep() {
                                 }
                               `}
                             >
-                              {isPast && <Check size={14} strokeWidth={3} />}
+                              {isPast ? (
+                                <Check size={14} strokeWidth={3} />
+                              ) : null}
                               <span className="truncate max-w-[200px]">
                                 {section.title}
                               </span>

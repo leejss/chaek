@@ -3,6 +3,7 @@
 import { useGenerationStore } from "@/lib/book/generationContext";
 import { Check, Lock, Loader2, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { cn } from "@/utils";
 
 export default function ChapterTabs() {
   const tableOfContents = useGenerationStore((state) => state.tableOfContents);
@@ -61,19 +62,16 @@ export default function ChapterTabs() {
                 }
               }}
               disabled={isLocked}
-              className={`
-                relative flex items-center gap-2 px-5 py-2.5 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors duration-200
-                snap-center shrink-0 border
-                ${
-                  isActive
-                    ? "bg-black border-black text-white"
-                    : isLocked
-                    ? "bg-transparent border-transparent text-neutral-300 cursor-not-allowed"
-                    : isCurrent
-                    ? "bg-white border-black text-black hover:bg-neutral-50"
-                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-400 hover:text-neutral-900 hover:bg-neutral-50"
-                }
-              `}
+              className={cn(
+                "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors duration-200 snap-center shrink-0 border",
+                isActive
+                  ? "bg-black border-black text-white"
+                  : isLocked
+                  ? "bg-transparent border-transparent text-neutral-300 cursor-not-allowed"
+                  : isCurrent
+                  ? "bg-white border-black text-black hover:bg-neutral-50"
+                  : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-400 hover:text-neutral-900 hover:bg-neutral-50",
+              )}
             >
               <div className="flex items-center justify-center">
                 {isCompleted ? (
@@ -98,13 +96,7 @@ export default function ChapterTabs() {
               </div>
 
               <span className="truncate max-w-[180px]">
-                <span
-                  className={`mr-2 ${
-                    isActive ? "text-neutral-400" : "text-neutral-300"
-                  }`}
-                >
-                  {index + 1}.
-                </span>
+                <span>{index + 1}.</span>
                 {title}
               </span>
             </button>

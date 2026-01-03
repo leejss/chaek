@@ -84,18 +84,3 @@ export async function* fetchStreamSection(params: {
     yield decoder.decode(chunk, { stream: true });
   }
 }
-
-export async function fetchBookById(id: string): Promise<Book> {
-  const response = await authFetch(`/api/books/${id}`);
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error("Book not found");
-    }
-    const error = await response.json();
-    throw new Error(error.error || "Failed to fetch book");
-  }
-
-  const data = await response.json();
-  return data.book as Book;
-}

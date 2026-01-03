@@ -7,8 +7,8 @@ import {
   generateChapterSummary,
 } from "@/lib/ai/core/ai";
 import { db } from "@/db";
-import { books } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { books, chapters } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
@@ -94,6 +94,7 @@ export async function generatePlanAction(
 }
 
 export interface GenerateOutlineParams {
+  bookId?: string;
   toc: string[];
   chapterNumber: number;
   sourceText: string;
@@ -107,6 +108,7 @@ export async function generateOutlineAction(
   params: GenerateOutlineParams,
 ): Promise<ChapterOutline> {
   const {
+    bookId,
     toc,
     chapterNumber,
     sourceText,
@@ -119,6 +121,26 @@ export async function generateOutlineAction(
   const chapterTitle = toc[chapterNumber - 1];
   if (!chapterTitle) {
     throw new Error("Chapter title not found in TOC");
+  }
+
+  if (bookId) {
+    const existingChapter = await db
+      .select()
+      .from(chapters)
+      .where(
+        and(
+          eq(chapters.bookId, bookId),
+          eq(chapters.chapterNumber, chapterNumber),
+        ),
+      )
+      .limit(1);
+
+    // 기존 챕터가 있으면 outline을 가져옴
+    if (existingChapter[0]?.outline) {
+      return ChapterOutlineSchema.parse(
+        existingChapter[0].outline,
+      ) as ChapterOutline;
+    }
   }
 
   if (!bookPlan) {

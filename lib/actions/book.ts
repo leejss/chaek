@@ -6,6 +6,7 @@ import { books, chapters } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { BookGenerationSettings } from "@/lib/book/settings";
+import { ChapterOutline } from "@/lib/book/types";
 
 export async function createBookAction(
   title: string,
@@ -54,6 +55,7 @@ export async function saveChapterAction(
   chapterNumber: number,
   title: string,
   content: string,
+  outline: ChapterOutline,
 ) {
   const userId = await getUserId();
 
@@ -65,6 +67,7 @@ export async function saveChapterAction(
       chapterNumber,
       title,
       content,
+      outline,
       status: "completed",
       updatedAt: new Date(),
     })
@@ -72,6 +75,7 @@ export async function saveChapterAction(
       target: [chapters.bookId, chapters.chapterNumber],
       set: {
         content,
+        outline,
         status: "completed",
         updatedAt: new Date(),
       },
