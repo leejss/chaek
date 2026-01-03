@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface AILoadingStepProps {
   title: string;
@@ -13,12 +13,21 @@ export default function AILoadingStep({
 }: AILoadingStepProps) {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-50 mb-4">
-          <Sparkles className="text-brand-600" size={32} />
+      <div className="text-center space-y-8">
+        <div className="inline-flex items-center justify-center">
+          <Loader2
+            className="w-16 h-16 animate-spin text-black"
+            strokeWidth={1.5}
+          />
         </div>
-        <h3 className="text-xl font-bold text-foreground">{title}</h3>
-        <p className="text-neutral-600 text-sm">{description}</p>
+        <div className="space-y-3">
+          <h3 className="text-3xl font-extrabold text-black uppercase tracking-tight">
+            {title}
+          </h3>
+          <p className="text-neutral-500 font-bold text-xs uppercase tracking-widest max-w-sm mx-auto">
+            {description}
+          </p>
+        </div>
       </div>
     </div>
   );

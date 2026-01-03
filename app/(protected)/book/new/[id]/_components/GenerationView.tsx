@@ -12,8 +12,8 @@ import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
 import { updateBookAction, saveChapterAction } from "@/lib/actions/book";
 import GenerationStep from "../../_components/GenerationStep";
-import Button from "../../../_components/Button";
 import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration";
+import Button from "../../../_components/Button";
 
 export default function GenerationView() {
   const storeApi = useGenerationStoreApi();
@@ -273,22 +273,22 @@ export default function GenerationView() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={3}
                 d="M5 13l4 4L19 7"
               />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            책 생성 완료!
+          <h1 className="text-4xl font-extrabold text-black mb-4 tracking-tight">
+            BOOK GENERATED
           </h1>
-          <p className="text-neutral-500 mb-8">
-            “{bookTitle || "Untitled Book"}”이(가) 성공적으로 생성되었습니다.
+          <p className="text-neutral-500 font-medium mb-8">
+            “{bookTitle || "Untitled Book"}” has been successfully created.
           </p>
           <a
             href={`/book/${savedBookId}`}
-            className="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold h-14 px-8 rounded-xl text-lg transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-black hover:bg-neutral-800 text-white font-bold h-14 px-8 rounded-full text-lg transition-colors"
           >
-            책 보러가기
+            VIEW BOOK
             <svg
               className="w-5 h-5"
               fill="none"
@@ -298,7 +298,7 @@ export default function GenerationView() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={3}
                 d="M9 5l7 7-7 7"
               />
             </svg>
@@ -317,7 +317,7 @@ export default function GenerationView() {
           isGenerating={isActuallyGenerating}
         />
         {generationProgress.error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
             {generationProgress.error}
           </div>
         )}
@@ -327,17 +327,19 @@ export default function GenerationView() {
 
   return (
     <div className="max-w-3xl mx-auto pb-32">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-4">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-black mb-4 tracking-tight">
           {bookTitle || "Untitled Book"}
         </h1>
       </div>
 
-      <div className="bg-background border border-neutral-200 rounded-2xl p-8 mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-6">
-          차례 (Table of Contents)
-        </h3>
-        <div className="space-y-3">
+      <div className="bg-white border border-neutral-200 rounded-2xl p-8 mb-8">
+        <div className="flex items-center gap-2 mb-6 border-b border-neutral-100 pb-4">
+          <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
+            Table of Contents
+          </h3>
+        </div>
+        <div className="space-y-2">
           {tableOfContents.map((chapter, idx) => {
             const isFinished = chapters.some(
               (c) => c.chapterNumber === idx + 1,
@@ -345,20 +347,20 @@ export default function GenerationView() {
             return (
               <div
                 key={idx}
-                className={`flex items-baseline gap-4 text-base p-2 rounded-lg transition-colors ${
-                  isFinished ? "bg-green-50/50" : "hover:bg-neutral-50"
+                className={`flex items-baseline gap-4 text-base p-3 rounded-lg transition-colors ${
+                  isFinished ? "bg-green-50" : "hover:bg-neutral-50"
                 }`}
               >
                 <span
-                  className={`font-bold w-6 text-right ${
-                    isFinished ? "text-green-500" : "text-neutral-400"
+                  className={`font-mono text-sm font-bold w-8 text-right ${
+                    isFinished ? "text-green-600" : "text-neutral-400"
                   }`}
                 >
-                  {isFinished ? "✓" : `${idx + 1}.`}
+                  {isFinished ? "✓" : `${String(idx + 1).padStart(2, "0")}.`}
                 </span>
                 <span
-                  className={`font-medium ${
-                    isFinished ? "text-green-700" : "text-foreground"
+                  className={`font-bold ${
+                    isFinished ? "text-green-800" : "text-black"
                   }`}
                 >
                   {chapter}
@@ -373,22 +375,22 @@ export default function GenerationView() {
         <Button
           onClick={handleStart}
           disabled={isProcessing}
-          className={`w-full h-14 text-lg font-semibold ${
-            isResumable ? "bg-brand-600 hover:bg-brand-700 text-white" : ""
+          className={`w-full h-16 text-lg font-bold rounded-full ${
+            isResumable ? "bg-black hover:bg-neutral-800 text-white" : ""
           }`}
         >
           {isDeductingCredits
-            ? "크레딧 차감 중..."
+            ? "DEDUCTING CREDITS..."
             : isProcessing
-            ? "처리 중..."
+            ? "PROCESSING..."
             : isResumable
-            ? "생성 재개하기"
-            : "책 생성 시작하기"}
+            ? "RESUME GENERATION"
+            : "START GENERATION"}
         </Button>
       </div>
 
       {generationProgress.error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-center">
           {generationProgress.error}
         </div>
       )}

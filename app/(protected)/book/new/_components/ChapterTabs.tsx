@@ -1,7 +1,7 @@
 "use client";
 
 import { useGenerationStore } from "@/lib/book/generationContext";
-import { Check, Lock, Loader2 } from "lucide-react";
+import { Check, Lock, Loader2, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 export default function ChapterTabs() {
@@ -42,7 +42,7 @@ export default function ChapterTabs() {
     <div className="w-full bg-white">
       <div
         ref={scrollContainerRef}
-        className="flex overflow-x-auto no-scrollbar px-4 gap-2 py-3 snap-x justify-center"
+        className="flex overflow-x-auto no-scrollbar px-4 md:px-6 gap-2 py-4 snap-x items-center"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {tableOfContents.map((title, index) => {
@@ -62,47 +62,55 @@ export default function ChapterTabs() {
               }}
               disabled={isLocked}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all snap-center border
+                relative flex items-center gap-2 px-5 py-2.5 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors duration-200
+                snap-center shrink-0 border
                 ${
                   isActive
-                    ? "bg-brand-50 border-brand-200 text-brand-700 shadow-sm ring-1 ring-brand-100"
+                    ? "bg-black border-black text-white"
                     : isLocked
-                    ? "bg-neutral-50 border-transparent text-neutral-400 cursor-not-allowed"
-                    : "bg-white border-neutral-200 text-neutral-600 hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-600"
+                    ? "bg-transparent border-transparent text-neutral-300 cursor-not-allowed"
+                    : isCurrent
+                    ? "bg-white border-black text-black hover:bg-neutral-50"
+                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-400 hover:text-neutral-900 hover:bg-neutral-50"
                 }
               `}
             >
-              {isCompleted ? (
+              <div className="flex items-center justify-center">
+                {isCompleted ? (
+                  <Check
+                    size={16}
+                    strokeWidth={3}
+                    className={isActive ? "text-white" : "text-green-600"}
+                  />
+                ) : isCurrent ? (
+                  <Loader2
+                    size={16}
+                    className={`animate-spin ${
+                      isActive ? "text-white" : "text-black"
+                    }`}
+                    strokeWidth={3}
+                  />
+                ) : isActive ? (
+                  <FileText size={16} strokeWidth={3} />
+                ) : (
+                  <Lock size={16} className="text-neutral-300" />
+                )}
+              </div>
+
+              <span className="truncate max-w-[180px]">
                 <span
-                  className={`flex items-center justify-center w-5 h-5 rounded-full ${
-                    isActive
-                      ? "bg-brand-100 text-brand-600"
-                      : "bg-green-100 text-green-600"
+                  className={`mr-2 ${
+                    isActive ? "text-neutral-400" : "text-neutral-300"
                   }`}
                 >
-                  <Check size={12} strokeWidth={3} />
+                  {index + 1}.
                 </span>
-              ) : isCurrent ? (
-                <span className="flex items-center justify-center w-5 h-5">
-                  <Loader2 size={14} className="animate-spin text-brand-500" />
-                </span>
-              ) : (
-                <span className="flex items-center justify-center w-5 h-5 text-neutral-300">
-                  <Lock size={12} />
-                </span>
-              )}
-
-              <span className="truncate max-w-[150px]">
-                {index + 1}. {title}
+                {title}
               </span>
             </button>
           );
         })}
       </div>
-
-      {/* Scroll Fade Indicators (Optional visual enhancement) */}
-      <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-white to-transparent pointer-events-none" />
-      <div className="absolute top-0 right-0 w-4 h-full bg-gradient-to-l from-white to-transparent pointer-events-none" />
     </div>
   );
 }
