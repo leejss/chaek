@@ -1,16 +1,17 @@
-import { db } from "@/db";
-import { books } from "@/db/schema";
-import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
-import { serverEnv } from "@/lib/env";
-import { highlightCode, extractTOC } from "@/lib/book/serverMarkdown";
-import { eq, and } from "drizzle-orm";
-import { notFound, redirect } from "next/navigation";
+import { and, eq } from "drizzle-orm";
+import parse from "html-react-parser";
 import { cookies } from "next/headers";
-import ReactMarkdown from "react-markdown";
-import BookView from "./_components/BookView";
-import { Book } from "@/lib/book/types";
+import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { Components } from "react-markdown";
+import ReactMarkdown from "react-markdown";
+import { db } from "@/db";
+import { books } from "@/db/schema";
+import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
+import { extractTOC, highlightCode } from "@/lib/book/serverMarkdown";
+import type { Book } from "@/lib/book/types";
+import { serverEnv } from "@/lib/env";
+import BookView from "./_components/BookView";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -100,10 +101,7 @@ export default async function BookDetailPage({ params }: PageProps) {
       );
     },
     h4: ({ ...props }: MarkdownProps) => (
-      <h4
-        className="text-lg font-semibold mt-6 mb-2 text-ink-800"
-        {...props}
-      />
+      <h4 className="text-lg font-semibold mt-6 mb-2 text-ink-800" {...props} />
     ),
     h5: ({ ...props }: MarkdownProps) => (
       <h5
@@ -148,12 +146,9 @@ export default async function BookDetailPage({ params }: PageProps) {
           <div className="absolute right-3 top-3 text-xs text-stone-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity uppercase">
             {match?.[1]}
           </div>
-          <div
-            className="rounded-lg border border-stone-200 bg-stone-50 overflow-hidden text-sm"
-            dangerouslySetInnerHTML={{
-              __html: html,
-            }}
-          />
+          <div className="rounded-lg border border-stone-200 bg-stone-50 overflow-hidden text-sm">
+            {parse(html)}
+          </div>
         </div>
       );
     },
@@ -166,5 +161,12 @@ export default async function BookDetailPage({ params }: PageProps) {
     </div>
   );
 
-  return <BookView book={book} headings={headings} markdownHtml={markdownHtml} status={book.status} />;
+  return (
+    <BookView
+      book={book}
+      headings={headings}
+      markdownHtml={markdownHtml}
+      status={book.status}
+    />
+  );
 }

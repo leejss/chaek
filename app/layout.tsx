@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans, Noto_Serif } from "next/font/google";
+import { SWRConfig } from "swr";
 import "./globals.css";
-import { SWRConfig } from "@/lib/swr";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
