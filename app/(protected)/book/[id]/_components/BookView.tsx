@@ -1,10 +1,10 @@
 "use client";
 
+import { AlignLeft, ChevronLeft, Download, List, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Download, List, AlignLeft, Play } from "lucide-react";
 import Button from "@/app/(protected)/book/_components/Button";
-import { Book } from "@/lib/book/types";
+import type { Book } from "@/lib/book/types";
 import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 
 interface TOCItem {
