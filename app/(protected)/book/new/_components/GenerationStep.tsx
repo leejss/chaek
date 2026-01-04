@@ -102,7 +102,7 @@ export default function GenerationStep(props: GenerationStepProps) {
 
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] bg-white">
-      <div className="sticky top-0 z-30 bg-white border-b border-neutral-100">
+      <div className="sticky top-0 z-30 bg-white">
         <ChapterTabs tableOfContents={tableOfContents} />
       </div>
 
@@ -112,7 +112,7 @@ export default function GenerationStep(props: GenerationStepProps) {
           {isViewingCurrentChapter &&
             tableOfContents &&
             typeof currentChapterIndex === "number" && (
-              <div className="bg-white rounded-2xl border border-neutral-200 p-6">
+              <div className="bg-white p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="inline-flex items-center gap-2 text-sm font-bold px-3 py-1 bg-black text-white rounded-full">
                     <span className="relative flex h-2.5 w-2.5">
@@ -169,7 +169,7 @@ export default function GenerationStep(props: GenerationStepProps) {
             )}
 
           {!isViewingCurrentChapter && viewingChapter && (
-            <div className="bg-white rounded-2xl border border-neutral-200 p-6">
+            <div className="bg-white p-6">
               <div className="flex items-center gap-3 mb-4">
                 <span className="inline-flex items-center gap-2 text-sm font-bold px-3 py-1 bg-neutral-100 text-neutral-600 rounded-full">
                   <Check size={14} strokeWidth={3} />
@@ -224,7 +224,7 @@ export default function GenerationStep(props: GenerationStepProps) {
         </div>
 
         {/* Content Display */}
-        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden min-h-[60vh]">
+        <div className="bg-white overflow-hidden min-h-[60vh]">
           <ChapterContentDisplay />
         </div>
       </div>

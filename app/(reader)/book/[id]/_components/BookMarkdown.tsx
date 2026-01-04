@@ -22,7 +22,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h1
           id={`heading-${text}`}
           data-heading-text={text}
-          className="text-5xl font-extrabold tracking-tight mt-12 mb-8 text-brand-900 border-b-2 border-brand-100 pb-6 scroll-mt-24"
+          className="text-6xl font-black tracking-tighter mt-16 mb-12 text-black scroll-mt-24 uppercase"
           {...props}
         >
           {children}
@@ -35,7 +35,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h2
           id={`heading-${text}`}
           data-heading-text={text}
-          className="text-4xl font-bold mt-10 mb-6 text-brand-700 border-l-4 border-brand-500 pl-4 scroll-mt-24"
+          className="text-4xl font-bold mt-12 mb-8 text-black scroll-mt-24 tracking-tight"
           {...props}
         >
           {children}
@@ -48,7 +48,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h3
           id={`heading-${text}`}
           data-heading-text={text}
-          className="text-2xl font-bold mt-8 mb-4 text-ink-900 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-brand-400 before:rounded-full scroll-mt-24"
+          className="text-2xl font-bold mt-10 mb-6 text-black scroll-mt-24 tracking-tight"
           {...props}
         >
           {children}
@@ -57,28 +57,34 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
     },
     h4: ({ ...props }: MarkdownProps) => (
       <h4
-        className="text-xl font-bold mt-6 mb-3 text-ink-800 decoration-stone-300 underline-offset-4"
+        className="text-xl font-bold mt-8 mb-4 text-black tracking-tight"
         {...props}
       />
     ),
     h5: ({ ...props }: MarkdownProps) => (
       <h5
-        className="text-lg font-bold mt-6 mb-2 text-brand-600 uppercase tracking-widest border-b border-stone-200 pb-1 inline-block"
+        className="text-lg font-bold mt-6 mb-3 text-neutral-500 uppercase tracking-widest"
         {...props}
       />
     ),
     p: ({ ...props }: MarkdownProps) => (
-      <p className="leading-loose mb-4 text-base" {...props} />
+      <p className="leading-relaxed mb-6 text-lg text-neutral-900" {...props} />
     ),
     ul: ({ ...props }: MarkdownProps) => (
-      <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />
+      <ul
+        className="list-disc pl-6 mb-6 space-y-2 text-lg text-neutral-900 marker:text-black"
+        {...props}
+      />
     ),
     ol: ({ ...props }: MarkdownProps) => (
-      <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />
+      <ol
+        className="list-decimal pl-6 mb-6 space-y-2 text-lg text-neutral-900 marker:text-black font-bold"
+        {...props}
+      />
     ),
     blockquote: ({ ...props }: MarkdownProps) => (
       <blockquote
-        className="border-l-4 border-accent-500 pl-4 italic text-ink-400 my-6"
+        className="border-l-4 border-black pl-6 italic text-xl text-neutral-800 my-8 font-serif"
         {...props}
       />
     ),
@@ -89,7 +95,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
       if (!match && !codeContent.includes("\n")) {
         return (
           <code
-            className="px-1.5 py-0.5 rounded bg-stone-100 text-rose-600 font-mono text-[0.9em] border border-stone-200"
+            className="px-1.5 py-0.5 rounded bg-neutral-100 text-black font-mono text-[0.9em] font-medium"
             {...props}
           >
             {children}

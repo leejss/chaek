@@ -88,7 +88,7 @@ export default function CreateBookPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white border border-neutral-200 rounded-xl min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-4xl mx-auto bg-white min-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 duration-500">
       {/* Credit Balance Warning */}
       {!isLoadingBalance && hasInsufficientCredits && (
         <div className="px-6 py-4 bg-red-50 border-b border-red-100">
