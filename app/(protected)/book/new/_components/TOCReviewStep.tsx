@@ -87,9 +87,9 @@ export default function TOCReviewStep() {
       };
 
       await createBookAction(
-        bookTitle || "Untitled Book",
+        bookTitle,
         tableOfContents,
-        sourceText || undefined,
+        sourceText,
         generationSettings,
       );
     } finally {

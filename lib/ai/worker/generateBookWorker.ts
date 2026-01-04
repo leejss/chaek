@@ -75,7 +75,10 @@ async function initGeneration(job: GenerateBookJob) {
       updatedAt: new Date(),
     })
     .where(
-      and(eq(books.id, job.bookId), inArray(books.status, ["draft", "failed"])),
+      and(
+        eq(books.id, job.bookId),
+        inArray(books.status, ["waiting", "failed"]),
+      ),
     );
 
   const settings = toSettings(job);

@@ -59,7 +59,7 @@ export async function POST(
         content: "",
         tableOfContents: body.tableOfContents,
         sourceText: body.sourceText,
-        status: "draft",
+        status: "waiting",
         updatedAt: new Date(),
       });
     } else {

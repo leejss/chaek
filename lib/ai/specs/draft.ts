@@ -40,6 +40,9 @@ function createInstructions(input: DraftInput): string {
 1. Write ONLY the specified section content in Markdown.
 2. **Heading Rule**:
    - Start the section with '### ' followed by the section title.
+  - The very first characters of the output MUST be '### ' (start at column 1).
+  - Always place headings on their own line: ensure there are TWO newlines (a blank line) before any '### ' or '#### ' heading.
+  - NEVER attach a heading immediately after a sentence (e.g., '...text### Title').
    - Use '#### ' for sub-headings within this section.
    - **NEVER use '#' or '##' headings** as they are reserved for Book and Chapter titles.
 3. Write comprehensive, engaging, and educational content.

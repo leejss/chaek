@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { books, chapters } from "@/db/schema";
+import { books, BookStatus, chapters } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { BookGenerationSettings } from "@/lib/book/settings";
@@ -24,7 +24,7 @@ export async function createBookAction(
       content: "",
       tableOfContents,
       sourceText: sourceText ?? undefined,
-      status: "draft",
+      status: "waiting",
       generationSettings: generationSettings ?? undefined,
     })
     .returning({ id: books.id });
@@ -36,7 +36,7 @@ export async function updateBookAction(
   bookId: string,
   data: {
     content?: string;
-    status?: "draft" | "generating" | "completed" | "failed";
+    status?: BookStatus;
   },
 ) {
   const userId = await getUserId();

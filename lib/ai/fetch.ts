@@ -60,8 +60,9 @@ export async function* fetchStreamSection(params: {
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
   settings?: BookSettings;
+  signal?: AbortSignal;
 }) {
-  const { settings, ...rest } = params;
+  const { settings, signal, ...rest } = params;
   const response = await authFetch("/api/ai/section", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -70,6 +71,7 @@ export async function* fetchStreamSection(params: {
       language: settings?.language,
       userPreference: settings?.userPreference,
     }),
+    signal,
   });
 
   if (!response.ok) {

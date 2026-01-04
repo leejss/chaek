@@ -80,13 +80,7 @@ export default async function BookGenerationPage({ params }: PageProps) {
         tableOfContents={tableOfContents ?? []}
         sourceText={sourceText || ""}
         chapters={initialChapters}
-        generationSettings={{
-          language: settings.language,
-          chapterCount: settings.chapterCount,
-          userPreference: settings.userPreference,
-          provider: settings.provider,
-          model: settings.model,
-        }}
+        generationSettings={settings}
       />
     </GenerationStoreProvider>
   );

@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const bookStatusEnum = pgEnum("book_status", [
-  "draft",
+  "waiting",
   "generating",
   "completed",
   "failed",
@@ -79,7 +79,7 @@ export const books = pgTable(
     content: text("content").notNull().default(""),
     tableOfContents: text("table_of_contents").array(),
     sourceText: text("source_text"),
-    status: bookStatusEnum("status").notNull().default("draft"),
+    status: bookStatusEnum("status").notNull().default("waiting"),
     currentChapterIndex: integer("current_chapter_index"),
     error: text("error"),
     generationSettings: jsonb("generation_settings"),

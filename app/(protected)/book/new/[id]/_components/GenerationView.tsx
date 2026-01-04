@@ -7,7 +7,7 @@ import {
 } from "@/lib/book/generationContext";
 import { BookSettings } from "@/lib/book/settings";
 import { BookGenerationSettings } from "@/lib/book/settings";
-import { ClaudeModel, GeminiModel, Section } from "@/lib/book/types";
+import { Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { cn } from "@/utils";
 import { deductCreditsAction } from "@/lib/actions/credits";
@@ -17,18 +17,49 @@ import GenerationStep from "../../_components/GenerationStep";
 import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration";
 import Button from "../../../_components/Button";
 
+const CANCELLED_MESSAGE = "생성이 취소되었습니다.";
+
+function getNextChapterNumber(args: {
+  totalChapters: number;
+  chapters: { chapterNumber: number; isComplete: boolean }[];
+}): number {
+  const completed = new Set(
+    args.chapters.filter((c) => c.isComplete).map((c) => c.chapterNumber),
+  );
+
+  for (let chapterNum = 1; chapterNum <= args.totalChapters; chapterNum++) {
+    if (!completed.has(chapterNum)) return chapterNum;
+  }
+
+  return args.totalChapters + 1;
+}
+
 export interface GenerationViewProps {
   bookTitle: string;
-  bookStatus: "draft" | "generating" | "completed" | "failed";
+  bookStatus: "waiting" | "generating" | "completed" | "failed";
   tableOfContents: string[];
   sourceText: string;
-  chapters: { chapterNumber: number; chapterTitle: string; content: string; isComplete: boolean }[];
+  chapters: {
+    chapterNumber: number;
+    chapterTitle: string;
+    content: string;
+    isComplete: boolean;
+  }[];
   generationSettings: BookGenerationSettings;
   savedBookId: string;
 }
 
 export default function GenerationView(props: GenerationViewProps) {
-  const { bookTitle, bookStatus, tableOfContents, sourceText, chapters, generationSettings, savedBookId } = props;
+  const {
+    bookTitle,
+    bookStatus,
+    tableOfContents,
+    sourceText,
+    chapters,
+    generationSettings,
+    savedBookId,
+  } = props;
+
   const storeApi = useGenerationStoreApi();
   const actions = useGenerationStore((state) => state.actions);
   const generationProgress = useGenerationStore(
@@ -38,32 +69,44 @@ export default function GenerationView(props: GenerationViewProps) {
   const [isDeductingCredits, setIsDeductingCredits] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const draftChunkBufferRef = useRef<string[]>([]);
+  const draftFlushRafRef = useRef<number | null>(null);
+
+  const flushDraft = useCallback(() => {
+    if (draftFlushRafRef.current != null) {
+      cancelAnimationFrame(draftFlushRafRef.current);
+      draftFlushRafRef.current = null;
+    }
+    const buffered = draftChunkBufferRef.current;
+    if (buffered.length === 0) return;
+
+    const delta = buffered.join("");
+    draftChunkBufferRef.current = [];
+    actions.appendDraftChunk(delta);
+  }, [actions]);
+
+  const scheduleDraftFlush = useCallback(() => {
+    if (draftFlushRafRef.current != null) return;
+    draftFlushRafRef.current = requestAnimationFrame(() => {
+      draftFlushRafRef.current = null;
+      flushDraft();
+    });
+  }, [flushDraft]);
+
   const clearError = useCallback(() => {
     actions.updateGenerationProgress({ error: null });
   }, [actions]);
 
   const handleSectionChunk = useCallback(
     (chunk: string) => {
-      const { streamingContent, currentChapterContent } = storeApi.getState();
-      actions.updateDraft({
-        streamingContent: streamingContent + chunk,
-        currentChapterContent: currentChapterContent + chunk,
-      });
+      if (abortRef.current?.signal.aborted) return;
+      draftChunkBufferRef.current.push(chunk);
+      scheduleDraftFlush();
     },
-    [actions, storeApi],
+    [scheduleDraftFlush],
   );
 
   const handleStart = async () => {
-    if (!savedBookId) {
-      alert("책 ID가 없습니다.");
-      return;
-    }
-
-    if (!tableOfContents.length) {
-      alert("차례가 없습니다.");
-      return;
-    }
-
     if (isProcessing) return;
 
     abortRef.current = new AbortController();
@@ -71,21 +114,14 @@ export default function GenerationView(props: GenerationViewProps) {
     clearError();
 
     try {
-      // 1. Deduct credits only if starting for the first time
-      if (chapters.length === 0) {
-        setIsDeductingCredits(true);
-        await deductCreditsAction(savedBookId);
-        setIsDeductingCredits(false);
+      const ensureNotCancelled = () => {
+        if (abortRef.current?.signal.aborted) {
+          throw new Error(CANCELLED_MESSAGE);
+        }
+      };
 
-        actions.setupGeneration(tableOfContents.length);
-      } else {
-        // Prepare for resume: update progress phase
-        actions.updateGenerationProgress({
-          phase: "planning",
-          totalChapters: tableOfContents.length,
-          currentChapter: chapters.length + 1,
-        });
-      }
+      const totalChapters = tableOfContents.length;
+      const model = generationSettings.model;
 
       const settings: BookSettings = {
         language: generationSettings.language,
@@ -93,32 +129,60 @@ export default function GenerationView(props: GenerationViewProps) {
         userPreference: generationSettings.userPreference,
       };
 
-      // 2. Planning (Ensure plan exists)
-      let bookPlan = storeApi.getState().bookPlan;
-      if (!bookPlan) {
+      const startChapterNum = getNextChapterNumber({
+        totalChapters,
+        chapters,
+      });
+
+      const prepareGeneration = async () => {
+        if (chapters.length === 0) {
+          setIsDeductingCredits(true);
+          await deductCreditsAction(savedBookId);
+          setIsDeductingCredits(false);
+
+          actions.setupGeneration(totalChapters);
+          return;
+        }
+
+        const { streamingContent } = storeApi.getState();
+        if (!streamingContent && chapters.length > 0) {
+          actions.updateDraft({
+            streamingContent: chapters.map((c) => c.content).join("\n\n"),
+            currentChapterContent: "",
+          });
+        }
+
+        actions.updateGenerationProgress({
+          phase: "planning",
+          totalChapters,
+          currentChapter: startChapterNum,
+        });
+      };
+
+      const ensureBookPlan = async () => {
+        let bookPlan = storeApi.getState().bookPlan;
+        if (bookPlan) return bookPlan;
+
         actions.updateGenerationProgress({ phase: "planning" });
+        ensureNotCancelled();
         bookPlan = await generatePlanAction({
           bookId: savedBookId,
           sourceText: sourceText || "",
           toc: tableOfContents,
           provider: generationSettings.provider,
-          model: generationSettings.model as GeminiModel | ClaudeModel,
+          model,
           settings,
         });
         actions.setBookPlan(bookPlan);
-      }
+        return bookPlan;
+      };
 
-      // 3. Generation Loop (Start from the next missing chapter)
-      const startChapterNum = chapters.length + 1;
-
-      for (
-        let chapterNum = startChapterNum;
-        chapterNum <= tableOfContents.length;
-        chapterNum++
-      ) {
-        if (abortRef.current?.signal.aborted) {
-          throw new Error("생성이 취소되었습니다.");
-        }
+      const generateSingleChapter = async (args: {
+        chapterNum: number;
+        bookPlan: Awaited<ReturnType<typeof ensureBookPlan>>;
+      }) => {
+        const { chapterNum, bookPlan } = args;
+        ensureNotCancelled();
 
         actions.updateGenerationProgress({
           phase: "outlining",
@@ -128,6 +192,7 @@ export default function GenerationView(props: GenerationViewProps) {
         });
 
         const chapterTitle = tableOfContents[chapterNum - 1];
+        ensureNotCancelled();
 
         const chapterOutline = await generateOutlineAction({
           bookId: savedBookId,
@@ -136,12 +201,12 @@ export default function GenerationView(props: GenerationViewProps) {
           sourceText,
           bookPlan,
           provider: generationSettings.provider,
-          model: generationSettings.model as GeminiModel | ClaudeModel,
+          model,
           settings,
         });
 
-        // Add Chapter Header to draft
         {
+          flushDraft();
           const { streamingContent } = storeApi.getState();
           const chapterHeader = `\n\n## ${chapterTitle}\n\n`;
           actions.updateDraft({
@@ -162,10 +227,7 @@ export default function GenerationView(props: GenerationViewProps) {
           sectionIndex < chapterOutline.sections.length;
           sectionIndex++
         ) {
-          console.log("Generating section", sectionIndex);
-          if (abortRef.current?.signal.aborted) {
-            throw new Error("생성이 취소되었습니다.");
-          }
+          ensureNotCancelled();
 
           actions.updateGenerationProgress({
             currentSection: sectionIndex,
@@ -174,6 +236,16 @@ export default function GenerationView(props: GenerationViewProps) {
           const previousSections = chapterOutline.sections
             .slice(0, sectionIndex)
             .map((s: Section) => ({ title: s.title, summary: s.summary }));
+
+          flushDraft();
+          const { currentChapterContent } = storeApi.getState();
+
+          if (
+            currentChapterContent.length > 0 &&
+            !currentChapterContent.endsWith("\n")
+          ) {
+            actions.appendDraftChunk("\n");
+          }
 
           for await (const chunk of fetchStreamSection({
             chapterNumber: chapterNum,
@@ -185,20 +257,23 @@ export default function GenerationView(props: GenerationViewProps) {
             sourceText: sourceText || "",
             bookPlan,
             provider: generationSettings.provider,
-            model: generationSettings.model as GeminiModel | ClaudeModel,
+            model,
             settings,
+            signal: abortRef.current?.signal,
           })) {
             handleSectionChunk(chunk);
           }
+
+          flushDraft();
 
           actions.updateGenerationProgress({
             currentSection: sectionIndex + 1,
           });
         }
 
+        flushDraft();
         const { currentChapterContent } = storeApi.getState();
 
-        // Save to DB immediately after each chapter
         await saveChapterAction(
           savedBookId,
           chapterNum,
@@ -207,7 +282,6 @@ export default function GenerationView(props: GenerationViewProps) {
           chapterOutline,
         );
 
-        // Update local store
         actions.finishChapter(chapterTitle, currentChapterContent);
 
         actions.updateGenerationProgress({
@@ -216,21 +290,47 @@ export default function GenerationView(props: GenerationViewProps) {
           totalSections: 0,
           currentOutline: undefined,
         });
+      };
+
+      const finalizeBook = async () => {
+        actions.completeGeneration();
+        flushDraft();
+        const { streamingContent } = storeApi.getState();
+        await updateBookAction(savedBookId, {
+          status: "completed",
+          content: streamingContent,
+        });
+
+        actions.updateGenerationProgress({
+          phase: "completed",
+          currentChapter: totalChapters,
+        });
+      };
+
+      await prepareGeneration();
+      const bookPlan = await ensureBookPlan();
+
+      for (let chapterNum = startChapterNum; chapterNum <= totalChapters; ) {
+        await generateSingleChapter({ chapterNum, bookPlan });
+        chapterNum++;
       }
 
-      // 4. Finalize Book
-      actions.completeGeneration();
-      const { streamingContent } = storeApi.getState();
-      await updateBookAction(savedBookId, {
-        status: "completed",
-        content: streamingContent,
-      });
-
-      actions.updateGenerationProgress({
-        phase: "completed",
-        currentChapter: tableOfContents.length,
-      });
+      await finalizeBook();
     } catch (err) {
+      const isCancelled =
+        abortRef.current?.signal.aborted ||
+        (err instanceof Error && err.message === CANCELLED_MESSAGE);
+
+      if (isCancelled) {
+        flushDraft();
+        actions.updateGenerationProgress({
+          phase: "idle",
+          error: null,
+        });
+        actions.cancelGeneration();
+        return;
+      }
+
       const message = err instanceof Error ? err.message : "알 수 없는 오류";
       actions.updateGenerationProgress({
         phase: "error",
@@ -247,12 +347,19 @@ export default function GenerationView(props: GenerationViewProps) {
       setIsProcessing(false);
       setIsDeductingCredits(false);
       abortRef.current = null;
+
+      if (draftFlushRafRef.current != null) {
+        cancelAnimationFrame(draftFlushRafRef.current);
+        draftFlushRafRef.current = null;
+      }
+      draftChunkBufferRef.current = [];
     }
   };
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
-  }, []);
+    flushDraft();
+  }, [flushDraft]);
 
   const isActuallyGenerating =
     generationProgress.phase !== "idle" &&

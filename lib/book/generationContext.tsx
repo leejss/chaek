@@ -38,6 +38,7 @@ export type GenerationStoreState = GenerationContextState & {
     completeGeneration: () => void;
     finishChapter: (title: string, content: string) => void;
     cancelGeneration: () => void;
+    appendDraftChunk: (delta: string) => void;
     updateDraft: (
       draft: Partial<
         Pick<
@@ -87,10 +88,20 @@ export const createGenerationStore = (init?: GenerationInit) => {
 
       const actions = {
         initFromServer: () => {
+          const initialChapters = init?.chapters || [];
+          const initialStreamingContent =
+            initialChapters.length > 0
+              ? initialChapters.map((c) => c.content).join("\n\n")
+              : "";
+
           set(
             {
-              chapters: init?.chapters || [],
+              chapters: initialChapters,
               bookPlan: init?.bookPlan,
+              streamingContent: initialStreamingContent,
+              currentChapterContent: "",
+              currentChapterIndex: initialChapters.length,
+              viewingChapterIndex: initialChapters.length,
             },
             false,
             "generation/initFromServer",
@@ -234,6 +245,18 @@ export const createGenerationStore = (init?: GenerationInit) => {
           resolveChapterDecision("cancel");
         },
 
+        appendDraftChunk: (delta: string) => {
+          if (!delta) return;
+          set(
+            (state) => ({
+              streamingContent: state.streamingContent + delta,
+              currentChapterContent: state.currentChapterContent + delta,
+            }),
+            false,
+            "generation/appendDraftChunk",
+          );
+        },
+
         updateDraft: (
           draft: Partial<
             Pick<
@@ -266,10 +289,20 @@ export const createGenerationStore = (init?: GenerationInit) => {
       };
 
       if (init) {
+        const initialChapters = init.chapters || [];
+        const initialStreamingContent =
+          initialChapters.length > 0
+            ? initialChapters.map((c) => c.content).join("\n\n")
+            : "";
+
         return {
           ...base,
-          chapters: init.chapters || [],
+          chapters: initialChapters,
           bookPlan: init.bookPlan,
+          streamingContent: initialStreamingContent,
+          currentChapterContent: "",
+          currentChapterIndex: initialChapters.length,
+          viewingChapterIndex: initialChapters.length,
         };
       }
 
