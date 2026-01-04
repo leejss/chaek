@@ -2,8 +2,8 @@ import { serverEnv } from "./env";
 
 export const accessTokenConfig = {
   name: "bookmaker_access_token",
-  duration: "15m",
-  maxAge: 15 * 60,
+  duration: "60m",
+  maxAge: 60 * 60,
 };
 
 export const refreshTokenConfig = {

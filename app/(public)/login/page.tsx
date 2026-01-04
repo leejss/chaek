@@ -94,7 +94,7 @@ function LoginContent() {
 
           <div
             ref={googleBtnRef}
-            className={`min-h-[44px] flex justify-center ${
+            className={`min-h-11 flex justify-center ${
               loading ? "pointer-events-none opacity-60" : ""
             }`}
           />

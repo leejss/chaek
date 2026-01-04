@@ -1,9 +1,7 @@
 "use client";
 
 import { PlanOutput } from "@/lib/ai/specs/plan";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
 import { ChapterContent, GenerationProgress } from "@/lib/book/types";
-import { BookGenerationSettings } from "@/lib/book/settings";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { createContext, useContext, useState } from "react";
@@ -11,14 +9,7 @@ import type { ReactNode } from "react";
 import { devtools } from "zustand/middleware";
 
 export interface GenerationContextState {
-  savedBookId: string | null;
-  bookTitle: string;
-  bookStatus: "draft" | "generating" | "completed" | "failed";
-  sourceText: string;
-  tableOfContents: string[];
-  generationSettings: BookGenerationSettings;
-  content: string;
-  bookPlan?: PlanOutput;
+  generationProgress: GenerationProgress;
   chapters: ChapterContent[];
   viewingChapterIndex: number;
   streamingContent: string;
@@ -26,17 +17,15 @@ export interface GenerationContextState {
   currentChapterContent: string;
   awaitingChapterDecision: boolean;
   error: string | null;
-  generationProgress: GenerationProgress;
   bookGenerationStarted: boolean;
   generationCancelled: boolean;
+  bookPlan?: PlanOutput;
 }
 
 export type GenerationStoreState = GenerationContextState & {
   actions: {
-    initFromServer: (payload: GenerationInit) => void;
+    initFromServer: () => void;
     setViewingChapterIndex: (index: number) => void;
-    setSavedBookId: (bookId: string | null) => void;
-    setContent: (content: string) => void;
     setBookPlan: (bookPlan: PlanOutput | undefined) => void;
     updateGenerationProgress: (progress: Partial<GenerationProgress>) => void;
     setupGeneration: (totalChapters: number) => void;
@@ -53,7 +42,7 @@ export type GenerationStoreState = GenerationContextState & {
       draft: Partial<
         Pick<
           GenerationContextState,
-          "content" | "streamingContent" | "currentChapterContent"
+          "streamingContent" | "currentChapterContent"
         >
       >,
     ) => void;
@@ -63,38 +52,12 @@ export type GenerationStoreState = GenerationContextState & {
 };
 
 export type GenerationInit = {
-  bookId: string;
-  title: string;
-  bookStatus?: "draft" | "generating" | "completed" | "failed";
-  content: string;
-  tableOfContents: string[];
   chapters?: ChapterContent[];
-  sourceText?: string;
-  generationSettings?: Partial<BookGenerationSettings>;
   bookPlan?: PlanOutput;
 };
 
-const createInitialSettings = (
-  partial?: Partial<BookGenerationSettings>,
-): BookGenerationSettings => {
-  return {
-    language: partial?.language ?? "Korean",
-    chapterCount: partial?.chapterCount ?? "Auto",
-    userPreference: partial?.userPreference ?? "",
-    provider: partial?.provider ?? DEFAULT_PROVIDER,
-    model: partial?.model ?? DEFAULT_MODEL,
-  };
-};
-
 const initialState: GenerationContextState = {
-  savedBookId: null,
-  bookTitle: "",
-  bookStatus: "draft",
-  sourceText: "",
-  tableOfContents: [],
-  generationSettings: createInitialSettings(),
-  content: "",
-  bookPlan: undefined,
+  generationProgress: { phase: "idle" },
   chapters: [],
   viewingChapterIndex: 0,
   streamingContent: "",
@@ -102,7 +65,6 @@ const initialState: GenerationContextState = {
   currentChapterContent: "",
   awaitingChapterDecision: false,
   error: null,
-  generationProgress: { phase: "idle" },
   bookGenerationStarted: false,
   generationCancelled: false,
 };
@@ -124,21 +86,11 @@ export const createGenerationStore = (init?: GenerationInit) => {
       };
 
       const actions = {
-        initFromServer: (payload: GenerationInit) => {
+        initFromServer: () => {
           set(
             {
-              savedBookId: payload.bookId,
-              bookTitle: payload.title,
-              bookStatus: payload.bookStatus || "draft",
-              content: payload.content || "",
-              streamingContent: payload.content || "",
-              chapters: payload.chapters || [],
-              tableOfContents: payload.tableOfContents || [],
-              sourceText: payload.sourceText || "",
-              generationSettings: createInitialSettings(
-                payload.generationSettings,
-              ),
-              bookPlan: payload.bookPlan,
+              chapters: init?.chapters || [],
+              bookPlan: init?.bookPlan,
             },
             false,
             "generation/initFromServer",
@@ -151,14 +103,6 @@ export const createGenerationStore = (init?: GenerationInit) => {
             false,
             "generation/setViewingChapterIndex",
           );
-        },
-
-        setSavedBookId: (bookId: string | null) => {
-          set({ savedBookId: bookId }, false, "generation/setSavedBookId");
-        },
-
-        setContent: (content: string) => {
-          set({ content }, false, "generation/setContent");
         },
 
         setBookPlan: (bookPlan: PlanOutput | undefined) => {
@@ -181,7 +125,6 @@ export const createGenerationStore = (init?: GenerationInit) => {
         setupGeneration: (totalChapters: number) => {
           set(
             {
-              savedBookId: get().savedBookId,
               error: null,
               generationProgress: {
                 phase: "deducting_credits",
@@ -295,7 +238,7 @@ export const createGenerationStore = (init?: GenerationInit) => {
           draft: Partial<
             Pick<
               GenerationContextState,
-              "content" | "streamingContent" | "currentChapterContent"
+              "streamingContent" | "currentChapterContent"
             >
           >,
         ) => {
@@ -325,15 +268,7 @@ export const createGenerationStore = (init?: GenerationInit) => {
       if (init) {
         return {
           ...base,
-          savedBookId: init.bookId,
-          bookTitle: init.title,
-          bookStatus: init.bookStatus || "draft",
-          content: init.content || "",
-          streamingContent: init.content || "",
           chapters: init.chapters || [],
-          tableOfContents: init.tableOfContents || [],
-          sourceText: init.sourceText || "",
-          generationSettings: createInitialSettings(init.generationSettings),
           bookPlan: init.bookPlan,
         };
       }

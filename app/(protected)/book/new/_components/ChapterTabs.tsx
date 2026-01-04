@@ -5,8 +5,12 @@ import { Check, Lock, Loader2, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { cn } from "@/utils";
 
-export default function ChapterTabs() {
-  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
+export interface ChapterTabsProps {
+  tableOfContents: string[];
+}
+
+export default function ChapterTabs(props: ChapterTabsProps) {
+  const { tableOfContents } = props;
   const viewingChapterIndex = useGenerationStore(
     (state) => state.viewingChapterIndex,
   );

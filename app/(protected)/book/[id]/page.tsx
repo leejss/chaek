@@ -41,8 +41,6 @@ export default async function BookDetailPage({ params }: PageProps) {
 
   let content = bookData.content;
 
-  // If the book is not completed, we construct the content from chapters
-  // This allows us to show partial progress and avoids giant updates to the main book record
   if (bookData.status !== "completed") {
     const bookChapters = await db
       .select()
@@ -66,7 +64,6 @@ export default async function BookDetailPage({ params }: PageProps) {
   };
 
   const headings = extractTOC(book.content);
-
   const markdownHtml = <BookMarkdown content={book.content} />;
 
   return (

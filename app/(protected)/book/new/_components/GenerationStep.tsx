@@ -8,7 +8,12 @@ import Button from "../../_components/Button";
 import ChapterContentDisplay from "./ChapterContentDisplay";
 import ChapterTabs from "./ChapterTabs";
 
-export default function GenerationStep() {
+export interface GenerationStepProps {
+  tableOfContents: string[];
+}
+
+export default function GenerationStep(props: GenerationStepProps) {
+  const { tableOfContents } = props;
   const generationProgress = useGenerationStore(
     (state) => state.generationProgress,
   ) || { phase: "idle" };
@@ -16,7 +21,6 @@ export default function GenerationStep() {
   const viewingChapterIndex = useGenerationStore(
     (state) => state.viewingChapterIndex,
   );
-  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
   const currentChapterIndex = useGenerationStore(
     (state) => state.currentChapterIndex,
   );
@@ -99,7 +103,7 @@ export default function GenerationStep() {
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] bg-white">
       <div className="sticky top-0 z-30 bg-white border-b border-neutral-100">
-        <ChapterTabs />
+        <ChapterTabs tableOfContents={tableOfContents} />
       </div>
 
       <div className="max-w-4xl mx-auto py-8 px-4 md:px-6 pb-40">

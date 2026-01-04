@@ -6,6 +6,7 @@ import {
   useGenerationStoreApi,
 } from "@/lib/book/generationContext";
 import { BookSettings } from "@/lib/book/settings";
+import { BookGenerationSettings } from "@/lib/book/settings";
 import { ClaudeModel, GeminiModel, Section } from "@/lib/book/types";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { cn } from "@/utils";
@@ -16,21 +17,23 @@ import GenerationStep from "../../_components/GenerationStep";
 import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration";
 import Button from "../../../_components/Button";
 
-export default function GenerationView() {
+export interface GenerationViewProps {
+  bookTitle: string;
+  bookStatus: "draft" | "generating" | "completed" | "failed";
+  tableOfContents: string[];
+  sourceText: string;
+  chapters: { chapterNumber: number; chapterTitle: string; content: string; isComplete: boolean }[];
+  generationSettings: BookGenerationSettings;
+  savedBookId: string;
+}
+
+export default function GenerationView(props: GenerationViewProps) {
+  const { bookTitle, bookStatus, tableOfContents, sourceText, chapters, generationSettings, savedBookId } = props;
   const storeApi = useGenerationStoreApi();
   const actions = useGenerationStore((state) => state.actions);
   const generationProgress = useGenerationStore(
     (state) => state.generationProgress,
   );
-  const bookTitle = useGenerationStore((state) => state.bookTitle);
-  const bookStatus = useGenerationStore((state) => state.bookStatus);
-  const tableOfContents = useGenerationStore((state) => state.tableOfContents);
-  const sourceText = useGenerationStore((state) => state.sourceText);
-  const chapters = useGenerationStore((state) => state.chapters);
-  const generationSettings = useGenerationStore(
-    (state) => state.generationSettings,
-  );
-  const savedBookId = useGenerationStore((state) => state.savedBookId);
   const abortRef = useRef<AbortController | null>(null);
   const [isDeductingCredits, setIsDeductingCredits] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -207,9 +210,6 @@ export default function GenerationView() {
         // Update local store
         actions.finishChapter(chapterTitle, currentChapterContent);
 
-        const { streamingContent } = storeApi.getState();
-        actions.setContent(streamingContent);
-
         actions.updateGenerationProgress({
           currentChapter: chapterNum + 1,
           currentSection: 0,
@@ -314,8 +314,12 @@ export default function GenerationView() {
   if (isActuallyGenerating) {
     return (
       <div className="max-w-3xl mx-auto pb-32">
-        <GenerationStep />
+        <GenerationStep tableOfContents={tableOfContents} />
         <StatusOverviewGeneration
+          bookTitle={bookTitle}
+          sourceText={sourceText}
+          tableOfContents={tableOfContents}
+          generationSettings={generationSettings}
           onCancel={handleCancel}
           isGenerating={isActuallyGenerating}
         />

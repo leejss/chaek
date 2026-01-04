@@ -2,16 +2,10 @@ import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
 import type { PlanOutput } from "@/lib/ai/specs/plan";
 import { GenerationStoreProvider } from "@/lib/book/generationContext";
 import { BookGenerationSettings } from "@/lib/book/settings";
-import {
-  AIProvider,
-  ChapterContent,
-  ClaudeModel,
-  GeminiModel,
-} from "@/lib/book/types";
+import { ChapterContent } from "@/lib/book/types";
 import { and, eq, asc } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -69,36 +63,31 @@ export default async function BookGenerationPage({ params }: PageProps) {
     initialContent = initialChapters.map((c) => c.content).join("\n\n");
   }
 
-  const rawSettings = bookData.generationSettings as
-    | Partial<BookGenerationSettings>
-    | null
-    | undefined;
-
-  const generationSettings: Partial<BookGenerationSettings> = {
-    language: rawSettings?.language,
-    chapterCount: rawSettings?.chapterCount,
-    userPreference: rawSettings?.userPreference,
-    provider: (rawSettings?.provider ?? DEFAULT_PROVIDER) as AIProvider,
-    model: (rawSettings?.model ?? DEFAULT_MODEL) as GeminiModel | ClaudeModel,
-  };
+  const settings = bookData.generationSettings as BookGenerationSettings;
+  const { title, id, status, tableOfContents, sourceText, bookPlan } = bookData;
 
   const init = {
-    bookId: bookData.id,
-    title: bookData.title,
-    bookStatus:
-      (bookData.status as "draft" | "generating" | "completed" | "failed") ||
-      "draft",
-    content: initialContent,
-    tableOfContents: bookData.tableOfContents || [],
     chapters: initialChapters,
-    sourceText: bookData.sourceText || undefined,
-    generationSettings,
-    bookPlan: (bookData.bookPlan as PlanOutput | null) || undefined,
+    bookPlan: (bookPlan as PlanOutput | null) || undefined,
   };
 
   return (
     <GenerationStoreProvider key={bookData.id} init={init}>
-      <GenerationView />
+      <GenerationView
+        savedBookId={id}
+        bookTitle={title}
+        bookStatus={status}
+        tableOfContents={tableOfContents ?? []}
+        sourceText={sourceText || ""}
+        chapters={initialChapters}
+        generationSettings={{
+          language: settings.language,
+          chapterCount: settings.chapterCount,
+          userPreference: settings.userPreference,
+          provider: settings.provider,
+          model: settings.model,
+        }}
+      />
     </GenerationStoreProvider>
   );
 }
