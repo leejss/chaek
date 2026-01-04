@@ -15,7 +15,17 @@ import { sha256Hex } from "@/utils";
 
 import Button from "./Button";
 
-export default function LogoutButton() {
+import { cn } from "@/utils";
+
+interface LogoutButtonProps {
+  className?: string;
+  iconOnly?: boolean;
+}
+
+export default function LogoutButton({
+  className,
+  iconOnly,
+}: LogoutButtonProps) {
   const logoutAction = async () => {
     "use server";
 
@@ -56,13 +66,24 @@ export default function LogoutButton() {
       <Button
         type="submit"
         variant="ghost"
-        className="px-3"
+        className={cn(
+          "text-foreground hover:bg-neutral-100 rounded-full",
+          iconOnly
+            ? "p-2 h-auto w-auto"
+            : "w-full justify-start px-4 py-3 text-xl font-normal h-auto",
+          className,
+        )}
         aria-label="Logout"
         title="Logout"
       >
-        <div className="inline-flex items-center gap-2">
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Logout</span>
+        <div
+          className={cn(
+            "inline-flex items-center",
+            iconOnly ? "gap-0" : "gap-4",
+          )}
+        >
+          <LogOut className={cn(iconOnly ? "w-6 h-6" : "w-7 h-7")} />
+          {!iconOnly && <span>Logout</span>}
         </div>
       </Button>
     </form>

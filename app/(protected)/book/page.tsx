@@ -6,7 +6,7 @@ import { desc, eq } from "drizzle-orm";
 import { Library, Plus } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import Button from "./_components/Button";
+import Button from "../_components/Button";
 import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 
 export default async function LibraryPage() {
@@ -82,7 +82,9 @@ export default async function LibraryPage() {
               <div className="flex items-center gap-2 mb-2">
                 {book.status && (
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[book.status] || STATUS_COLORS.draft}`}
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      STATUS_COLORS[book.status] || STATUS_COLORS.draft
+                    }`}
                   >
                     {STATUS_LABELS[book.status] || book.status}
                   </span>

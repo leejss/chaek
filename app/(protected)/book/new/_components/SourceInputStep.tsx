@@ -1,7 +1,7 @@
 "use client";
 
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import Button from "../../_components/Button";
+import Button from "../../../_components/Button";
 
 export default function SourceInputStep() {
   const sourceText = useBookStore((state) => state.sourceText);

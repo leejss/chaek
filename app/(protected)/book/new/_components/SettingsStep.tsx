@@ -5,7 +5,7 @@ import {
   settingsStoreActions,
   useSettingsStore,
 } from "@/lib/book/settingsStore";
-import Button from "../../_components/Button";
+import Button from "../../../_components/Button";
 import { bookStoreActions } from "@/lib/book/bookContext";
 
 export default function SettingsStep() {

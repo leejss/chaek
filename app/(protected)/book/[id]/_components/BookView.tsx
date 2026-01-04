@@ -3,7 +3,7 @@
 import { AlignLeft, ChevronLeft, Download, List, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import Button from "@/app/(protected)/book/_components/Button";
+import Button from "@/app/(protected)/_components/Button";
 import type { Book } from "@/lib/book/types";
 import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 
