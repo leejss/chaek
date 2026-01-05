@@ -7,7 +7,7 @@ export function Sidebar() {
     <aside className="hidden md:flex w-[275px] h-screen sticky top-0 flex-col border-r border-neutral-200 px-2 py-4">
       <div className="px-4 py-2 mb-4">
         <Link href="/book" className="text-3xl font-bold tracking-tight">
-          book.build
+          Chaek
         </Link>
       </div>
 
