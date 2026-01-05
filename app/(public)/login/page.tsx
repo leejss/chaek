@@ -83,13 +83,13 @@ function LoginContent() {
         {/* Logo Area */}
         <div className="flex flex-col gap-2">
           <h1 className="text-5xl font-bold text-foreground tracking-tighter">
-            book.build
+            chaek
           </h1>
         </div>
 
         <div className="flex flex-col gap-4 w-full items-center">
           <h2 className="text-2xl font-bold text-foreground">
-            Sign in to book.build
+            Sign in to chaek
           </h2>
 
           <div

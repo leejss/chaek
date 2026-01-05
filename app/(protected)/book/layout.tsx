@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 export const metadata: Metadata = {
-  title: "book.build",
+  title: "chaek",
   description: "AI-assisted book creation studio",
 };
 

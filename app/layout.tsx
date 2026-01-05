@@ -18,8 +18,9 @@ const notoSerif = Noto_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "book.build",
+  title: "chaek",
   description: "AI-assisted book creation studio",
+  icons: [{ rel: "icon", url: "/favicon.svg" }],
 };
 
 export default function RootLayout({
