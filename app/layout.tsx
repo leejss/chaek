@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
-import { Noto_Sans, Noto_Serif } from "next/font/google";
+import { IBM_Plex_Sans_KR, Noto_Sans, Noto_Serif } from "next/font/google";
 import { SWRConfig } from "swr";
 import "./globals.css";
+
+const ibmPlexSansKr = IBM_Plex_Sans_KR({
+  variable: "--font-ibm-plex-sans",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "700"],
+});
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -30,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${notoSans.variable} ${notoSerif.variable} antialiased`}
+      className={`${ibmPlexSansKr.variable} ${notoSans.variable} ${notoSerif.variable} antialiased`}
       lang="en"
     >
       <body>

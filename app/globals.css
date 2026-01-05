@@ -6,7 +6,7 @@
 }
 
 @theme {
-  --font-sans: var(--font-noto-sans);
+  --font-sans: var(--font-ibm-plex-sans);
   --font-serif: var(--font-noto-serif);
   --font-mono: monospace;
 }

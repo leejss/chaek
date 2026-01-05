@@ -1,21 +1,22 @@
 "use client";
 
+import { bookStoreActions } from "@/lib/book/bookContext";
 import {
   Language,
   settingsStoreActions,
   useSettingsStore,
 } from "@/lib/book/settingsStore";
-import Button from "../../../_components/Button";
-import { bookStoreActions } from "@/lib/book/bookContext";
+import { cn } from "@/utils";
+import Button from "@/app/(protected)/_components/Button";
 
 export default function SettingsStep() {
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
-  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
+  // const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
   const { goToStep } = bookStoreActions;
-  const { setChapterCount, setLanguage, setUserPreference, setRequireConfirm } =
+  const { setChapterCount, setLanguage, setUserPreference } =
     settingsStoreActions;
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,60 +68,50 @@ export default function SettingsStep() {
             </p>
           </div>
 
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <label className="block text-xs font-bold text-black uppercase tracking-widest">
               Chapter Review Mode
             </label>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setRequireConfirm(true)}
-                className={`
-                  flex-1 px-5 py-4 rounded-xl border-2 transition-all text-left group
-                  ${
-                    requireConfirm
-                      ? "bg-black border-black text-white"
-                      : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300"
-                  }
-                `}
+                className={cn(
+                  "flex-1 px-5 py-4 rounded-xl border-2 transition-all text-left group",
+                  requireConfirm
+                    ? "bg-black border-black text-white"
+                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300",
+                )}
               >
                 <div
-                  className={`font-bold text-sm ${
-                    requireConfirm ? "text-white" : "text-black"
-                  }`}
+                  className={cn(
+                    "font-bold text-sm",
+                    requireConfirm ? "text-white" : "text-black",
+                  )}
                 >
                   REVIEW EACH CHAPTER
                 </div>
-                <div
-                  className={`text-xs mt-1 font-medium ${
-                    requireConfirm ? "text-neutral-400" : "text-neutral-400"
-                  }`}
-                >
+                <div className="text-xs mt-1 font-medium text-neutral-400">
                   Confirm each chapter before proceeding
                 </div>
               </button>
               <button
                 onClick={() => setRequireConfirm(false)}
-                className={`
-                  flex-1 px-5 py-4 rounded-xl border-2 transition-all text-left group
-                  ${
-                    !requireConfirm
-                      ? "bg-black border-black text-white"
-                      : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300"
-                  }
-                `}
+                className={cn(
+                  "flex-1 px-5 py-4 rounded-xl border-2 transition-all text-left group",
+                  !requireConfirm
+                    ? "bg-black border-black text-white"
+                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300",
+                )}
               >
                 <div
-                  className={`font-bold text-sm ${
-                    !requireConfirm ? "text-white" : "text-black"
-                  }`}
+                  className={cn(
+                    "font-bold text-sm",
+                    !requireConfirm ? "text-white" : "text-black",
+                  )}
                 >
                   AUTO-GENERATE
                 </div>
-                <div
-                  className={`text-xs mt-1 font-medium ${
-                    !requireConfirm ? "text-neutral-400" : "text-neutral-400"
-                  }`}
-                >
+                <div className="text-xs mt-1 font-medium text-neutral-400">
                   Generate entire book automatically
                 </div>
               </button>
@@ -129,7 +120,7 @@ export default function SettingsStep() {
               Choose whether to review chapters one by one or generate all at
               once.
             </p>
-          </div>
+          </div> */}
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -154,11 +145,12 @@ export default function SettingsStep() {
             </div>
 
             <div
-              className={`transition-opacity ${
+              className={cn(
+                "transition-opacity",
                 chapterCount === "Auto"
                   ? "opacity-40 pointer-events-none"
-                  : "opacity-100"
-              }`}
+                  : "opacity-100",
+              )}
             >
               <div className="flex items-center gap-4">
                 <input
