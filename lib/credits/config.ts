@@ -1,5 +1,5 @@
-export const FREE_SIGNUP_CREDITS = 5;
-export const BOOK_CREATION_COST = 10;
+export const FREE_SIGNUP_CREDITS = 10;
+export const BOOK_CREATION_COST = 1;
 
 export interface CreditPackage {
   id: string;
