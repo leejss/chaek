@@ -24,6 +24,7 @@ async function getHighlighter() {
         "sql",
         "css",
         "html",
+        "go",
       ],
     });
   }

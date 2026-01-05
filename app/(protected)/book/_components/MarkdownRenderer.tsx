@@ -28,6 +28,7 @@ function getHighlighter() {
         "sql",
         "css",
         "html",
+        "go",
       ],
     });
   }
