@@ -3,6 +3,9 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clientEnv } from "@/lib/env";
+import { motion } from "motion/react";
+import { Background } from "./_components/Background";
+import { MagneticButton } from "./_components/MagneticButton";
 
 declare global {
   interface Window {
@@ -78,34 +81,63 @@ function LoginContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="w-full max-w-[350px] flex flex-col gap-8 relative items-center">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <Background />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="w-full max-w-[1200px] flex flex-col gap-8 relative items-center z-10"
+      >
         {/* Logo Area */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-5xl font-bold text-foreground tracking-tighter">
+        <motion.div
+          className="flex flex-col gap-2"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.8, ease: "backOut" }}
+        >
+          <h1 className="text-7xl md:text-9xl font-black text-foreground tracking-tighter cursor-default select-none">
             chaek
           </h1>
-        </div>
+        </motion.div>
 
-        <div className="flex flex-col gap-4 w-full items-center">
-          <h2 className="text-2xl font-bold text-foreground">
-            Sign in to chaek
-          </h2>
+        <div className="flex flex-col gap-6 w-full items-center">
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="text-2xl md:text-3xl font-medium text-muted-foreground text-center"
+          >
+            Create your book with AI
+          </motion.h2>
 
-          <div
-            ref={googleBtnRef}
-            className={`min-h-11 flex justify-center ${
-              loading ? "pointer-events-none opacity-60" : ""
-            }`}
-          />
+          <MagneticButton
+            className="w-full flex justify-center"
+            strength={0.3}
+            range={100}
+          >
+            <div
+              ref={googleBtnRef}
+              className={`min-h-[44px] flex justify-center transition-all duration-300 ${
+                loading
+                  ? "pointer-events-none opacity-60 scale-95"
+                  : "hover:scale-105"
+              }`}
+            />
+          </MagneticButton>
 
           {loading && (
-            <p className="text-xs text-neutral-500 animate-pulse text-center">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-xs text-neutral-500 animate-pulse text-center"
+            >
               Authenticating...
-            </p>
+            </motion.p>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
