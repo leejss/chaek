@@ -1,6 +1,6 @@
 import { streamBook } from "@/lib/ai/streaming/streamGenerator";
 import { StreamingConfig } from "@/lib/ai/types/streaming";
-import { AIProvider } from "@/lib/book/types";
+import { AIProvider } from "@/lib/ai/config";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
 import { readJson, normalizeToHttpError } from "@/utils";

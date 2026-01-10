@@ -1,6 +1,6 @@
 import { streamSection } from "@/lib/ai/core/ai";
-import { AIProvider, Section } from "@/lib/book/types";
-import { getProviderByModel, isValidModel } from "@/lib/ai/config";
+import { Section } from "@/lib/book/types";
+import { getProviderByModel, isValidModel, AIProvider } from "@/lib/ai/config";
 import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";

@@ -7,7 +7,7 @@ import { readJson, normalizeToHttpError } from "@/utils";
 import { and, eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { AIProvider } from "@/lib/book/types";
+import { AIProvider } from "@/lib/ai/config";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import {
   deductCredits,

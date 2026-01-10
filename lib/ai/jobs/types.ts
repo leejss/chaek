@@ -1,4 +1,4 @@
-import { AIProvider } from "@/lib/book/types";
+import { AIProvider } from "@/lib/ai/config";
 import { z } from "zod";
 
 const languageSchema = z.enum([

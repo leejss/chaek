@@ -1,4 +1,17 @@
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+export enum GeminiModel {
+  FLASH = "gemini-3-flash-preview",
+  PRO = "gemini-3-pro-preview",
+}
+
+export enum ClaudeModel {
+  SONNET = "claude-sonnet-4-5-20250929",
+  HAIKU = "claude-haiku-4-5-20251001",
+}
+
+export enum AIProvider {
+  GOOGLE = "google",
+  ANTHROPIC = "anthropic",
+}
 
 export interface ModelConfig {
   id: string;

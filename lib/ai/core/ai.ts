@@ -1,4 +1,4 @@
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
+import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/ai/config";
 import { serverEnv } from "@/lib/env";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";

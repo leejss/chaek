@@ -36,21 +36,6 @@ export interface User {
   email: string;
 }
 
-export enum GeminiModel {
-  FLASH = "gemini-3-flash-preview",
-  PRO = "gemini-3-pro-preview",
-}
-
-export enum ClaudeModel {
-  SONNET = "claude-sonnet-4-5-20250929",
-  HAIKU = "claude-haiku-4-5-20251001",
-}
-
-export enum AIProvider {
-  GOOGLE = "google",
-  ANTHROPIC = "anthropic",
-}
-
 export type FlowStatus =
   | "settings"
   | "source_input"
@@ -66,17 +51,6 @@ export type BookDraft = {
   sourceText: string;
   tableOfContents: string[];
   content: string;
-};
-
-export type AIConfiguration = {
-  toc: {
-    provider: AIProvider;
-    model: GeminiModel | ClaudeModel;
-  };
-  content: {
-    provider: AIProvider;
-    model: GeminiModel | ClaudeModel;
-  };
 };
 
 export type GenerationPhase =

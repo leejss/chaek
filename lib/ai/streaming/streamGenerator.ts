@@ -3,7 +3,7 @@ import { books, chapters } from "@/db/schema";
 import { ai, generatePlan } from "@/lib/ai/core/ai";
 import { PlanOutput } from "@/lib/ai/specs/plan";
 import { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
-import { AIProvider } from "@/lib/book/types";
+import { AIProvider } from "@/lib/ai/config";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import {
   initializeBookAndDeductCredits,

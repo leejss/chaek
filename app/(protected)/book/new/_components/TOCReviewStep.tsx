@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { AI_CONFIG, getProviderByModel } from "@/lib/ai/config";
+import {
+  AI_CONFIG,
+  getProviderByModel,
+  AIProvider,
+  ClaudeModel,
+  GeminiModel,
+} from "@/lib/ai/config";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/book/types";
 import { createBookAction } from "@/lib/actions/book";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import {

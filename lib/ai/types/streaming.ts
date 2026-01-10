@@ -1,4 +1,4 @@
-import { AIProvider } from "@/lib/book/types";
+import { AIProvider } from "@/lib/ai/config";
 import { Language } from "@/lib/book/settings";
 
 export type StreamingConfig = {
