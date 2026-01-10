@@ -1,15 +1,14 @@
 "use client";
 
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/config";
-import { fetchTableOfContent } from "@/lib/ai/fetch";
 import {
+  DEFAULT_MODEL,
+  DEFAULT_PROVIDER,
   AIProvider,
-  Book,
-  BookContextState,
   ClaudeModel,
-  FlowStatus,
   GeminiModel,
-} from "@/lib/book/types";
+} from "@/lib/ai/config";
+import { fetchTableOfContent } from "@/lib/ai/fetch";
+import { Book, BookContextState, FlowStatus } from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
@@ -100,9 +99,7 @@ export const useBookStore = create(
           draft: Partial<
             Pick<
               BookContextState,
-              | "sourceText"
-              | "bookTitle"
-              | "tableOfContents"
+              "sourceText" | "bookTitle" | "tableOfContents"
             >
           >,
         ) => {

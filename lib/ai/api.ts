@@ -1,49 +1,17 @@
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/ai/config";
-import { serverEnv } from "@/lib/env";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { draftV1 } from "../specs/draft";
-import { draftDevV1 } from "../specs/draftDev";
-import { draftTextV1 } from "../specs/draftText";
-import { outlineV1 } from "../specs/outline";
-import { PlanOutput, planV1 } from "../specs/plan";
-import { summaryV1 } from "../specs/summary";
-import { tocV1 } from "../specs/toc";
-import { registry } from "./registry";
+import { AIProvider } from "@/lib/ai/config";
+import { getModel } from "@/lib/ai/core";
+import { PlanOutput } from "@/lib/ai/schemas/plan";
+import { Section } from "@/lib/ai/schemas/outline";
+import { GenerationSettings } from "@/lib/ai/types/prompts";
+import { generateToc } from "@/lib/ai/prompts/toc";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import { generateOutline } from "@/lib/ai/prompts/outline";
+import { streamDraft } from "@/lib/ai/prompts/draft";
+import { streamDraftDev } from "@/lib/ai/prompts/draftDev";
+import { generateDraftText } from "@/lib/ai/prompts/draftText";
+import { generateSummary } from "@/lib/ai/prompts/summary";
 
-export interface GenerationSettings {
-  provider: AIProvider;
-  model: string;
-  language: string;
-  chapterCount?: number | "Auto";
-  userPreference?: string;
-}
-
-registry.register(tocV1);
-registry.register(planV1);
-registry.register(outlineV1);
-registry.register(draftV1);
-registry.register(draftDevV1);
-registry.register(draftTextV1);
-registry.register(summaryV1);
-
-const google = createGoogleGenerativeAI({ apiKey: serverEnv.GEMINI_API_KEY });
-const anthropic = createAnthropic({ apiKey: serverEnv.ANTHROPIC_API_KEY });
-
-function getModel(
-  provider: AIProvider | undefined,
-  modelName: string | undefined,
-) {
-  if (provider === AIProvider.ANTHROPIC) {
-    return anthropic(modelName || ClaudeModel.HAIKU);
-  }
-
-  if (provider === AIProvider.GOOGLE) {
-    return google(modelName || GeminiModel.FLASH);
-  }
-
-  throw new Error(`Unknown provider: ${provider}`);
-}
+export type { GenerationSettings };
 
 export async function generateTableOfContent(params: {
   sourceText: string;
@@ -54,8 +22,7 @@ export async function generateTableOfContent(params: {
   model: string;
 }) {
   const model = getModel(params.provider, params.model);
-  return registry.runSpec(
-    "book.toc@v1",
+  return generateToc(
     {
       sourceText: params.sourceText,
       language: params.language,
@@ -63,10 +30,9 @@ export async function generateTableOfContent(params: {
         params.chapterCount === "Auto" ? 5 : params.chapterCount || 5,
       maxChapters:
         params.chapterCount === "Auto" ? 10 : params.chapterCount || 10,
-      userPreference: params.userPreference || "",
+      userPreference: params.userPreference,
     },
     model,
-    "object",
   );
 }
 
@@ -79,16 +45,7 @@ export async function generatePlan(params: {
 }) {
   const { sourceText, toc, language, provider, model } = params;
   const languageModel = getModel(provider, model);
-  return registry.runSpec(
-    "book.plan@v1",
-    {
-      sourceText,
-      toc,
-      language,
-    },
-    languageModel,
-    "object",
-  );
+  return generatePlanPrompt({ sourceText, toc, language }, languageModel);
 }
 
 export async function generateChapterOutline(params: {
@@ -115,8 +72,7 @@ export async function generateChapterOutline(params: {
   } = params;
 
   const languageModel = getModel(provider, model);
-  return registry.runSpec(
-    "book.chapter.outline@v1",
+  return generateOutline(
     {
       toc,
       chapterTitle,
@@ -127,23 +83,21 @@ export async function generateChapterOutline(params: {
       userPreference,
     },
     languageModel,
-    "object",
   );
 }
 
-export async function streamSection(params: {
+export function streamSection(params: {
   chapterNumber: number;
   chapterTitle: string;
-  chapterOutline: Array<{ title: string; summary: string }>;
+  chapterOutline: Section[];
   sectionIndex: number;
-  previousSections: Array<{ title: string; summary: string }>;
+  previousSections: Section[];
   bookPlan: PlanOutput;
   settings: GenerationSettings;
 }) {
   const model = getModel(params.settings.provider, params.settings.model);
 
-  return registry.runSpec(
-    "book.chapter.draft@v1",
+  return streamDraft(
     {
       chapterNumber: params.chapterNumber,
       chapterTitle: params.chapterTitle,
@@ -155,22 +109,20 @@ export async function streamSection(params: {
       userPreference: params.settings.userPreference,
     },
     model,
-    "stream",
   );
 }
 
-export async function streamSectionDev(params: {
+export function streamSectionDev(params: {
   chapterNumber: number;
   chapterTitle: string;
-  chapterOutline: Array<{ title: string; summary: string }>;
+  chapterOutline: Section[];
   sectionIndex: number;
-  previousSections: Array<{ title: string; summary: string }>;
+  previousSections: Section[];
   bookPlan: PlanOutput;
   settings: GenerationSettings;
 }) {
   const model = getModel(params.settings.provider, params.settings.model);
-  return registry.runSpec(
-    "book.chapter.draftDev@v1",
+  return streamDraftDev(
     {
       chapterNumber: params.chapterNumber,
       chapterTitle: params.chapterTitle,
@@ -182,22 +134,20 @@ export async function streamSectionDev(params: {
       userPreference: params.settings.userPreference,
     },
     model,
-    "stream",
   );
 }
 
 export async function generateSectionDraftText(params: {
   chapterNumber: number;
   chapterTitle: string;
-  chapterOutline: Array<{ title: string; summary: string }>;
+  chapterOutline: Section[];
   sectionIndex: number;
-  previousSections: Array<{ title: string; summary: string }>;
+  previousSections: Section[];
   bookPlan: PlanOutput;
   settings: GenerationSettings;
 }) {
   const model = getModel(params.settings.provider, params.settings.model);
-  return registry.runSpec(
-    "book.chapter.draftText@v1",
+  return generateDraftText(
     {
       chapterNumber: params.chapterNumber,
       chapterTitle: params.chapterTitle,
@@ -209,7 +159,6 @@ export async function generateSectionDraftText(params: {
       userPreference: params.settings.userPreference,
     },
     model,
-    "text",
   );
 }
 
@@ -219,15 +168,7 @@ export async function generateChapterSummary(
   settings: GenerationSettings,
 ) {
   const model = getModel(settings.provider, settings.model);
-  return registry.runSpec(
-    "book.chapter.summary@v1",
-    {
-      chapterId,
-      finalText,
-    },
-    model,
-    "object",
-  );
+  return generateSummary({ chapterId, finalText }, model);
 }
 
 export const ai = {

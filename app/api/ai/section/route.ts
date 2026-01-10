@@ -1,4 +1,4 @@
-import { streamSection } from "@/lib/ai/core/ai";
+import { streamSection } from "@/lib/ai/api";
 import { Section } from "@/lib/book/types";
 import { getProviderByModel, isValidModel, AIProvider } from "@/lib/ai/config";
 import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";

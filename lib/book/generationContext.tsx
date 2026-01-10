@@ -1,6 +1,6 @@
 "use client";
 
-import { PlanOutput } from "@/lib/ai/specs/plan";
+import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { ChapterContent, GenerationProgress } from "@/lib/book/types";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";

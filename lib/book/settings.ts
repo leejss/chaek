@@ -7,8 +7,10 @@ export interface BookSettings {
 }
 
 export interface BookGenerationSettings extends BookSettings {
-  provider: import("@/lib/book/types").AIProvider;
-  model: import("@/lib/book/types").GeminiModel | import("@/lib/book/types").ClaudeModel;
+  provider: import("@/lib/ai/config").AIProvider;
+  model:
+    | import("@/lib/ai/config").GeminiModel
+    | import("@/lib/ai/config").ClaudeModel;
 }
 
 export const defaultSettings: BookSettings = {

@@ -1,9 +1,10 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { GenerateBookJob } from "@/lib/ai/jobs/types";
-import { ai, generatePlan } from "@/lib/ai/core/ai";
-import { PlanOutput } from "@/lib/ai/specs/plan";
+import { ai, generatePlan } from "@/lib/ai/api";
+import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { BookSettings } from "@/lib/book/settings";
+import { normalizeToc } from "@/lib/ai/utils";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
 import { enqueueGenerateBookJob } from "./bookGenerationQueue";
 
@@ -13,13 +14,6 @@ function toSettings(job: GenerateBookJob): BookSettings {
     chapterCount: "Auto",
     userPreference: job.userPreference ?? "",
   };
-}
-
-function normalizeToc(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (t): t is string => typeof t === "string" && t.length > 0,
-  );
 }
 
 export async function handleGenerateBookJob(job: GenerateBookJob) {

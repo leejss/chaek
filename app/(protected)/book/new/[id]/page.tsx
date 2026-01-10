@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
-import type { PlanOutput } from "@/lib/ai/specs/plan";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
 import { GenerationStoreProvider } from "@/lib/book/generationContext";
 import { BookGenerationSettings } from "@/lib/book/settings";
 import { ChapterContent } from "@/lib/book/types";

@@ -1,25 +1,16 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
-import { ai, generatePlan } from "@/lib/ai/core/ai";
-import { PlanOutput } from "@/lib/ai/specs/plan";
+import { ai, generatePlan } from "@/lib/ai/api";
+import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
 import { AIProvider } from "@/lib/ai/config";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
-import {
-  initializeBookAndDeductCredits,
-  refundUsageCredits,
-} from "@/lib/credits/operations";
+import { initializeBookAndDeductCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
+import { normalizeToc, handleGenerationError } from "@/lib/ai/utils";
 import { asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { createSSEResponse } from "./sse";
-
-function normalizeToc(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (t): t is string => typeof t === "string" && t.length > 0,
-  );
-}
 
 async function saveChapterContent(
   bookId: string,
@@ -199,68 +190,31 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
           data: { bookId, content: completedContent },
         };
       } catch (error) {
-        if (didDeductCredits) {
-          try {
-            await refundUsageCredits({
-              userId,
-              amount: BOOK_CREATION_COST,
-              bookId,
-              metadata: { reason: "streaming_generation_failed" },
-            });
-          } catch (refundError) {
-            console.error("[streamBook] refund failed:", refundError);
-          }
-        }
-
-        if (createdNewBook) {
-          await db.delete(books).where(eq(books.id, bookId));
-        }
-
-        const httpError = error instanceof HttpError ? error : null;
-        yield {
-          type: "error",
-          data: {
-            message:
-              httpError?.publicMessage ??
-              (error instanceof Error ? error.message : "Unknown error"),
-          },
-        };
+        const { message } = await handleGenerationError({
+          error,
+          didDeductCredits,
+          createdNewBook,
+          userId,
+          bookId,
+        });
+        yield { type: "error", data: { message } };
       }
     })();
 
     return createSSEResponse(events);
   } catch (error) {
-    if (didDeductCredits) {
-      try {
-        const book = await db
-          .select()
-          .from(books)
-          .where(eq(books.id, bookId))
-          .limit(1);
-        await refundUsageCredits({
-          userId: book[0]?.userId ?? "",
-          amount: BOOK_CREATION_COST,
-          bookId,
-          metadata: { reason: "streaming_generation_failed" },
-        });
-      } catch (refundError) {
-        console.error("[streamBook] refund failed:", refundError);
-      }
-    }
-
-    if (createdNewBook) {
-      await db.delete(books).where(eq(books.id, bookId));
-    }
+    const { message } = await handleGenerationError({
+      error,
+      didDeductCredits,
+      createdNewBook,
+      userId,
+      bookId,
+    });
 
     const httpError = error instanceof HttpError ? error : null;
-    const errorMessage =
-      httpError?.publicMessage ??
-      (error instanceof Error ? error.message : "Unknown error");
-
-    return new NextResponse(
-      JSON.stringify({ ok: false, error: errorMessage }),
-      { status: httpError?.status ?? 500 },
-    );
+    return new NextResponse(JSON.stringify({ ok: false, error: message }), {
+      status: httpError?.status ?? 500,
+    });
   }
 }
 

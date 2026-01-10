@@ -1,4 +1,4 @@
-import { PlanOutput } from "@/lib/ai/specs/plan";
+import { PlanOutput } from "@/lib/ai/schemas/plan";
 
 export interface Section {
   title: string;
@@ -84,6 +84,18 @@ export type StreamingStatus = {
   lastStreamedChapter: number | null;
   lastStreamedSection: number | null;
   lastUpdated: string;
+};
+
+export type AIModelConfig = {
+  provider: import("@/lib/ai/config").AIProvider;
+  model:
+    | import("@/lib/ai/config").GeminiModel
+    | import("@/lib/ai/config").ClaudeModel;
+};
+
+export type AIConfiguration = {
+  toc: AIModelConfig;
+  content: AIModelConfig;
 };
 
 export type BookWorkflowState = {

@@ -13,17 +13,17 @@ export enum AIProvider {
   ANTHROPIC = "anthropic",
 }
 
-export interface ModelConfig {
+type ModelConfig = {
   id: string;
   name: string;
   description: string;
-}
+};
 
-export interface ProviderConfig {
+type ProviderConfig = {
   id: AIProvider;
   name: string;
   models: ModelConfig[];
-}
+};
 
 export const AI_CONFIG: ProviderConfig[] = [
   {
@@ -74,12 +74,4 @@ export function getProviderByModel(modelId: string): AIProvider | undefined {
 
 export function isValidModel(modelId: string): boolean {
   return AI_CONFIG.some((p) => p.models.some((m) => m.id === modelId));
-}
-
-export function getModelConfig(modelId: string): ModelConfig | undefined {
-  for (const provider of AI_CONFIG) {
-    const model = provider.models.find((m) => m.id === modelId);
-    if (model) return model;
-  }
-  return undefined;
 }

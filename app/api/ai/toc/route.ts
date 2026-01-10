@@ -1,5 +1,5 @@
 import { getProviderByModel, isValidModel, AIProvider } from "@/lib/ai/config";
-import { generateTableOfContent } from "@/lib/ai/core/ai";
+import { generateTableOfContent } from "@/lib/ai/api";
 import {
   httpErrorToResponse,
   normalizeToHttpError,

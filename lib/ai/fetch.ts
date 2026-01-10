@@ -1,6 +1,6 @@
 import { Section } from "@/lib/book/types";
 import { BookSettings } from "@/lib/book/settings";
-import { PlanOutput } from "@/lib/ai/specs/plan";
+import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { authFetch } from "@/lib/api";
 import { z } from "zod";
 import { AIProvider, GeminiModel, ClaudeModel } from "./config";

@@ -5,20 +5,20 @@ import {
   generateChapterOutline,
   generateTableOfContent,
   generateChapterSummary,
-} from "@/lib/ai/core/ai";
+} from "@/lib/ai/api";
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/book/types";
+import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/ai/config";
 import { BookSettings } from "@/lib/book/settings";
-import { PlanOutput, PlanSchema } from "@/lib/ai/specs/plan";
+import { PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
 import { ChapterOutline } from "@/lib/book/types";
-import { ChapterOutlineSchema } from "@/lib/ai/specs/outline";
-import { TocOutput, TocSchema } from "@/lib/ai/specs/toc";
+import { ChapterOutlineSchema } from "@/lib/ai/schemas/outline";
+import { TocOutput, TocSchema } from "@/lib/ai/schemas/toc";
 import {
   ChapterSummaryOutput,
   ChapterSummarySchema,
-} from "@/lib/ai/specs/summary";
+} from "@/lib/ai/schemas/summary";
 
 export interface GenerateTocParams {
   sourceText: string;
