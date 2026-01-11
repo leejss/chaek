@@ -8,14 +8,15 @@ import {
 } from "@/lib/book/settingsStore";
 import { cn } from "@/utils";
 import Button from "@/app/(protected)/_components/Button";
+import { useRouter } from "next/navigation";
 
 export default function SettingsStep() {
+  const router = useRouter();
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
-  // const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
-  const { goToStep } = bookStoreActions;
+  const { completeStep } = bookStoreActions;
   const { setChapterCount, setLanguage, setUserPreference } =
     settingsStoreActions;
 
@@ -33,7 +34,8 @@ export default function SettingsStep() {
   };
 
   const handleContinue = () => {
-    goToStep("source_input");
+    completeStep("settings");
+    router.push("/book/new?step=source_input");
   };
 
   return (

@@ -27,7 +27,8 @@ export default function TOCReviewStep() {
   const bookTitle = useBookStore((state) => state.bookTitle);
   const sourceText = useBookStore((state) => state.sourceText);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
-  const isProcessing = useBookStore((state) => state.isProcessing);
+  const loadingState = useBookStore((state) => state.loadingState);
+  const isLoading = loadingState === "generating_toc";
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
@@ -276,13 +277,13 @@ export default function TOCReviewStep() {
                 <Button
                   variant="outline"
                   onClick={regenerateTOC}
-                  disabled={isProcessing}
+                  disabled={isLoading}
                   className="w-full sm:w-auto gap-2 px-6 h-12 bg-white border-2 border-neutral-200 text-black hover:border-black hover:bg-white rounded-full font-bold uppercase tracking-wide text-xs"
                 >
                   <RefreshCw
                     size={14}
                     strokeWidth={3}
-                    className={isProcessing ? "animate-spin" : ""}
+                    className={isLoading ? "animate-spin" : ""}
                   />
                   Regenerate
                 </Button>
@@ -290,7 +291,7 @@ export default function TOCReviewStep() {
                   variant="primary"
                   onClick={handleStartWriting}
                   disabled={
-                    isProcessing || isSaving || tableOfContents.length === 0
+                    isLoading || isSaving || tableOfContents.length === 0
                   }
                   className="w-full sm:w-auto gap-2 px-8 h-12 rounded-full font-bold uppercase tracking-wide text-xs shadow-none"
                 >

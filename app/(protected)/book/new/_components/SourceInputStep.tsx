@@ -1,12 +1,29 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import Button from "../../../_components/Button";
 
 export default function SourceInputStep() {
+  const router = useRouter();
   const sourceText = useBookStore((state) => state.sourceText);
-  const isProcessing = useBookStore((state) => state.isProcessing);
+  const loadingState = useBookStore((state) => state.loadingState);
+  const tableOfContents = useBookStore((state) => state.tableOfContents);
   const { updateDraft, generateTOC } = bookStoreActions;
+  const isLoading = loadingState === "generating_toc";
+  const wasLoadingRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      wasLoadingRef.current &&
+      loadingState === "idle" &&
+      tableOfContents.length > 0
+    ) {
+      router.push("/book/new?step=toc_review");
+    }
+    wasLoadingRef.current = loadingState === "generating_toc";
+  }, [loadingState, tableOfContents.length, router]);
 
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
@@ -36,7 +53,7 @@ export default function SourceInputStep() {
         <Button
           onClick={() => generateTOC(sourceText || "")}
           disabled={!sourceText}
-          isLoading={isProcessing}
+          isLoading={isLoading}
           className="w-full md:w-auto h-14 px-12 text-lg font-bold rounded-full"
         >
           GENERATE STRUCTURE

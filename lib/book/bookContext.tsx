@@ -8,18 +8,12 @@ import {
   GeminiModel,
 } from "@/lib/ai/config";
 import { fetchTableOfContent } from "@/lib/ai/fetch";
-import { Book, BookContextState, FlowStatus } from "@/lib/book/types";
+import { Book, BookContextState, Step, LoadingState } from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 import { useSettingsStore } from "./settingsStore";
 
-const FLOW_STEPS = [
-  "settings",
-  "source_input",
-  "toc_review",
-  "generating",
-  "completed",
-] as const;
+const STEPS: Step[] = ["settings", "source_input", "toc_review"];
 
 const initialState: BookContextState = {
   sourceText: "",
@@ -35,10 +29,9 @@ const initialState: BookContextState = {
       model: DEFAULT_MODEL,
     },
   },
-  flowStatus: "settings",
-  isProcessing: false,
+  loadingState: "idle",
   error: null,
-  completedSteps: new Set(["settings"]),
+  completedSteps: new Set<Step>(["settings"]),
   savedBookId: null,
   isSavingBook: false,
 };
@@ -46,37 +39,20 @@ const initialState: BookContextState = {
 export const useBookStore = create(
   devtools(
     combine(initialState, (set, get) => {
-      const canAccessStep = (
-        step: FlowStatus,
-        state: BookContextState,
-      ): boolean => {
-        if (!FLOW_STEPS.includes(step as (typeof FLOW_STEPS)[number])) {
-          return false;
+      const canAccessStep = (step: Step, state: BookContextState): boolean => {
+        if (!STEPS.includes(step)) return false;
+        if (state.completedSteps.has(step)) return true;
+
+        switch (step) {
+          case "settings":
+            return true;
+          case "source_input":
+            return state.completedSteps.has("settings");
+          case "toc_review":
+            return state.tableOfContents.length > 0;
+          default:
+            return false;
         }
-
-        const currentIndex = FLOW_STEPS.indexOf(
-          state.flowStatus as (typeof FLOW_STEPS)[number],
-        );
-        const targetIndex = FLOW_STEPS.indexOf(
-          step as (typeof FLOW_STEPS)[number],
-        );
-
-        if (targetIndex === currentIndex + 1) {
-          switch (step) {
-            case "source_input":
-              return true;
-            case "toc_review":
-              return state.tableOfContents.length > 0;
-            case "generating":
-              return state.tableOfContents.length > 0;
-            case "completed":
-              return false;
-            default:
-              return true;
-          }
-        }
-
-        return false;
       };
 
       const actions = {
@@ -86,9 +62,9 @@ export const useBookStore = create(
               sourceText: "",
               bookTitle: "",
               tableOfContents: [],
-              flowStatus: "settings",
+              loadingState: "idle",
               error: null,
-              completedSteps: new Set(["settings"]),
+              completedSteps: new Set<Step>(["settings"]),
             },
             false,
             "book/startNewBook",
@@ -123,7 +99,7 @@ export const useBookStore = create(
               sourceText: book.sourceText || "",
               bookTitle: book.title,
               tableOfContents: book.tableOfContents || [],
-              flowStatus: "generating",
+              loadingState: "generating",
               error: null,
             },
             false,
@@ -136,11 +112,10 @@ export const useBookStore = create(
 
           set(
             {
-              isProcessing: true,
+              loadingState: "generating_toc",
               error: null,
-              flowStatus: "generating_toc",
               sourceText,
-              completedSteps: new Set([
+              completedSteps: new Set<Step>([
                 ...get().completedSteps,
                 "source_input",
               ]),
@@ -161,10 +136,10 @@ export const useBookStore = create(
             const { title, chapters } = data;
             set(
               {
-                flowStatus: "toc_review",
+                loadingState: "idle",
                 bookTitle: title,
                 tableOfContents: chapters,
-                completedSteps: new Set([
+                completedSteps: new Set<Step>([
                   ...get().completedSteps,
                   "toc_review",
                 ]),
@@ -176,14 +151,12 @@ export const useBookStore = create(
             console.error("TOC generation failed:", err);
             set(
               {
+                loadingState: "error",
                 error: "TOC 생성에 실패했습니다. 다시 시도해 주세요.",
-                flowStatus: "source_input",
               },
               false,
               "book/generateTOC_error",
             );
-          } finally {
-            set({ isProcessing: false }, false, "book/generateTOC_finally");
           }
         },
 
@@ -192,16 +165,26 @@ export const useBookStore = create(
           await actions.generateTOC(sourceText || "");
         },
 
-        setFlowStatus: (status: FlowStatus) => {
-          set({ flowStatus: status }, false, "book/setFlowStatus");
+        setLoadingState: (state: LoadingState) => {
+          set({ loadingState: state }, false, "book/setLoadingState");
         },
 
-        goToStep: (step: FlowStatus) => {
-          const state = get();
+        canAccessStep: (step: Step): boolean => {
+          return canAccessStep(step, get());
+        },
 
-          if (!canAccessStep(step, state)) return;
+        completeStep: (step: Step) => {
+          set(
+            {
+              completedSteps: new Set<Step>([...get().completedSteps, step]),
+            },
+            false,
+            "book/completeStep",
+          );
+        },
 
-          set({ flowStatus: step }, false, "book/goToStep");
+        clearError: () => {
+          set({ error: null, loadingState: "idle" }, false, "book/clearError");
         },
 
         setTocAiConfiguraiton: (
