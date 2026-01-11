@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { books, BookStatus, chapters } from "@/db/schema";
+import { bookGenerationStates, books, BookStatus, chapters } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { BookGenerationSettings } from "@/context/types/settings";
@@ -16,20 +16,32 @@ export async function createBookAction(
 ) {
   const userId = await getUserId();
 
-  const result = await db
-    .insert(books)
-    .values({
-      userId,
-      title,
-      content: "",
-      tableOfContents,
-      sourceText: sourceText ?? undefined,
+  const inserted = await db.transaction(async (tx) => {
+    const result = await tx
+      .insert(books)
+      .values({
+        userId,
+        title,
+        content: "",
+        tableOfContents,
+        sourceText: sourceText ?? undefined,
+        updatedAt: new Date(),
+      })
+      .returning({ id: books.id });
+
+    const row = result[0];
+    if (!row) return null;
+
+    await tx.insert(bookGenerationStates).values({
+      bookId: row.id,
       status: "waiting",
       generationSettings: generationSettings ?? undefined,
-    })
-    .returning({ id: books.id });
+      updatedAt: new Date(),
+    });
 
-  const inserted = result[0];
+    return row;
+  });
+
   if (!inserted) {
     throw new Error("Failed to create book");
   }
@@ -46,13 +58,42 @@ export async function updateBookAction(
 ) {
   const userId = await getUserId();
 
-  await db
-    .update(books)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+  await db.transaction(async (tx) => {
+    const found = await tx
+      .select({ id: books.id })
+      .from(books)
+      .where(and(eq(books.id, bookId), eq(books.userId, userId)))
+      .limit(1);
+
+    if (found.length === 0) {
+      throw new Error("Book not found");
+    }
+
+    if (data.status) {
+      await tx
+        .insert(bookGenerationStates)
+        .values({
+          bookId,
+          status: data.status,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [bookGenerationStates.bookId],
+          set: {
+            status: data.status,
+            updatedAt: new Date(),
+          },
+        });
+    }
+
+    await tx
+      .update(books)
+      .set({
+        ...(data.content ? { content: data.content } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+  });
 }
 
 export async function saveChapterAction(
@@ -63,6 +104,16 @@ export async function saveChapterAction(
   outline: ChapterOutline,
 ) {
   const userId = await getUserId();
+
+  const bookFound = await db
+    .select({ id: books.id })
+    .from(books)
+    .where(and(eq(books.id, bookId), eq(books.userId, userId)))
+    .limit(1);
+
+  if (bookFound.length === 0) {
+    throw new Error("Book not found");
+  }
 
   // 1. Save chapter
   await db
@@ -95,13 +146,30 @@ export async function saveChapterAction(
 
   const fullContent = allChapters.map((c) => c.content).join("\n\n");
 
-  await db
-    .update(books)
-    .set({
-      content: fullContent,
-      currentChapterIndex: chapterNumber,
-      status: "generating",
-      updatedAt: new Date(),
-    })
-    .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(bookGenerationStates)
+      .values({
+        bookId,
+        status: "generating",
+        currentChapterIndex: chapterNumber,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          status: "generating",
+          currentChapterIndex: chapterNumber,
+          updatedAt: new Date(),
+        },
+      });
+
+    await tx
+      .update(books)
+      .set({
+        content: fullContent,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+  });
 }

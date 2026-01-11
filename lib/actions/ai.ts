@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { books, chapters } from "@/db/schema";
+import { bookGenerationStates, chapters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
@@ -77,9 +77,19 @@ export async function generatePlanAction(
   const parsedPlan = PlanSchema.parse(planResult);
 
   await db
-    .update(books)
-    .set({ bookPlan: parsedPlan })
-    .where(eq(books.id, bookId));
+    .insert(bookGenerationStates)
+    .values({
+      bookId,
+      bookPlan: parsedPlan,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [bookGenerationStates.bookId],
+      set: {
+        bookPlan: parsedPlan,
+        updatedAt: new Date(),
+      },
+    });
 
   return parsedPlan;
 }

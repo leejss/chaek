@@ -1,21 +1,43 @@
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { bookGenerationStates, books } from "@/db/schema";
 import { ValidationError } from "@/lib/errors";
 import { BookGenerationSettingsSchema } from "@/lib/ai/schemas/settings";
 import { and, eq } from "drizzle-orm";
 
 export async function findBookByIdAndUserId(bookId: string, userId: string) {
   const result = await db
-    .select()
+    .select({ book: books, state: bookGenerationStates })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(and(eq(books.id, bookId), eq(books.userId, userId)))
     .limit(1);
 
-  const book = result[0];
+  const row = result[0];
+  const book = row?.book;
+  const state = row?.state;
 
   if (book) {
+    const defaultGenerationSettings = {
+      provider: "google",
+      model: "gemini-3-flash-preview",
+      language: "Korean",
+      chapterCount: "Auto",
+      userPreference: "",
+    };
+
+    const merged = {
+      ...book,
+      status: state?.status ?? "waiting",
+      currentChapterIndex: state?.currentChapterIndex ?? null,
+      error: state?.error ?? null,
+      generationSettings:
+        state?.generationSettings ?? defaultGenerationSettings,
+      bookPlan: state?.bookPlan ?? null,
+      streamingStatus: state?.streamingStatus ?? null,
+    };
+
     const parsed = BookGenerationSettingsSchema.safeParse(
-      book.generationSettings,
+      merged.generationSettings,
     );
 
     if (!parsed.success) {
@@ -35,7 +57,7 @@ export async function findBookByIdAndUserId(bookId: string, userId: string) {
     }
 
     return {
-      ...book,
+      ...merged,
       generationSettings: parsed.data,
     };
   }

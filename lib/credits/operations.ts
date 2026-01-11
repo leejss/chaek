@@ -1,8 +1,15 @@
 import { db } from "@/db";
-import { books, creditBalances, creditTransactions } from "@/db/schema";
+import {
+  bookGenerationStates,
+  books,
+  creditBalances,
+  creditTransactions,
+} from "@/db/schema";
 import { HttpError } from "@/lib/errors";
 import { and, desc, eq } from "drizzle-orm";
 import { FREE_SIGNUP_CREDITS } from "./config";
+import { AIProvider } from "@/lib/ai/config";
+import { Language } from "@/context/types/settings";
 
 function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -333,6 +340,13 @@ export interface InitializeBookAndDeductCreditsParams {
   sourceText: string;
   cost: number;
   startChapter: number;
+  generationSettings: {
+    provider: AIProvider;
+    model: string;
+    language: Language;
+    chapterCount: number | "Auto";
+    userPreference: string;
+  };
 }
 
 export async function initializeBookAndDeductCredits(
@@ -346,17 +360,20 @@ export async function initializeBookAndDeductCredits(
     sourceText,
     cost,
     startChapter,
+    generationSettings,
   } = params;
 
   return await db.transaction(async (tx) => {
     const existingBook = await tx
-      .select()
+      .select({ book: books, state: bookGenerationStates })
       .from(books)
+      .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
       .where(eq(books.id, bookId))
       .limit(1);
 
-    const existingBookRow = existingBook[0];
-    if (existingBookRow && existingBookRow.status === "completed") {
+    const existingBookRow = existingBook[0]?.book;
+    const existingState = existingBook[0]?.state;
+    if (existingState?.status === "completed") {
       throw new HttpError(409, "Book already completed");
     }
 
@@ -372,7 +389,12 @@ export async function initializeBookAndDeductCredits(
     }
 
     let isNewBook = false;
-    if (existingBook.length === 0) {
+    const initialStreamingStatus = {
+      lastStreamedChapter: startChapter - 1,
+      lastStreamedSection: null,
+      lastUpdated: new Date().toISOString(),
+    };
+    if (existingBookRow == null) {
       isNewBook = true;
       await tx.insert(books).values({
         id: bookId,
@@ -381,7 +403,14 @@ export async function initializeBookAndDeductCredits(
         content: "",
         tableOfContents,
         sourceText,
+        updatedAt: new Date(),
+      });
+
+      await tx.insert(bookGenerationStates).values({
+        bookId,
         status: "generating",
+        generationSettings,
+        streamingStatus: initialStreamingStatus,
         updatedAt: new Date(),
       });
     } else {
@@ -391,15 +420,28 @@ export async function initializeBookAndDeductCredits(
           title,
           tableOfContents,
           sourceText,
-          status: "generating",
-          streamingStatus: {
-            lastStreamedChapter: startChapter - 1,
-            lastStreamedSection: null,
-            lastUpdated: new Date().toISOString(),
-          },
           updatedAt: new Date(),
         })
         .where(eq(books.id, bookId));
+
+      await tx
+        .insert(bookGenerationStates)
+        .values({
+          bookId,
+          status: "generating",
+          generationSettings,
+          streamingStatus: initialStreamingStatus,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [bookGenerationStates.bookId],
+          set: {
+            status: "generating",
+            generationSettings,
+            streamingStatus: initialStreamingStatus,
+            updatedAt: new Date(),
+          },
+        });
     }
 
     const newBalance = current.balance - cost;

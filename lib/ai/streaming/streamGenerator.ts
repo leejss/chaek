@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { books, chapters } from "@/db/schema";
+import { bookGenerationStates, books, chapters } from "@/db/schema";
 import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
 import { AIProvider } from "@/lib/ai/config";
@@ -42,8 +42,9 @@ async function saveChapterContent(
     });
 
   await db
-    .update(books)
-    .set({
+    .insert(bookGenerationStates)
+    .values({
+      bookId,
       currentChapterIndex: chapterNumber,
       streamingStatus: {
         lastStreamedChapter: chapterNumber,
@@ -52,7 +53,18 @@ async function saveChapterContent(
       },
       updatedAt: new Date(),
     })
-    .where(eq(books.id, bookId));
+    .onConflictDoUpdate({
+      target: [bookGenerationStates.bookId],
+      set: {
+        currentChapterIndex: chapterNumber,
+        streamingStatus: {
+          lastStreamedChapter: chapterNumber,
+          lastStreamedSection: null,
+          lastUpdated: new Date().toISOString(),
+        },
+        updatedAt: new Date(),
+      },
+    });
 }
 
 async function updateStreamingStatus(
@@ -61,8 +73,9 @@ async function updateStreamingStatus(
   sectionIndex: number,
 ) {
   await db
-    .update(books)
-    .set({
+    .insert(bookGenerationStates)
+    .values({
+      bookId,
       streamingStatus: {
         lastStreamedChapter: chapterNumber,
         lastStreamedSection: sectionIndex,
@@ -70,7 +83,17 @@ async function updateStreamingStatus(
       },
       updatedAt: new Date(),
     })
-    .where(eq(books.id, bookId));
+    .onConflictDoUpdate({
+      target: [bookGenerationStates.bookId],
+      set: {
+        streamingStatus: {
+          lastStreamedChapter: chapterNumber,
+          lastStreamedSection: sectionIndex,
+          lastUpdated: new Date().toISOString(),
+        },
+        updatedAt: new Date(),
+      },
+    });
 }
 
 export async function streamBook(config: StreamingConfig): Promise<Response> {
@@ -107,6 +130,13 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
       sourceText,
       cost: BOOK_CREATION_COST,
       startChapter,
+      generationSettings: {
+        provider,
+        model,
+        language,
+        chapterCount: "Auto",
+        userPreference,
+      },
     });
 
     createdNewBook = isNewBook;
@@ -124,11 +154,16 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
         };
 
         const existingBook = await db
-          .select()
+          .select({ book: books, state: bookGenerationStates })
           .from(books)
+          .leftJoin(
+            bookGenerationStates,
+            eq(bookGenerationStates.bookId, books.id),
+          )
           .where(eq(books.id, bookId))
           .limit(1);
-        const savedPlan = existingBook[0]?.bookPlan as PlanOutput | null;
+        const row = existingBook[0];
+        const savedPlan = row?.state?.bookPlan as PlanOutput | null;
         if (savedPlan) {
           bookPlan = savedPlan;
         } else {
@@ -138,10 +173,22 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
             languageModel,
           );
 
-          await db
-            .update(books)
-            .set({ bookPlan, updatedAt: new Date() })
-            .where(eq(books.id, bookId));
+          await db.transaction(async (tx) => {
+            await tx
+              .insert(bookGenerationStates)
+              .values({
+                bookId,
+                bookPlan,
+                updatedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [bookGenerationStates.bookId],
+                set: {
+                  bookPlan,
+                  updatedAt: new Date(),
+                },
+              });
+          });
         }
 
         for (
@@ -181,16 +228,34 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
           .map((c) => c.content)
           .join("\n\n");
 
-        await db
-          .update(books)
-          .set({
-            content: completedContent,
-            status: "completed",
-            error: null,
-            streamingStatus: null,
-            updatedAt: new Date(),
-          })
-          .where(eq(books.id, bookId));
+        await db.transaction(async (tx) => {
+          await tx
+            .insert(bookGenerationStates)
+            .values({
+              bookId,
+              status: "completed",
+              error: null,
+              streamingStatus: null,
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [bookGenerationStates.bookId],
+              set: {
+                status: "completed",
+                error: null,
+                streamingStatus: null,
+                updatedAt: new Date(),
+              },
+            });
+
+          await tx
+            .update(books)
+            .set({
+              content: completedContent,
+              updatedAt: new Date(),
+            })
+            .where(eq(books.id, bookId));
+        });
 
         yield {
           type: "book_complete",

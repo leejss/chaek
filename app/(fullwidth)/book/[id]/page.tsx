@@ -2,7 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
-import { books, chapters } from "@/db/schema";
+import { bookGenerationStates, books, chapters } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { extractTOC } from "@/lib/serverMarkdown";
 import type { Book } from "@/context/types/book";
@@ -28,8 +28,9 @@ export default async function BookDetailPage({ params }: PageProps) {
   const { id: bookId } = await params;
 
   const foundBooks = await db
-    .select()
+    .select({ book: books, state: bookGenerationStates })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(and(eq(books.id, bookId), eq(books.userId, userId)))
     .limit(1);
 
@@ -37,14 +38,18 @@ export default async function BookDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const bookData = foundBooks[0];
+  const row = foundBooks[0];
+  const bookData = row?.book;
+  const state = row?.state;
   if (!bookData) {
     notFound();
   }
 
   let content = bookData.content;
 
-  if (bookData.status !== "completed") {
+  const status = state?.status ?? "waiting";
+
+  if (status !== "completed") {
     const bookChapters = await db
       .select()
       .from(chapters)
@@ -63,7 +68,7 @@ export default async function BookDetailPage({ params }: PageProps) {
     tableOfContents: bookData.tableOfContents || [],
     sourceText: bookData.sourceText || undefined,
     createdAt: bookData.createdAt.toISOString(),
-    status: bookData.status,
+    status,
   };
 
   const headings = extractTOC(book.content);

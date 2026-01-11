@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { bookGenerationStates, books } from "@/db/schema";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import { refundUsageCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
@@ -39,6 +39,37 @@ export async function handleGenerationError(params: {
   }
 
   const httpError = error instanceof HttpError ? error : null;
+
+  if (!createdNewBook) {
+    const shouldMarkFailed = !httpError || httpError.status >= 500;
+    if (shouldMarkFailed) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      await db
+        .update(books)
+        .set({ updatedAt: new Date() })
+        .where(eq(books.id, bookId));
+
+      await db
+        .insert(bookGenerationStates)
+        .values({
+          bookId,
+          status: "failed",
+          error: errorMessage,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [bookGenerationStates.bookId],
+          set: {
+            status: "failed",
+            error: errorMessage,
+            updatedAt: new Date(),
+          },
+        });
+    }
+  }
+
   return {
     message:
       httpError?.publicMessage ??

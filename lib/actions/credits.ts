@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { books, creditTransactions } from "@/db/schema";
+import { bookGenerationStates, books, creditTransactions } from "@/db/schema";
 import { getUserId } from "@/lib/auth";
 import { deductCredits, getUserBalance } from "@/lib/credits/operations";
 import { and, eq } from "drizzle-orm";
@@ -11,8 +11,9 @@ export async function deductCreditsAction(bookId: string) {
   const userId = await getUserId();
 
   const existing = await db
-    .select()
+    .select({ book: books, state: bookGenerationStates })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(and(eq(books.id, bookId), eq(books.userId, userId)))
     .limit(1);
 
@@ -20,12 +21,14 @@ export async function deductCreditsAction(bookId: string) {
     throw new Error("Book not found");
   }
 
-  const book = existing[0];
+  const row = existing[0];
+  const book = row?.book;
+  const state = row?.state;
   if (!book) {
     throw new Error("Book not found");
   }
 
-  if (book.status === "completed") {
+  if (state?.status === "completed") {
     throw new Error("Book already completed");
   }
 

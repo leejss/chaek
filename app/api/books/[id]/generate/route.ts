@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { books, creditTransactions } from "@/db/schema";
+import { bookGenerationStates, books, creditTransactions } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
 import { enqueueGenerateBookJob } from "@/lib/ai/worker/bookGenerationQueue";
 import { HttpError } from "@/lib/errors";
@@ -41,34 +41,53 @@ export async function POST(
 
     const body = parsed.data;
 
+    const nextGenerationSettings = {
+      provider: body.provider,
+      model: body.model,
+      language: body.language,
+      chapterCount: "Auto" as const,
+      userPreference: body.userPreference,
+    };
+
     let createdNewBook = false;
     let didDeductCredits = false;
 
     const existing = await db
-      .select()
+      .select({ book: books, state: bookGenerationStates })
       .from(books)
+      .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
       .where(and(eq(books.id, bookId), eq(books.userId, userId)))
       .limit(1);
 
     if (existing.length === 0) {
       createdNewBook = true;
-      await db.insert(books).values({
-        id: bookId,
-        userId,
-        title: body.title,
-        content: "",
-        tableOfContents: body.tableOfContents,
-        sourceText: body.sourceText,
-        status: "waiting",
-        updatedAt: new Date(),
+      await db.transaction(async (tx) => {
+        await tx.insert(books).values({
+          id: bookId,
+          userId,
+          title: body.title,
+          content: "",
+          tableOfContents: body.tableOfContents,
+          sourceText: body.sourceText,
+          updatedAt: new Date(),
+        });
+
+        await tx.insert(bookGenerationStates).values({
+          bookId,
+          status: "waiting",
+          generationSettings: nextGenerationSettings,
+          updatedAt: new Date(),
+        });
       });
     } else {
-      const existingBook = existing[0];
+      const row = existing[0];
+      const existingBook = row?.book;
+      const existingState = row?.state;
       if (!existingBook) {
         throw new HttpError(404, "Book not found");
       }
 
-      const status = existingBook.status;
+      const status = existingState?.status ?? "waiting";
       if (status === "completed") {
         return NextResponse.json(
           { ok: false, error: "Book already completed" },
@@ -89,6 +108,21 @@ export async function POST(
           updatedAt: new Date(),
         })
         .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+
+      await db
+        .insert(bookGenerationStates)
+        .values({
+          bookId,
+          generationSettings: nextGenerationSettings,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [bookGenerationStates.bookId],
+          set: {
+            generationSettings: nextGenerationSettings,
+            updatedAt: new Date(),
+          },
+        });
     }
 
     const existingUsage = await db
@@ -153,13 +187,21 @@ export async function POST(
           );
 
           await db
-            .update(books)
-            .set({
+            .insert(bookGenerationStates)
+            .values({
+              bookId,
               status: "failed",
               error: "Queue enqueue failed (and credit refund failed)",
               updatedAt: new Date(),
             })
-            .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+            .onConflictDoUpdate({
+              target: [bookGenerationStates.bookId],
+              set: {
+                status: "failed",
+                error: "Queue enqueue failed (and credit refund failed)",
+                updatedAt: new Date(),
+              },
+            });
 
           throw new HttpError(503, "Job queue is temporarily unavailable");
         }
@@ -171,12 +213,25 @@ export async function POST(
           .where(and(eq(books.id, bookId), eq(books.userId, userId)));
       } else {
         await db
-          .update(books)
-          .set({
+          .insert(bookGenerationStates)
+          .values({
+            bookId,
             status: "failed",
             error: "Queue enqueue failed",
             updatedAt: new Date(),
           })
+          .onConflictDoUpdate({
+            target: [bookGenerationStates.bookId],
+            set: {
+              status: "failed",
+              error: "Queue enqueue failed",
+              updatedAt: new Date(),
+            },
+          });
+
+        await db
+          .update(books)
+          .set({ updatedAt: new Date() })
           .where(and(eq(books.id, bookId), eq(books.userId, userId)));
       }
 

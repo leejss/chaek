@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { generateBookJobSchema } from "@/lib/ai/jobs/types";
 import { handleGenerateBookJob } from "@/lib/ai/worker/generateBookWorker";
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { bookGenerationStates, books } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { refundUsageCredits } from "@/lib/credits/operations";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
@@ -61,8 +61,12 @@ export async function POST(req: NextRequest) {
 
   const job = parsed.data;
   const found = await db
-    .select({ userId: books.userId, status: books.status })
+    .select({
+      userId: books.userId,
+      stateStatus: bookGenerationStates.status,
+    })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(eq(books.id, job.bookId))
     .limit(1);
 
@@ -75,7 +79,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (bookRow.status === "completed" || bookRow.status === "failed") {
+  const status = bookRow.stateStatus ?? "waiting";
+
+  if (status === "completed" || status === "failed") {
     return NextResponse.json({ ok: true });
   }
 
@@ -93,13 +99,21 @@ export async function POST(req: NextRequest) {
     });
 
     await db
-      .update(books)
-      .set({
+      .insert(bookGenerationStates)
+      .values({
+        bookId: job.bookId,
         status: "failed",
         error: error instanceof Error ? error.message : "Worker error",
         updatedAt: new Date(),
       })
-      .where(eq(books.id, job.bookId));
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          status: "failed",
+          error: error instanceof Error ? error.message : "Worker error",
+          updatedAt: new Date(),
+        },
+      });
 
     return NextResponse.json(
       { ok: false, error: "Worker error" },

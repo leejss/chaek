@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { bookGenerationStates, books } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { desc, eq } from "drizzle-orm";
@@ -25,19 +25,20 @@ export default async function LibraryPage() {
   const { userId } = await verifyAccessJWT(accessToken, secret);
 
   const dbBooks = await db
-    .select()
+    .select({ book: books, state: bookGenerationStates })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(eq(books.userId, userId))
     .orderBy(desc(books.createdAt));
 
-  const userBooks = dbBooks.map((book) => ({
-    id: book.id,
-    title: book.title,
-    content: book.content,
-    createdAt: book.createdAt.toISOString(),
-    tableOfContents: book.tableOfContents || [],
-    sourceText: book.sourceText || undefined,
-    status: book.status,
+  const userBooks = dbBooks.map((row) => ({
+    id: row.book.id,
+    title: row.book.title,
+    content: row.book.content,
+    createdAt: row.book.createdAt.toISOString(),
+    tableOfContents: row.book.tableOfContents || [],
+    sourceText: row.book.sourceText || undefined,
+    status: row.state?.status ?? "waiting",
   }));
 
   return (

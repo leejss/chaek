@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { books, chapters } from "@/db/schema";
+import { bookGenerationStates, books, chapters } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
 import { and, asc, eq } from "drizzle-orm";
@@ -17,15 +17,22 @@ export async function GET(
     const { id: bookId } = await params;
 
     const found = await db
-      .select()
+      .select({ book: books, state: bookGenerationStates })
       .from(books)
+      .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
       .where(and(eq(books.id, bookId), eq(books.userId, userId)))
       .limit(1);
 
     if (found.length === 0) throw new HttpError(404, "Book not found");
 
-    const book = found[0];
+    const row = found[0];
+    const book = row?.book;
+    const state = row?.state;
     if (!book) throw new HttpError(404, "Book not found");
+
+    const status = state?.status ?? "waiting";
+    const error = state?.error ?? null;
+    const currentChapterIndex = state?.currentChapterIndex ?? null;
 
     const chapterRows = await db
       .select()
@@ -43,9 +50,9 @@ export async function GET(
 
     return NextResponse.json({
       ok: true,
-      status: book.status,
-      error: book.error,
-      currentChapterIndex: book.currentChapterIndex,
+      status,
+      error,
+      currentChapterIndex,
       totalChapters,
       completedChapters,
       chapters: chapterRows.map((c) => ({

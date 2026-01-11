@@ -64,7 +64,6 @@ async function BookGenerationContent({ params }: PageProps) {
     initialContent = initialChapters.map((c) => c.content).join("\n\n");
   }
 
-  const settings = bookData.generationSettings as BookGenerationSettings;
   const { title, id, status, tableOfContents, sourceText, bookPlan } = bookData;
 
   const init = {
@@ -81,7 +80,9 @@ async function BookGenerationContent({ params }: PageProps) {
         tableOfContents={tableOfContents ?? []}
         sourceText={sourceText || ""}
         chapters={initialChapters}
-        generationSettings={settings}
+        generationSettings={
+          bookData.generationSettings as BookGenerationSettings
+        }
       />
     </GenerationStoreProvider>
   );

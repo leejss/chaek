@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { books, chapters } from "@/db/schema";
+import { bookGenerationStates, books, chapters } from "@/db/schema";
 import { GenerateBookJob } from "@/lib/ai/jobs/types";
 import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { BookSettings } from "@/context/types/settings";
@@ -35,12 +35,15 @@ export async function handleGenerateBookJob(job: GenerateBookJob) {
 
 async function initGeneration(job: GenerateBookJob) {
   const existing = await db
-    .select()
+    .select({ book: books, state: bookGenerationStates })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(eq(books.id, job.bookId))
     .limit(1);
 
-  const book = existing[0];
+  const row = existing[0];
+  const book = row?.book;
+  const state = row?.state;
   if (!book) {
     throw new Error("Book not found");
   }
@@ -48,38 +51,53 @@ async function initGeneration(job: GenerateBookJob) {
   const toc = normalizeToc(book.tableOfContents);
   if (!book.sourceText || toc.length === 0) {
     await db
-      .update(books)
-      .set({
+      .insert(bookGenerationStates)
+      .values({
+        bookId: job.bookId,
         status: "failed",
         error: "Missing sourceText or tableOfContents",
         updatedAt: new Date(),
       })
-      .where(eq(books.id, job.bookId));
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          status: "failed",
+          error: "Missing sourceText or tableOfContents",
+          updatedAt: new Date(),
+        },
+      });
     return;
   }
 
+  const nextGenerationSettings = {
+    provider: job.provider,
+    model: job.model,
+    language: job.language,
+    chapterCount: "Auto" as const,
+    userPreference: job.userPreference,
+  };
+
   await db
-    .update(books)
-    .set({
+    .insert(bookGenerationStates)
+    .values({
+      bookId: job.bookId,
       status: "generating",
       error: null,
-      generationSettings: {
-        provider: job.provider,
-        model: job.model,
-        language: job.language,
-        userPreference: job.userPreference,
-      },
+      generationSettings: nextGenerationSettings,
       updatedAt: new Date(),
     })
-    .where(
-      and(
-        eq(books.id, job.bookId),
-        inArray(books.status, ["waiting", "failed"]),
-      ),
-    );
+    .onConflictDoUpdate({
+      target: [bookGenerationStates.bookId],
+      set: {
+        status: "generating",
+        error: null,
+        generationSettings: nextGenerationSettings,
+        updatedAt: new Date(),
+      },
+    });
 
   const settings = toSettings(job);
-  const existingPlan = book.bookPlan as PlanOutput | null | undefined;
+  const existingPlan = state?.bookPlan as PlanOutput | null | undefined;
 
   if (!existingPlan) {
     const languageModel = getModel(job.provider, job.model);
@@ -89,12 +107,19 @@ async function initGeneration(job: GenerateBookJob) {
     );
 
     await db
-      .update(books)
-      .set({
+      .insert(bookGenerationStates)
+      .values({
+        bookId: job.bookId,
         bookPlan: plan,
         updatedAt: new Date(),
       })
-      .where(eq(books.id, job.bookId));
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          bookPlan: plan,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   await db
@@ -128,12 +153,15 @@ async function generateChapter(job: GenerateBookJob) {
   if (chapterNumber == null) throw new Error("Missing chapterNumber");
 
   const found = await db
-    .select()
+    .select({ book: books, state: bookGenerationStates })
     .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
     .where(eq(books.id, job.bookId))
     .limit(1);
 
-  const book = found[0];
+  const row = found[0];
+  const book = row?.book;
+  const state = row?.state;
   if (!book) throw new Error("Book not found");
 
   const toc = normalizeToc(book.tableOfContents);
@@ -170,7 +198,7 @@ async function generateChapter(job: GenerateBookJob) {
       ),
     );
 
-  const plan = book.bookPlan as PlanOutput | null | undefined;
+  const plan = state?.bookPlan as PlanOutput | null | undefined;
   if (!plan) throw new Error("Book plan missing");
 
   const languageModel = getModel(job.provider, job.model);
@@ -238,12 +266,19 @@ async function generateChapter(job: GenerateBookJob) {
       );
 
     await tx
-      .update(books)
-      .set({
+      .insert(bookGenerationStates)
+      .values({
+        bookId: job.bookId,
         currentChapterIndex: chapterNumber,
         updatedAt: new Date(),
       })
-      .where(eq(books.id, job.bookId));
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          currentChapterIndex: chapterNumber,
+          updatedAt: new Date(),
+        },
+      });
   });
 
   await enqueueNextOrFinalize(job, toc.length);
@@ -272,12 +307,12 @@ async function enqueueNextOrFinalize(
 
 async function finalizeBook(job: GenerateBookJob) {
   const found = await db
-    .select()
+    .select({ book: books })
     .from(books)
     .where(eq(books.id, job.bookId))
     .limit(1);
 
-  const book = found[0];
+  const book = found[0]?.book;
   if (!book) throw new Error("Book not found");
 
   const toc = normalizeToc(book.tableOfContents);
@@ -302,13 +337,32 @@ async function finalizeBook(job: GenerateBookJob) {
     .map((c) => c.content)
     .join("\n\n");
 
-  await db
-    .update(books)
-    .set({
-      content: fullContent,
-      status: "completed",
-      error: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(books.id, job.bookId));
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(bookGenerationStates)
+      .values({
+        bookId: job.bookId,
+        status: "completed",
+        error: null,
+        streamingStatus: null,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          status: "completed",
+          error: null,
+          streamingStatus: null,
+          updatedAt: new Date(),
+        },
+      });
+
+    await tx
+      .update(books)
+      .set({
+        content: fullContent,
+        updatedAt: new Date(),
+      })
+      .where(eq(books.id, job.bookId));
+  });
 }
