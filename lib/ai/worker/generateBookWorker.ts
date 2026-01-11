@@ -1,12 +1,15 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { GenerateBookJob } from "@/lib/ai/jobs/types";
-import { ai, generatePlan } from "@/lib/ai/api";
 import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { BookSettings } from "@/lib/book/settings";
 import { normalizeToc } from "@/lib/ai/utils";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
 import { enqueueGenerateBookJob } from "./bookGenerationQueue";
+import { getModel } from "@/lib/ai/core";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import { generateOutline } from "@/lib/ai/prompts/outline";
+import { generateDraftText } from "@/lib/ai/prompts/draftText";
 
 function toSettings(job: GenerateBookJob): BookSettings {
   return {
@@ -79,13 +82,11 @@ async function initGeneration(job: GenerateBookJob) {
   const existingPlan = book.bookPlan as PlanOutput | null | undefined;
 
   if (!existingPlan) {
-    const plan = await generatePlan({
-      sourceText: book.sourceText,
-      toc,
-      provider: job.provider,
-      model: job.model,
-      language: settings.language,
-    });
+    const languageModel = getModel(job.provider, job.model);
+    const plan = await generatePlanPrompt(
+      { sourceText: book.sourceText, toc, language: settings.language },
+      languageModel,
+    );
 
     await db
       .update(books)
@@ -172,17 +173,20 @@ async function generateChapter(job: GenerateBookJob) {
   const plan = book.bookPlan as PlanOutput | null | undefined;
   if (!plan) throw new Error("Book plan missing");
 
-  const outline = await ai.generateChapterOutline({
-    toc,
-    chapterTitle,
-    chapterNumber,
-    sourceText: book.sourceText,
-    plan: plan,
-    provider: job.provider,
-    model: job.model,
-    language: job.language,
-    userPreference: job.userPreference ?? "",
-  });
+  const languageModel = getModel(job.provider, job.model);
+
+  const outline = await generateOutline(
+    {
+      toc,
+      chapterTitle,
+      chapterNumber,
+      sourceText: book.sourceText,
+      plan,
+      language: job.language,
+      userPreference: job.userPreference,
+    },
+    languageModel,
+  );
 
   let chapterContent = `## ${chapterTitle}\n\n`;
   const completedSummaries: Array<{ title: string; summary: string }> = [];
@@ -192,20 +196,19 @@ async function generateChapter(job: GenerateBookJob) {
     sectionIndex < outline.sections.length;
     sectionIndex++
   ) {
-    const sectionText = await ai.generateSectionDraftText({
-      chapterNumber,
-      chapterTitle,
-      chapterOutline: outline.sections,
-      sectionIndex,
-      previousSections: completedSummaries,
-      bookPlan: plan,
-      settings: {
-        provider: job.provider,
-        model: job.model,
+    const sectionText = await generateDraftText(
+      {
+        chapterNumber,
+        chapterTitle,
+        chapterOutline: outline.sections,
+        sectionIndex,
+        previousSections: completedSummaries,
+        plan,
         language: job.language,
-        userPreference: job.userPreference ?? "",
+        userPreference: job.userPreference,
       },
-    });
+      languageModel,
+    );
 
     chapterContent += sectionText + "\n\n";
     completedSummaries.push({

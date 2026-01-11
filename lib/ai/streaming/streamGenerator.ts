@@ -1,9 +1,13 @@
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
-import { ai, generatePlan } from "@/lib/ai/api";
 import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
 import { AIProvider } from "@/lib/ai/config";
+import { getModel } from "@/lib/ai/core";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import { generateOutline } from "@/lib/ai/prompts/outline";
+import { streamDraft } from "@/lib/ai/prompts/draft";
+import { streamDraftDev } from "@/lib/ai/prompts/draftDev";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import { initializeBookAndDeductCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
@@ -128,13 +132,11 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
         if (savedPlan) {
           bookPlan = savedPlan;
         } else {
-          bookPlan = await generatePlan({
-            sourceText,
-            toc,
-            provider: provider as AIProvider,
-            model,
-            language,
-          });
+          const languageModel = getModel(provider as AIProvider, model);
+          bookPlan = await generatePlanPrompt(
+            { sourceText, toc, language },
+            languageModel,
+          );
 
           await db
             .update(books)
@@ -232,17 +234,20 @@ async function* streamChapter(
     userPreference: string;
   },
 ): AsyncGenerator<SSEEvent, void, unknown> {
-  const outlineResult = await ai.generateChapterOutline({
-    toc,
-    chapterTitle,
-    chapterNumber,
-    sourceText,
-    plan: bookPlan,
-    provider: settings.provider,
-    model: settings.model,
-    language: settings.language,
-    userPreference: settings.userPreference,
-  });
+  const languageModel = getModel(settings.provider, settings.model);
+
+  const outlineResult = await generateOutline(
+    {
+      toc,
+      chapterTitle,
+      chapterNumber,
+      sourceText,
+      plan: bookPlan,
+      language: settings.language,
+      userPreference: settings.userPreference,
+    },
+    languageModel,
+  );
 
   yield {
     type: "chapter_start",
@@ -275,20 +280,21 @@ async function* streamChapter(
         summary: s.summary,
       }));
 
-    const streamFunc =
-      process.env.NODE_ENV === "development"
-        ? ai.streamSectionDraftDev
-        : ai.streamSectionDraft;
-
-    const result = await streamFunc({
+    const draftInput = {
       chapterNumber,
       chapterTitle,
       chapterOutline: outlineResult.sections,
       sectionIndex,
       previousSections,
-      bookPlan,
-      settings,
-    });
+      plan: bookPlan,
+      language: settings.language,
+      userPreference: settings.userPreference,
+    };
+
+    const result =
+      process.env.NODE_ENV === "development"
+        ? streamDraftDev(draftInput, languageModel)
+        : streamDraft(draftInput, languageModel);
 
     let sectionText = "";
     for await (const chunk of result.textStream) {

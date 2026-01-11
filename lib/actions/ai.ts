@@ -1,15 +1,10 @@
 "use server";
 
-import {
-  generatePlan,
-  generateChapterOutline,
-  generateTableOfContent,
-  generateChapterSummary,
-} from "@/lib/ai/api";
 import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/ai/config";
+import { getModel } from "@/lib/ai/core";
 import { BookSettings } from "@/lib/book/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
 import { ChapterOutline } from "@/lib/book/types";
@@ -19,11 +14,15 @@ import {
   ChapterSummaryOutput,
   ChapterSummarySchema,
 } from "@/lib/ai/schemas/summary";
+import { generateToc } from "@/lib/ai/prompts/toc";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import { generateOutline } from "@/lib/ai/prompts/outline";
+import { generateSummary } from "@/lib/ai/prompts/summary";
 
 export interface GenerateTocParams {
   sourceText: string;
-  language?: string;
-  chapterCount?: number | "Auto";
+  language: string;
+  chapterCount: number | "Auto";
   userPreference?: string;
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
@@ -41,18 +40,14 @@ export async function generateTocAction(
     model,
   } = params;
 
-  const result = await generateTableOfContent({
-    sourceText,
-    language: language || "Korean",
-    chapterCount: chapterCount || "Auto",
-    userPreference,
-    provider,
-    model,
-  });
+  const languageModel = getModel(provider, model);
+  const minChapters = chapterCount === "Auto" ? 5 : chapterCount || 5;
+  const maxChapters = chapterCount === "Auto" ? 10 : chapterCount || 10;
 
-  if (!result) {
-    throw new Error("Failed to generate TOC");
-  }
+  const result = await generateToc(
+    { sourceText, language, minChapters, maxChapters, userPreference },
+    languageModel,
+  );
 
   return TocSchema.parse(result);
 }
@@ -71,17 +66,13 @@ export async function generatePlanAction(
 ): Promise<PlanOutput> {
   const { sourceText, toc, provider, model, settings, bookId } = params;
 
-  const planResult = await generatePlan({
-    sourceText,
-    toc,
-    language: settings?.language || "Korean",
-    provider,
-    model,
-  });
+  const languageModel = getModel(provider, model);
+  const language = settings?.language || "Korean";
 
-  if (!planResult) {
-    throw new Error("Failed to generate plan");
-  }
+  const planResult = await generatePlanPrompt(
+    { sourceText, toc, language },
+    languageModel,
+  );
 
   const parsedPlan = PlanSchema.parse(planResult);
 
@@ -147,21 +138,22 @@ export async function generateOutlineAction(
     throw new Error("Book plan is required for outline generation");
   }
 
-  const result = await generateChapterOutline({
-    toc,
-    chapterTitle,
-    chapterNumber,
-    sourceText,
-    plan: bookPlan,
-    provider,
-    model,
-    language: settings?.language || "Korean",
-    userPreference: settings?.userPreference,
-  });
+  const languageModel = getModel(provider, model);
+  const language = settings?.language || "Korean";
+  const userPreference = settings?.userPreference;
 
-  if (!result) {
-    throw new Error("Failed to generate chapter outline");
-  }
+  const result = await generateOutline(
+    {
+      toc,
+      chapterTitle,
+      chapterNumber,
+      sourceText,
+      plan: bookPlan,
+      language,
+      userPreference,
+    },
+    languageModel,
+  );
 
   return ChapterOutlineSchema.parse(result) as ChapterOutline;
 }
@@ -177,17 +169,11 @@ export interface GenerateSummaryParams {
 export async function generateSummaryAction(
   params: GenerateSummaryParams,
 ): Promise<ChapterSummaryOutput> {
-  const { chapterId, finalText, provider, model, language } = params;
+  const { chapterId, finalText, provider, model } = params;
 
-  const result = await generateChapterSummary(chapterId, finalText, {
-    provider,
-    model,
-    language,
-  });
+  const languageModel = getModel(provider, model);
 
-  if (!result) {
-    throw new Error("Failed to generate chapter summary");
-  }
+  const result = await generateSummary({ chapterId, finalText }, languageModel);
 
   return ChapterSummarySchema.parse(result);
 }

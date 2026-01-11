@@ -1,6 +1,7 @@
-import { streamSection } from "@/lib/ai/api";
 import { Section } from "@/lib/book/types";
 import { getProviderByModel, isValidModel, AIProvider } from "@/lib/ai/config";
+import { getModel } from "@/lib/ai/core";
+import { streamDraft } from "@/lib/ai/prompts/draft";
 import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -53,20 +54,21 @@ export async function POST(req: Request) {
       userPreference,
     } = parseAndValidateBody(jsonResult.data, sectionRequestSchema);
 
-    const result = await streamSection({
-      chapterNumber,
-      chapterTitle,
-      chapterOutline: chapterOutline as Section[],
-      sectionIndex,
-      previousSections: previousSections as Section[],
-      bookPlan,
-      settings: {
-        provider,
-        model,
+    const languageModel = getModel(provider, model);
+
+    const result = streamDraft(
+      {
+        chapterNumber,
+        chapterTitle,
+        chapterOutline: chapterOutline as Section[],
+        sectionIndex,
+        previousSections: previousSections as Section[],
+        plan: bookPlan,
         language,
         userPreference,
       },
-    });
+      languageModel,
+    );
 
     return result.toTextStreamResponse({
       headers: {
