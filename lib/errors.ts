@@ -10,10 +10,19 @@ export class HttpError extends Error {
   }
 }
 
-
 export class InvalidJsonError extends Error {
   constructor() {
     super("Invalid JSON format");
     this.name = "InvalidJsonError";
+  }
+}
+
+export class ValidationError extends Error {
+  public readonly fieldErrors: Record<string, string[]>;
+
+  constructor(message: string, fieldErrors: Record<string, string[]> = {}) {
+    super(message);
+    this.name = "ValidationError";
+    this.fieldErrors = fieldErrors;
   }
 }
