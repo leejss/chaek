@@ -1,5 +1,5 @@
-import { Section } from "@/lib/book/types";
-import { BookSettings } from "@/lib/book/settings";
+import { Section } from "@/context/types/book";
+import { BookSettings } from "@/context/types/settings";
 import { PlanOutput } from "@/lib/ai/schemas/plan";
 import { authFetch } from "@/lib/api";
 import { AIProvider, GeminiModel, ClaudeModel } from "./config";

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import { useSettingsStore } from "@/lib/book/settingsStore";
+import { bookStoreActions, useBookStore } from "@/context/bookStore";
+import { useSettingsStore } from "@/context/settingsStore";
 import { generateTocAction } from "@/lib/actions/ai";
 import Button from "@/components/Button";
 
@@ -13,10 +13,12 @@ export default function SourceInputStep() {
   const [error, setError] = useState<string | null>(null);
 
   const sourceText = useBookStore((state) => state.sourceText);
-  const aiConfiguration = useBookStore((state) => state.aiConfiguration);
+  const aiConfiguration = useSettingsStore((state) => state.aiConfiguration);
   const { updateDraft, setTocResult } = bookStoreActions;
 
-  const settings = useSettingsStore();
+  const language = useSettingsStore((state) => state.language);
+  const chapterCount = useSettingsStore((state) => state.chapterCount);
+  const userPreference = useSettingsStore((state) => state.userPreference);
 
   const handleGenerateTOC = async () => {
     if (!sourceText?.trim()) return;
@@ -27,9 +29,9 @@ export default function SourceInputStep() {
     try {
       const result = await generateTocAction({
         sourceText,
-        language: settings.language,
-        chapterCount: settings.chapterCount,
-        userPreference: settings.userPreference,
+        language,
+        chapterCount,
+        userPreference,
         provider: aiConfiguration.toc.provider,
         model: aiConfiguration.toc.model,
       });

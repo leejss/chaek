@@ -1,11 +1,11 @@
 "use client";
 
-import { bookStoreActions } from "@/lib/book/bookContext";
+import { bookStoreActions } from "@/context/bookStore";
 import {
   Language,
   settingsStoreActions,
   useSettingsStore,
-} from "@/lib/book/settingsStore";
+} from "@/context/settingsStore";
 import { cn } from "@/utils";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";

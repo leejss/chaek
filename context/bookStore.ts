@@ -1,58 +1,23 @@
 "use client";
 
-import {
-  DEFAULT_MODEL,
-  DEFAULT_PROVIDER,
-  AIProvider,
-  ClaudeModel,
-  GeminiModel,
-} from "@/lib/ai/config";
-import { Book, BookContextState, Step, LoadingState } from "@/lib/book/types";
+import { Book, BookState, Step, LoadingState } from "@/context/types/book";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 
 const STEPS: Step[] = ["settings", "source_input", "toc_review"];
 
-const initialState: BookContextState = {
+const initialState: BookState = {
   sourceText: "",
   bookTitle: "",
   tableOfContents: [],
-  aiConfiguration: {
-    toc: {
-      provider: DEFAULT_PROVIDER,
-      model: DEFAULT_MODEL,
-    },
-    content: {
-      provider: DEFAULT_PROVIDER,
-      model: DEFAULT_MODEL,
-    },
-  },
   loadingState: "idle",
   error: null,
   completedSteps: new Set<Step>(["settings"]),
-  savedBookId: null,
-  isSavingBook: false,
 };
 
 export const useBookStore = create(
   devtools(
     combine(initialState, (set, get) => {
-      const canAccessStep = (step: Step, state: BookContextState): boolean => {
-        if (!STEPS.includes(step)) return false;
-        if (state.completedSteps.has(step)) return true;
-
-        switch (step) {
-          case "settings":
-            return true;
-          case "source_input":
-            return state.completedSteps.has("settings");
-          case "toc_review":
-            return state.tableOfContents.length > 0;
-          default:
-            return false;
-        }
-      };
-
       const actions = {
         startNewBook: () => {
           set(
@@ -71,10 +36,7 @@ export const useBookStore = create(
 
         updateDraft: (
           draft: Partial<
-            Pick<
-              BookContextState,
-              "sourceText" | "bookTitle" | "tableOfContents"
-            >
+            Pick<BookState, "sourceText" | "bookTitle" | "tableOfContents">
           >,
         ) => {
           set(draft, false, "book/updateDraft");
@@ -126,7 +88,20 @@ export const useBookStore = create(
         },
 
         canAccessStep: (step: Step): boolean => {
-          return canAccessStep(step, get());
+          const state = get();
+          if (!STEPS.includes(step)) return false;
+          if (state.completedSteps.has(step)) return true;
+
+          switch (step) {
+            case "settings":
+              return true;
+            case "source_input":
+              return state.completedSteps.has("settings");
+            case "toc_review":
+              return state.tableOfContents.length > 0;
+            default:
+              return false;
+          }
         },
 
         completeStep: (step: Step) => {
@@ -141,44 +116,6 @@ export const useBookStore = create(
 
         clearError: () => {
           set({ error: null, loadingState: "idle" }, false, "book/clearError");
-        },
-
-        setTocAiConfiguraiton: (
-          provider: AIProvider,
-          model: GeminiModel | ClaudeModel,
-        ) => {
-          set(
-            (state) => ({
-              aiConfiguration: {
-                ...state.aiConfiguration,
-                toc: {
-                  provider,
-                  model,
-                },
-              },
-            }),
-            false,
-            "book/setTocAiConfiguraiton",
-          );
-        },
-
-        setSelectedModel: (
-          provider: AIProvider,
-          model: GeminiModel | ClaudeModel,
-        ) => {
-          set(
-            (state) => ({
-              aiConfiguration: {
-                ...state.aiConfiguration,
-                content: {
-                  provider,
-                  model,
-                },
-              },
-            }),
-            false,
-            "book/setSelectedModel",
-          );
         },
       };
 

@@ -5,9 +5,9 @@ import { books, chapters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
-import { BookSettings } from "@/lib/book/settings";
+import { BookSettings } from "@/context/types/settings";
 import { PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
-import { ChapterOutline } from "@/lib/book/types";
+import { ChapterOutline } from "@/context/types/book";
 import { ChapterOutlineSchema } from "@/lib/ai/schemas/outline";
 import { TocOutput, TocSchema } from "@/lib/ai/schemas/toc";
 import {

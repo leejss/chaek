@@ -1,6 +1,6 @@
 "use client";
 
-import { useGenerationStore } from "@/lib/book/generationContext";
+import { useGenerationStore } from "@/context/generationContext";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
 import { Loader2 } from "lucide-react";
 

@@ -1,4 +1,4 @@
-import { Section } from "@/lib/book/types";
+import { Section } from "@/context/types/book";
 import { getProviderByModel, isValidModel, AIProvider } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
 import { streamDraft } from "@/lib/ai/prompts/draft";

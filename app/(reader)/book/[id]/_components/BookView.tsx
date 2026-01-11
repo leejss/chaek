@@ -12,8 +12,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/Button";
-import type { Book } from "@/lib/book/types";
-import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
+import type { Book } from "@/context/types/book";
+import { STATUS_LABELS } from "@/utils/status";
 
 interface TOCItem {
   id: string;

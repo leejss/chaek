@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
-import { useGenerationStore } from "@/lib/book/generationContext";
-import { BookGenerationSettings } from "@/lib/book/settings";
+import { useGenerationStore } from "@/context/generationContext";
+import { BookGenerationSettings } from "@/context/types/settings";
 
 interface StatusOverviewGenerationProps {
   bookTitle: string;
@@ -17,7 +17,14 @@ interface StatusOverviewGenerationProps {
 export default function StatusOverviewGeneration(
   props: StatusOverviewGenerationProps,
 ) {
-  const { bookTitle, sourceText, tableOfContents, generationSettings, onCancel, isGenerating } = props;
+  const {
+    bookTitle,
+    sourceText,
+    tableOfContents,
+    generationSettings,
+    onCancel,
+    isGenerating,
+  } = props;
   const [isOpen, setIsOpen] = useState(false);
 
   const generationProgress = useGenerationStore(

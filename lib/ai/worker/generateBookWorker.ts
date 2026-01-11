@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { books, chapters } from "@/db/schema";
 import { GenerateBookJob } from "@/lib/ai/jobs/types";
 import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { BookSettings } from "@/lib/book/settings";
+import { BookSettings } from "@/context/types/settings";
 import { normalizeToc } from "@/lib/ai/utils";
 import { eq, and, inArray, asc, sql } from "drizzle-orm";
 import { enqueueGenerateBookJob } from "./bookGenerationQueue";

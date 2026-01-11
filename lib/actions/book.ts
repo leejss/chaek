@@ -5,8 +5,8 @@ import { db } from "@/db";
 import { books, BookStatus, chapters } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
-import { BookGenerationSettings } from "@/lib/book/settings";
-import { ChapterOutline } from "@/lib/book/types";
+import { BookGenerationSettings } from "@/context/types/settings";
+import { ChapterOutline } from "@/context/types/book";
 
 export async function createBookAction(
   title: string,

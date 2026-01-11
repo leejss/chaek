@@ -1,5 +1,5 @@
 import { AIProvider } from "@/lib/ai/config";
-import { Language } from "@/lib/book/settings";
+import { Language } from "@/context/types/settings";
 
 export type StreamingConfig = {
   bookId: string;

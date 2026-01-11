@@ -4,10 +4,9 @@ import { useRef, useState, useCallback } from "react";
 import {
   useGenerationStore,
   useGenerationStoreApi,
-} from "@/lib/book/generationContext";
-import { BookSettings } from "@/lib/book/settings";
-import { BookGenerationSettings } from "@/lib/book/settings";
-import { Section } from "@/lib/book/types";
+} from "@/context/generationContext";
+import { BookSettings, BookGenerationSettings } from "@/context/types/settings";
+import { Section } from "@/context/types/book";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { cn } from "@/utils";
 import { deductCreditsAction } from "@/lib/actions/credits";

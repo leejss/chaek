@@ -1,7 +1,7 @@
 "use client";
 
-import { useBookStore } from "@/lib/book/bookContext";
-import { Step } from "@/lib/book/types";
+import { useBookStore } from "@/context/bookStore";
+import { Step } from "@/context/types/book";
 import { cn } from "@/utils";
 import { ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";

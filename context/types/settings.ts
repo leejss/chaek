@@ -1,3 +1,5 @@
+import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/ai/config";
+
 export type Language = "Korean" | "English" | "Japanese" | "Chinese" | "Auto";
 
 export interface BookSettings {
@@ -7,14 +9,22 @@ export interface BookSettings {
 }
 
 export interface BookGenerationSettings extends BookSettings {
-  provider: import("@/lib/ai/config").AIProvider;
-  model:
-    | import("@/lib/ai/config").GeminiModel
-    | import("@/lib/ai/config").ClaudeModel;
+  provider: AIProvider;
+  model: GeminiModel | ClaudeModel;
 }
 
 export const defaultSettings: BookSettings = {
   language: "Korean",
   chapterCount: "Auto",
   userPreference: "",
+};
+
+export type AIModelConfig = {
+  provider: AIProvider;
+  model: GeminiModel | ClaudeModel;
+};
+
+export type AIConfiguration = {
+  toc: AIModelConfig;
+  content: AIModelConfig;
 };

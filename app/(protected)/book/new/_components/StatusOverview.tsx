@@ -1,7 +1,7 @@
 "use client";
 
-import { useBookStore } from "@/lib/book/bookContext";
-import { useSettingsStore } from "@/lib/book/settingsStore";
+import { useBookStore } from "@/context/bookStore";
+import { useSettingsStore } from "@/context/settingsStore";
 import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
@@ -17,7 +17,7 @@ export default function StatusOverview(props: StatusOverviewProps) {
 
   const sourceText = bookStore.sourceText;
   const tableOfContents = bookStore.tableOfContents;
-  const aiConfiguration = bookStore.aiConfiguration;
+  const aiConfiguration = useSettingsStore((state) => state.aiConfiguration);
 
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);

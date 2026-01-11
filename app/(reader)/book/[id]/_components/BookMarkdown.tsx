@@ -2,7 +2,7 @@ import parse from "html-react-parser";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
-import { highlightCode } from "@/lib/book/serverMarkdown";
+import { highlightCode } from "@/lib/serverMarkdown";
 
 type MarkdownProps = {
   children?: ReactNode;

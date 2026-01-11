@@ -1,6 +1,6 @@
 "use client";
 
-import { useGenerationStore } from "@/lib/book/generationContext";
+import { useGenerationStore } from "@/context/generationContext";
 import { Check, Lock, Loader2, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { cn } from "@/utils";

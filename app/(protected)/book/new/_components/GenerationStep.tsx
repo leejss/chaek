@@ -1,7 +1,7 @@
 "use client";
 
-import { useGenerationStore } from "@/lib/book/generationContext";
-import { Section } from "@/lib/book/types";
+import { useGenerationStore } from "@/context/generationContext";
+import { Section } from "@/context/types/book";
 import { BookOpen, Check, Copy, Download } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/Button";

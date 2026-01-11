@@ -1,7 +1,7 @@
 "use client";
 
-import { useBookStore } from "@/lib/book/bookContext";
-import { Step } from "@/lib/book/types";
+import { useBookStore } from "@/context/bookStore";
+import { Step } from "@/context/types/book";
 import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
 import { useSearchParams } from "next/navigation";
 import AILoadingStep from "./_components/AILoadingStep";

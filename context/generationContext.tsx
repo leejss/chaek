@@ -1,7 +1,7 @@
 "use client";
 
 import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { ChapterContent, GenerationProgress } from "@/lib/book/types";
+import { ChapterContent, GenerationProgress } from "@/context/types/generation";
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { createContext, useContext, useState } from "react";

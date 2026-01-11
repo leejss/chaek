@@ -8,10 +8,13 @@ import {
   ClaudeModel,
   GeminiModel,
 } from "@/lib/ai/config";
-import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
+import { bookStoreActions, useBookStore } from "@/context/bookStore";
+import {
+  settingsStoreActions,
+  useSettingsStore,
+} from "@/context/settingsStore";
 import { createBookAction } from "@/lib/actions/book";
 import { generateTocAction } from "@/lib/actions/ai";
-import { useSettingsStore } from "@/lib/book/settingsStore";
 import {
   FileText,
   RefreshCw,
@@ -27,13 +30,14 @@ export default function TOCReviewStep() {
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const bookTitle = useBookStore((state) => state.bookTitle);
   const sourceText = useBookStore((state) => state.sourceText);
-  const aiConfiguration = useBookStore((state) => state.aiConfiguration);
+  const aiConfiguration = useSettingsStore((state) => state.aiConfiguration);
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
 
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const { setSelectedModel, setTocResult, updateDraft } = bookStoreActions;
+  const { setTocResult, updateDraft } = bookStoreActions;
+  const { setContentAiConfiguration } = settingsStoreActions;
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
@@ -271,7 +275,7 @@ export default function TOCReviewStep() {
                       const modelId = e.target.value;
                       const providerId = getProviderByModel(modelId);
                       if (providerId) {
-                        setSelectedModel(
+                        setContentAiConfiguration(
                           providerId,
                           modelId as GeminiModel | ClaudeModel,
                         );
