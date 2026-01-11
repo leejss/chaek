@@ -29,7 +29,10 @@ export default function ChapterContentDisplay() {
     contentToDisplay = currentChapterContent;
     isStreaming = !awaitingChapterDecision;
   } else if (viewingChapterIndex < chapters.length) {
-    contentToDisplay = chapters[viewingChapterIndex].content;
+    const chapter = chapters[viewingChapterIndex];
+    if (chapter) {
+      contentToDisplay = chapter.content;
+    }
     isStreaming = false;
   }
 

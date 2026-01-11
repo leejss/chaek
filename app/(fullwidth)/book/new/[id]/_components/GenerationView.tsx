@@ -191,6 +191,9 @@ export default function GenerationView(props: GenerationViewProps) {
         });
 
         const chapterTitle = tableOfContents[chapterNum - 1];
+        if (!chapterTitle) {
+          throw new Error("Invalid chapter title");
+        }
         ensureNotCancelled();
 
         const chapterOutline = await generateOutlineAction({

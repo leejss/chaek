@@ -83,7 +83,10 @@ export default function GenerationStep(props: GenerationStepProps) {
       tableOfContents &&
       typeof currentChapterIndex === "number"
     ) {
-      title = tableOfContents[currentChapterIndex];
+      const tocTitle = tableOfContents[currentChapterIndex];
+      if (tocTitle) {
+        title = tocTitle;
+      }
     } else if (viewingChapter) {
       title = viewingChapter.chapterTitle;
     }

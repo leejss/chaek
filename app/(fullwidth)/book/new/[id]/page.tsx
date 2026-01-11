@@ -1,20 +1,30 @@
-import { verifyAccessJWT, accessTokenConfig } from "@/lib/auth";
+import { GenerationStoreProvider } from "@/context/generationContext";
+import { ChapterContent } from "@/context/types/generation";
+import { BookGenerationSettings } from "@/context/types/settings";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { findBookByIdAndUserId } from "@/lib/repositories/bookRepository";
 import { findChaptersByBookIdAndStatus } from "@/lib/repositories/chapterRepository";
-import type { PlanOutput } from "@/lib/ai/schemas/plan";
-import { GenerationStoreProvider } from "@/context/generationContext";
-import { BookGenerationSettings } from "@/context/types/settings";
-import { ChapterContent } from "@/context/types/generation";
-import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 import GenerationView from "./_components/GenerationView";
+import BookGenerationLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function BookGenerationPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<BookGenerationLoading />}>
+      <BookGenerationContent params={params} />
+    </Suspense>
+  );
+}
+
+async function BookGenerationContent({ params }: PageProps) {
   const { id: bookId } = await params;
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(accessTokenConfig.name)?.value;
@@ -36,7 +46,6 @@ export default async function BookGenerationPage({ params }: PageProps) {
     redirect(`/book/${bookId}`);
   }
 
-  // Fetch completed chapters to populate initial state for resume
   const completedChapters = await findChaptersByBookIdAndStatus(
     bookId,
     "completed",

@@ -39,7 +39,9 @@ export default function StepNavigation() {
 
     const currentIndex = STEPS_CONFIG.findIndex((s) => s.id === currentStep);
     if (currentIndex > 0) {
-      const prevStep = STEPS_CONFIG[currentIndex - 1].id;
+      const prevConfig = STEPS_CONFIG[currentIndex - 1];
+      if (!prevConfig) return;
+      const prevStep = prevConfig.id;
       router.push(`/book/new?step=${prevStep}`);
     }
   };
