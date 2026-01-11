@@ -50,7 +50,7 @@ export default function StepNavigation() {
   };
 
   return (
-    <div className="px-6 py-5 border-b border-neutral-100 bg-white sticky top-0 z-10">
+    <div className="px-6 py-5 bg-white sticky top-0 z-10">
       <div className="flex items-center justify-between">
         <button
           type="button"

@@ -12,8 +12,8 @@ import { cn } from "@/utils";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
 import { updateBookAction, saveChapterAction } from "@/lib/actions/book";
-import GenerationStep from "../../_components/GenerationStep";
-import StatusOverviewGeneration from "../../_components/StatusOverviewGeneration";
+import GenerationStep from "@/app/(protected)/book/new/_components/GenerationStep";
+import StatusOverviewGeneration from "@/app/(protected)/book/new/_components/StatusOverviewGeneration";
 import Button from "@/components/Button";
 
 const CANCELLED_MESSAGE = "생성이 취소되었습니다.";

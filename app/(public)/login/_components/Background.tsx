@@ -7,12 +7,12 @@ import {
   useTransform,
   MotionValue,
 } from "motion/react";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 
 function FloatingElement({
   delay,
-  initialX,
-  initialY,
+  initialXPercent,
+  initialYPercent,
   size,
   color,
   mouseX,
@@ -22,8 +22,8 @@ function FloatingElement({
   duration,
 }: {
   delay: number;
-  initialX: number;
-  initialY: number;
+  initialXPercent: number;
+  initialYPercent: number;
   size: number;
   color: string;
   mouseX: MotionValue<number>;
@@ -33,6 +33,8 @@ function FloatingElement({
   duration: number;
 }) {
   const dx = useTransform(mouseX, (x) => {
+    if (typeof window === "undefined") return 0;
+    const initialX = (initialXPercent / 100) * window.innerWidth;
     const distance = x - initialX;
     if (Math.abs(distance) < 400) {
       return (distance > 0 ? -1 : 1) * (400 - Math.abs(distance)) * 0.2;
@@ -41,6 +43,8 @@ function FloatingElement({
   });
 
   const dy = useTransform(mouseY, (y) => {
+    if (typeof window === "undefined") return 0;
+    const initialY = (initialYPercent / 100) * window.innerHeight;
     const distance = y - initialY;
     if (Math.abs(distance) < 400) {
       return (distance > 0 ? -1 : 1) * (400 - Math.abs(distance)) * 0.2;
@@ -48,7 +52,6 @@ function FloatingElement({
     return 0;
   });
 
-  // Smooth out the interaction
   const springX = useSpring(dx, { stiffness: 150, damping: 20 });
   const springY = useSpring(dy, { stiffness: 150, damping: 20 });
 
@@ -56,8 +59,8 @@ function FloatingElement({
     <motion.div
       style={{
         position: "absolute",
-        left: initialX,
-        top: initialY,
+        left: `${initialXPercent}%`,
+        top: `${initialYPercent}%`,
         x: springX,
         y: springY,
       }}
@@ -82,7 +85,6 @@ function FloatingElement({
           borderRadius: "50%",
           backgroundColor: color,
           filter: "blur(30px)",
-          // Center the element relative to its position point
           transform: "translate(-50%, -50%)",
         }}
       />
@@ -90,10 +92,10 @@ function FloatingElement({
   );
 }
 
-interface Element {
+interface FloatingElementData {
   id: number;
-  initialX: number;
-  initialY: number;
+  initialXPercent: number;
+  initialYPercent: number;
   size: number;
   delay: number;
   color: string;
@@ -102,31 +104,23 @@ interface Element {
   duration: number;
 }
 
+const ELEMENTS: FloatingElementData[] = Array.from({ length: 15 }).map(
+  (_, i) => ({
+    id: i,
+    initialXPercent: Math.random() * 100,
+    initialYPercent: Math.random() * 100,
+    size: 100 + Math.random() * 300,
+    delay: Math.random() * 5,
+    color: i % 2 === 0 ? "#60a5fa" : "#38bdf8",
+    driftX: Math.random() * 50 - 25,
+    driftY: Math.random() * 50 - 25,
+    duration: 10 + Math.random() * 10,
+  }),
+);
+
 export function Background() {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-
-  const elements = useSyncExternalStore<Element[]>(
-    () => {
-      return () => {};
-    },
-    () => {
-      if (typeof window === "undefined") return [];
-
-      return Array.from({ length: 15 }).map((_, i) => ({
-        id: i,
-        initialX: Math.random() * window.innerWidth,
-        initialY: Math.random() * window.innerHeight,
-        size: 100 + Math.random() * 300,
-        delay: Math.random() * 5,
-        color: i % 2 === 0 ? "#60a5fa" : "#38bdf8",
-        driftX: Math.random() * 50 - 25,
-        driftY: Math.random() * 50 - 25,
-        duration: 10 + Math.random() * 10,
-      }));
-    },
-    () => [],
-  );
 
   const moveX = useSpring(0, { stiffness: 50, damping: 20 });
   const moveY = useSpring(0, { stiffness: 50, damping: 20 });
@@ -148,18 +142,17 @@ export function Background() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [moveX, moveY, mouseX, mouseY]);
 
-
   return (
     <motion.div
       className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-white"
       style={{ x: moveX, y: moveY }}
     >
-      {elements.map((el) => (
+      {ELEMENTS.map((el) => (
         <FloatingElement
           key={el.id}
           delay={el.delay}
-          initialX={el.initialX}
-          initialY={el.initialY}
+          initialXPercent={el.initialXPercent}
+          initialYPercent={el.initialYPercent}
           size={el.size}
           color={el.color}
           mouseX={mouseX}
