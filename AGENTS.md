@@ -33,7 +33,7 @@
 import { z } from "zod";
 import { streamText } from "ai";
 import { HttpError } from "@/lib/errors";
-import { BookContextState } from "@/lib/book/types";
+import { BookState } from "@/context/types/book";
 ```
 
 ### Formatting
@@ -66,7 +66,7 @@ type Result = { ok: true; data: T } | { ok: false; error: Error };
 ```typescript
 const DEFAULT_MODEL = "gemini-3-flash-preview";
 enum AIProvider { GOOGLE = "google", ANTHROPIC = "anthropic" }
-interface BookContextState { ... }
+interface BookState { ... }
 function generateTOC() { ... }
 ```
 
@@ -110,7 +110,7 @@ const Button: React.FC<ButtonProps> = ({ children, variant = "primary", ...props
 ### State Management
 - Zustand for global state with `devtools` middleware
 - Combine initial state with actions using `combine()`
-- Store files named with "Store" suffix (e.g., `bookContext.tsx`, `settingsStore.ts`)
+- Store files in `context/` directory with "Store" suffix (e.g., `bookStore.ts`, `settingsStore.ts`)
 - Type state and actions separately
 
 ### API Routes
@@ -134,6 +134,7 @@ const Button: React.FC<ButtonProps> = ({ children, variant = "primary", ...props
 
 ### File Organization
 - `app/` - Next.js app directory (routes)
+- `context/` - Global state stores and related types
 - `lib/` - Shared business logic, utilities
 - `db/` - Database schema and connection
 - `utils/` - Pure utility functions
