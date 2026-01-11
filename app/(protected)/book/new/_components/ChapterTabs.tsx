@@ -12,14 +12,11 @@ export interface ChapterTabsProps {
 export default function ChapterTabs(props: ChapterTabsProps) {
   const { tableOfContents } = props;
   const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
+    (state) => state.chapters.length,
   );
   const chapters = useGenerationStore((state) => state.chapters);
   const currentChapterIndex = useGenerationStore(
     (state) => state.currentChapterIndex,
-  );
-  const setViewingChapterIndex = useGenerationStore(
-    (state) => state.actions.setViewingChapterIndex,
   );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +59,7 @@ export default function ChapterTabs(props: ChapterTabsProps) {
               key={index}
               onClick={() => {
                 if (!isLocked) {
-                  setViewingChapterIndex(index);
+                  // Viewing index is computed from chapters.length
                 }
               }}
               disabled={isLocked}

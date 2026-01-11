@@ -1,4 +1,3 @@
-import { GenerationStoreProvider } from "@/context/generationContext";
 import { ChapterContent } from "@/context/types/generation";
 import { BookGenerationSettings } from "@/context/types/settings";
 import type { PlanOutput } from "@/lib/ai/schemas/plan";
@@ -58,7 +57,6 @@ async function BookGenerationContent({ params }: PageProps) {
     isComplete: true,
   }));
 
-  // If book content is stale/empty but we have chapters, reconstruct it
   let initialContent = bookData.content || "";
   if (!initialContent && initialChapters.length > 0) {
     initialContent = initialChapters.map((c) => c.content).join("\n\n");
@@ -66,24 +64,18 @@ async function BookGenerationContent({ params }: PageProps) {
 
   const { title, id, status, tableOfContents, sourceText, bookPlan } = bookData;
 
-  const init = {
-    chapters: initialChapters,
-    bookPlan: (bookPlan as PlanOutput | null) || undefined,
-  };
-
   return (
-    <GenerationStoreProvider key={bookData.id} init={init}>
-      <GenerationView
-        bookId={id}
-        bookTitle={title}
-        bookStatus={status}
-        tableOfContents={tableOfContents ?? []}
-        sourceText={sourceText || ""}
-        chapters={initialChapters}
-        generationSettings={
-          bookData.generationSettings as BookGenerationSettings
-        }
-      />
-    </GenerationStoreProvider>
+    <GenerationView
+      bookId={id}
+      bookTitle={title}
+      bookStatus={status}
+      tableOfContents={tableOfContents ?? []}
+      sourceText={sourceText || ''}
+      chapters={initialChapters}
+      generationSettings={
+        bookData.generationSettings as BookGenerationSettings
+      }
+      bookPlan={(bookPlan as PlanOutput | null) || undefined}
+    />
   );
 }

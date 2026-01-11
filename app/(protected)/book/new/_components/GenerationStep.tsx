@@ -1,6 +1,6 @@
 "use client";
 
-import { useGenerationStore } from "@/context/generationContext";
+import { generationActions, useGenerationStore } from '@/context/generationContext';
 import { Section } from "@/context/types/book";
 import { BookOpen, Check, Copy, Download } from "lucide-react";
 import { useState } from "react";
@@ -19,7 +19,7 @@ export default function GenerationStep(props: GenerationStepProps) {
   ) || { phase: "idle" };
   const chapters = useGenerationStore((state) => state.chapters);
   const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
+    (state) => state.chapters.length,
   );
   const currentChapterIndex = useGenerationStore(
     (state) => state.currentChapterIndex,
@@ -30,19 +30,14 @@ export default function GenerationStep(props: GenerationStepProps) {
   const currentChapterContent = useGenerationStore(
     (state) => state.currentChapterContent,
   );
-  const cancelGeneration = useGenerationStore(
-    (state) => state.actions.cancelGeneration,
-  );
-  const confirmChapter = useGenerationStore(
-    (state) => state.actions.confirmChapter,
-  );
+  const { cancel, confirmChapter } = generationActions;
 
   const { currentSection, currentOutline } = generationProgress;
 
   const [isCopied, setIsCopied] = useState(false);
 
   const isViewingCurrentChapter =
-    currentChapterIndex !== null && viewingChapterIndex === currentChapterIndex;
+    currentChapterIndex >= 0 && viewingChapterIndex === currentChapterIndex;
 
   const viewingChapter =
     viewingChapterIndex < chapters.length
@@ -81,7 +76,7 @@ export default function GenerationStep(props: GenerationStepProps) {
     if (
       isViewingCurrentChapter &&
       tableOfContents &&
-      typeof currentChapterIndex === "number"
+      currentChapterIndex >= 0
     ) {
       const tocTitle = tableOfContents[currentChapterIndex];
       if (tocTitle) {
@@ -112,9 +107,9 @@ export default function GenerationStep(props: GenerationStepProps) {
       <div className="max-w-4xl mx-auto py-8 px-4 md:px-6 pb-40">
         {/* Header Section */}
         <div className="mb-8 space-y-6">
-          {isViewingCurrentChapter &&
-            tableOfContents &&
-            typeof currentChapterIndex === "number" && (
+            {isViewingCurrentChapter &&
+              tableOfContents &&
+              currentChapterIndex >= 0 && (
               <div className="bg-white p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="inline-flex items-center gap-2 text-sm font-bold px-3 py-1 bg-black text-white rounded-full">
@@ -243,9 +238,9 @@ export default function GenerationStep(props: GenerationStepProps) {
               <div className="flex w-full md:w-auto flex-1 gap-3 md:ml-auto">
                 <Button
                   variant="outline"
-                  onClick={cancelGeneration}
+                  onClick={cancel}
                   className="flex-1 md:flex-none md:min-w-[120px] h-12 rounded-full border-neutral-200 text-black font-bold hover:bg-neutral-100 hover:border-neutral-300"
-                  disabled={!cancelGeneration}
+                  disabled={!cancel}
                 >
                   DISCARD
                 </Button>

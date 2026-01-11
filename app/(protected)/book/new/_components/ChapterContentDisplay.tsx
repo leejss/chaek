@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 
 export default function ChapterContentDisplay() {
   const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
+    (state) => state.chapters.length,
   );
   const currentChapterIndex = useGenerationStore(
     (state) => state.currentChapterIndex,
@@ -20,7 +20,7 @@ export default function ChapterContentDisplay() {
   );
 
   const isViewingCurrentGeneration =
-    currentChapterIndex !== null && viewingChapterIndex === currentChapterIndex;
+    currentChapterIndex >= 0 && viewingChapterIndex === currentChapterIndex;
 
   let contentToDisplay = "";
   let isStreaming = false;
