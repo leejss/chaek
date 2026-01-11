@@ -79,6 +79,25 @@ export const books = pgTable(
     content: text("content").notNull().default(""),
     tableOfContents: text("table_of_contents").array(),
     sourceText: text("source_text"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("books_user_id_idx").on(table.userId),
+    index("books_updated_at_idx").on(table.updatedAt),
+  ],
+);
+
+export const bookGenerationStates = pgTable(
+  "book_generation_states",
+  {
+    bookId: uuid("book_id")
+      .primaryKey()
+      .references(() => books.id, { onDelete: "cascade" }),
     status: bookStatusEnum("status").notNull().default("waiting"),
     currentChapterIndex: integer("current_chapter_index"),
     error: text("error"),
@@ -93,9 +112,8 @@ export const books = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("books_user_id_idx").on(table.userId),
-    index("books_status_idx").on(table.status),
-    index("books_updated_at_idx").on(table.updatedAt),
+    index("book_generation_states_status_idx").on(table.status),
+    index("book_generation_states_updated_at_idx").on(table.updatedAt),
   ],
 );
 
