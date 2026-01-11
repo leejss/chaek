@@ -8,13 +8,12 @@ import {
 import { BookSettings, BookGenerationSettings } from "@/context/types/settings";
 import { Section } from "@/context/types/book";
 import { fetchStreamSection } from "@/lib/ai/fetch";
-import { cn } from "@/utils";
 import { deductCreditsAction } from "@/lib/actions/credits";
 import { generatePlanAction, generateOutlineAction } from "@/lib/actions/ai";
 import { updateBookAction, saveChapterAction } from "@/lib/actions/book";
-import GenerationStep from "@/app/(protected)/book/new/_components/GenerationStep";
-import StatusOverviewGeneration from "@/app/(protected)/book/new/_components/StatusOverviewGeneration";
-import Button from "@/components/Button";
+import CompletedView from "./CompletedView";
+import GeneratingView from "./GeneratingView";
+import IdleView from "./IdleView";
 
 const CANCELLED_MESSAGE = "생성이 취소되었습니다.";
 
@@ -45,7 +44,7 @@ export interface GenerationViewProps {
     isComplete: boolean;
   }[];
   generationSettings: BookGenerationSettings;
-  savedBookId: string;
+  bookId: string;
 }
 
 export default function GenerationView(props: GenerationViewProps) {
@@ -56,7 +55,7 @@ export default function GenerationView(props: GenerationViewProps) {
     sourceText,
     chapters,
     generationSettings,
-    savedBookId,
+    bookId,
   } = props;
 
   const storeApi = useGenerationStoreApi();
@@ -136,7 +135,7 @@ export default function GenerationView(props: GenerationViewProps) {
       const prepareGeneration = async () => {
         if (chapters.length === 0) {
           setIsDeductingCredits(true);
-          await deductCreditsAction(savedBookId);
+          await deductCreditsAction(bookId);
           setIsDeductingCredits(false);
 
           actions.setupGeneration(totalChapters);
@@ -165,7 +164,7 @@ export default function GenerationView(props: GenerationViewProps) {
         actions.updateGenerationProgress({ phase: "planning" });
         ensureNotCancelled();
         bookPlan = await generatePlanAction({
-          bookId: savedBookId,
+          bookId: bookId,
           sourceText: sourceText || "",
           toc: tableOfContents,
           provider: generationSettings.provider,
@@ -197,7 +196,7 @@ export default function GenerationView(props: GenerationViewProps) {
         ensureNotCancelled();
 
         const chapterOutline = await generateOutlineAction({
-          bookId: savedBookId,
+          bookId: bookId,
           toc: tableOfContents,
           chapterNumber: chapterNum,
           sourceText,
@@ -277,7 +276,7 @@ export default function GenerationView(props: GenerationViewProps) {
         const { currentChapterContent } = storeApi.getState();
 
         await saveChapterAction(
-          savedBookId,
+          bookId,
           chapterNum,
           chapterTitle,
           currentChapterContent,
@@ -298,7 +297,7 @@ export default function GenerationView(props: GenerationViewProps) {
         actions.completeGeneration();
         flushDraft();
         const { streamingContent } = storeApi.getState();
-        await updateBookAction(savedBookId, {
+        await updateBookAction(bookId, {
           status: "completed",
           content: streamingContent,
         });
@@ -340,8 +339,8 @@ export default function GenerationView(props: GenerationViewProps) {
       });
       actions.failGeneration(message);
 
-      if (savedBookId && !abortRef.current?.signal.aborted) {
-        await updateBookAction(savedBookId, {
+      if (bookId && !abortRef.current?.signal.aborted) {
+        await updateBookAction(bookId, {
           status: "failed",
         });
       }
@@ -372,148 +371,33 @@ export default function GenerationView(props: GenerationViewProps) {
   const isResumable = bookStatus === "generating" || bookStatus === "failed";
 
   if (isCompleted) {
-    return (
-      <div className="max-w-3xl mx-auto pb-32">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h1 className="text-4xl font-extrabold text-black mb-4 tracking-tight">
-            BOOK GENERATED
-          </h1>
-          <p className="text-neutral-500 font-medium mb-8">
-            “{bookTitle || "Untitled Book"}” has been successfully created.
-          </p>
-          <a
-            href={`/book/${savedBookId}`}
-            className="inline-flex items-center justify-center gap-2 bg-black hover:bg-neutral-800 text-white font-bold h-14 px-8 rounded-full text-lg transition-colors"
-          >
-            VIEW BOOK
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </a>
-        </div>
-      </div>
-    );
+    return <CompletedView bookTitle={bookTitle} bookId={bookId} />;
   }
 
   if (isActuallyGenerating) {
     return (
-      <div className="max-w-3xl mx-auto pb-32">
-        <GenerationStep tableOfContents={tableOfContents} />
-        <StatusOverviewGeneration
-          bookTitle={bookTitle}
-          sourceText={sourceText}
-          tableOfContents={tableOfContents}
-          generationSettings={generationSettings}
-          onCancel={handleCancel}
-          isGenerating={isActuallyGenerating}
-        />
-        {generationProgress.error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
-            {generationProgress.error}
-          </div>
-        )}
-      </div>
+      <GeneratingView
+        bookTitle={bookTitle}
+        sourceText={sourceText}
+        tableOfContents={tableOfContents}
+        generationSettings={generationSettings}
+        onCancel={handleCancel}
+        isGenerating={isActuallyGenerating}
+        error={generationProgress.error}
+      />
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto pb-32">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-black mb-4 tracking-tight">
-          {bookTitle || "Untitled Book"}
-        </h1>
-      </div>
-
-      <div className="bg-white border border-neutral-200 rounded-2xl p-8 mb-8">
-        <div className="flex items-center gap-2 mb-6 border-b border-neutral-100 pb-4">
-          <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
-            Table of Contents
-          </h3>
-        </div>
-        <div className="space-y-2">
-          {tableOfContents.map((chapter, idx) => {
-            const isFinished = chapters.some(
-              (c) => c.chapterNumber === idx + 1,
-            );
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  "flex items-baseline gap-4 text-base p-3 rounded-lg transition-colors",
-                  isFinished ? "bg-green-50" : "hover:bg-neutral-50",
-                )}
-              >
-                <span
-                  className={cn(
-                    "font-mono text-sm font-bold w-8 text-right",
-                    isFinished ? "text-green-600" : "text-neutral-400",
-                  )}
-                >
-                  {isFinished ? "✓" : `${String(idx + 1).padStart(2, "0")}.`}
-                </span>
-                <span
-                  className={cn(
-                    "font-bold",
-                    isFinished ? "text-green-800" : "text-black",
-                  )}
-                >
-                  {chapter}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <Button
-          onClick={handleStart}
-          disabled={isProcessing}
-          className={cn(
-            "w-full h-16 text-lg font-bold rounded-full",
-            isResumable && "bg-black hover:bg-neutral-800 text-white",
-          )}
-        >
-          {isDeductingCredits
-            ? "PROCESSING..."
-            : isProcessing
-            ? "PROCESSING..."
-            : isResumable
-            ? "RESUME GENERATION"
-            : "START GENERATION"}
-        </Button>
-      </div>
-
-      {generationProgress.error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-center">
-          {generationProgress.error}
-        </div>
-      )}
-    </div>
+    <IdleView
+      bookTitle={bookTitle}
+      tableOfContents={tableOfContents}
+      chapters={chapters}
+      isProcessing={isProcessing}
+      isDeductingCredits={isDeductingCredits}
+      isResumable={isResumable}
+      error={generationProgress.error}
+      onStart={handleStart}
+    />
   );
 }

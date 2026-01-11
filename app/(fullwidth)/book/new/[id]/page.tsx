@@ -74,7 +74,7 @@ async function BookGenerationContent({ params }: PageProps) {
   return (
     <GenerationStoreProvider key={bookData.id} init={init}>
       <GenerationView
-        savedBookId={id}
+        bookId={id}
         bookTitle={title}
         bookStatus={status}
         tableOfContents={tableOfContents ?? []}
