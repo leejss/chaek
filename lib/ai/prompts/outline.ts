@@ -31,15 +31,24 @@ function buildInstructions(language: string): string {
 }
 
 function buildPlanContext(plan: PlanOutput, chapterNumber: number): string {
-  const guidelines =
-    plan.chapterGuidelines.find((g) => g.chapterIndex === chapterNumber - 1)
-      ?.guidelines || "N/A";
+  const chapterPlan = plan.chapterGuidelines.find(
+    (g) => g.chapterIndex === chapterNumber - 1,
+  );
+
+  const guidelines = chapterPlan?.guidelines || "N/A";
+  const fromPrevious = chapterPlan?.continuity.fromPrevious || "N/A";
+  const toNext = chapterPlan?.continuity.toNext || "N/A";
+  const recurringElements = chapterPlan?.continuity.recurringElements || [];
 
   return `
 <book_plan_context>
 Target Audience: ${plan.targetAudience}
 Key Themes: ${plan.keyThemes.join(", ")}
 Chapter Guidelines: ${guidelines}
+Cross-Chapter Continuity:
+- From Previous: ${fromPrevious}
+- To Next: ${toNext}
+- Recurring Elements: ${recurringElements.join(", ")}
 </book_plan_context>
 `.trim();
 }

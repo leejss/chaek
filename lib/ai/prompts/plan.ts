@@ -18,7 +18,10 @@ function buildInstructions(language: string): string {
 3. Identify Key Themes that should weave through the book.
 4. Provide specific guidelines for EACH chapter in the <table_of_contents> to ensure they cover the necessary breadth and depth without overlapping unnecessarily.
 5. The output MUST be in ${language}.
-6. Respond with a VALID JSON object only (no markdown, no CDATA, no prose) matching the schema: { "targetAudience": string, "writingStyle": string, "keyThemes": string[], "chapterGuidelines": [{ "chapterIndex": number, "title": string, "guidelines": string }] }. Arrays must be real arrays, not embedded in strings.
+6. Strengthen cross-chapter cohesion: for each chapter, explicitly state how it continues from the previous chapter and how it sets up the next chapter.
+7. Use recurring elements (terms/metaphors/examples) consistently across chapters, and explicitly list them.
+8. Prevent redundancy: for each chapter, list chapter indices it could overlap with and clarify the distinction.
+9. Respond with a VALID JSON object only (no markdown, no CDATA, no prose) matching the schema: { "targetAudience": string, "writingStyle": string, "keyThemes": string[], "chapterGuidelines": [{ "chapterIndex": number, "title": string, "guidelines": string, "continuity": { "fromPrevious": string, "toNext": string, "recurringElements": string[], "avoidOverlapWith": number[] } }] }. Arrays must be real arrays, not embedded in strings.
 </instructions>
 `.trim();
 }
