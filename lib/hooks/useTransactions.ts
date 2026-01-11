@@ -25,7 +25,10 @@ async function fetcher<T>(url: string): Promise<T> {
   return res.json();
 }
 
-function getKey(index: number, previousData: TransactionsResponse | null): string | null {
+function getKey(
+  index: number,
+  previousData: TransactionsResponse | null,
+): string | null {
   if (index === 0) {
     return "/api/credits/transactions";
   }
@@ -42,7 +45,7 @@ export function useTransactions() {
   >(getKey, fetcher);
 
   const transactions = data?.flatMap((page) => page.transactions) ?? [];
-  const hasMore = data && data.length > 0 && data[data.length - 1].nextCursor;
+  const hasMore = !!data?.[data.length - 1]?.nextCursor;
 
   return {
     transactions,

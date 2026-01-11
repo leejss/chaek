@@ -1,4 +1,3 @@
-
 import { db } from "../db";
 import { chapters, books } from "../db/schema";
 import { count, desc, eq } from "drizzle-orm";
@@ -8,7 +7,8 @@ async function checkChapters() {
 
   try {
     const totalChapters = await db.select({ count: count() }).from(chapters);
-    console.log(`Total chapters in DB: ${totalChapters[0].count}`);
+    const totalRow = totalChapters[0];
+    console.log(`Total chapters in DB: ${totalRow?.count ?? 0}`);
 
     const recentChapters = await db
       .select({
@@ -19,7 +19,7 @@ async function checkChapters() {
         status: chapters.status,
         contentLength: chapters.content, // We'll just check length roughly
         updatedAt: chapters.updatedAt,
-        bookTitle: books.title
+        bookTitle: books.title,
       })
       .from(chapters)
       .leftJoin(books, eq(chapters.bookId, books.id))

@@ -25,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Button from "@/components/Button";
+import { BookGenerationSettings } from "@/context/types/settings";
 
 export default function TOCReviewStep() {
   const tableOfContents = useBookStore((state) => state.tableOfContents);
@@ -88,12 +89,12 @@ export default function TOCReviewStep() {
         getProviderByModel(selectedModel) ||
         AIProvider.ANTHROPIC;
 
-      const generationSettings = {
+      const generationSettings: BookGenerationSettings = {
         language,
         chapterCount,
         userPreference,
         provider,
-        model: selectedModel as GeminiModel | ClaudeModel,
+        model: selectedModel,
       };
 
       await createBookAction(
