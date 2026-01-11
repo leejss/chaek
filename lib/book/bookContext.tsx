@@ -7,11 +7,9 @@ import {
   ClaudeModel,
   GeminiModel,
 } from "@/lib/ai/config";
-import { fetchTableOfContent } from "@/lib/ai/fetch";
 import { Book, BookContextState, Step, LoadingState } from "@/lib/book/types";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
-import { useSettingsStore } from "./settingsStore";
 
 const STEPS: Step[] = ["settings", "source_input", "toc_review"];
 
@@ -107,62 +105,20 @@ export const useBookStore = create(
           );
         },
 
-        generateTOC: async (sourceText: string) => {
-          if (!sourceText.trim()) return;
-
+        setTocResult: (title: string, chapters: string[]) => {
           set(
             {
-              loadingState: "generating_toc",
-              error: null,
-              sourceText,
+              bookTitle: title,
+              tableOfContents: chapters,
               completedSteps: new Set<Step>([
                 ...get().completedSteps,
                 "source_input",
+                "toc_review",
               ]),
             },
             false,
-            "book/generateTOC_start",
+            "book/setTocResult",
           );
-
-          try {
-            const { aiConfiguration } = get();
-            const settings = useSettingsStore.getState();
-            const { data } = await fetchTableOfContent(
-              sourceText,
-              aiConfiguration.toc.provider,
-              aiConfiguration.toc.model,
-              settings,
-            );
-            const { title, chapters } = data;
-            set(
-              {
-                loadingState: "idle",
-                bookTitle: title,
-                tableOfContents: chapters,
-                completedSteps: new Set<Step>([
-                  ...get().completedSteps,
-                  "toc_review",
-                ]),
-              },
-              false,
-              "book/generateTOC_success",
-            );
-          } catch (err) {
-            console.error("TOC generation failed:", err);
-            set(
-              {
-                loadingState: "error",
-                error: "TOC 생성에 실패했습니다. 다시 시도해 주세요.",
-              },
-              false,
-              "book/generateTOC_error",
-            );
-          }
-        },
-
-        regenerateTOC: async () => {
-          const { sourceText } = get();
-          await actions.generateTOC(sourceText || "");
         },
 
         setLoadingState: (state: LoadingState) => {

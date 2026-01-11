@@ -10,6 +10,7 @@ import {
 } from "@/lib/ai/config";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
 import { createBookAction } from "@/lib/actions/book";
+import { generateTocAction } from "@/lib/actions/ai";
 import { useSettingsStore } from "@/lib/book/settingsStore";
 import {
   FileText,
@@ -27,13 +28,12 @@ export default function TOCReviewStep() {
   const bookTitle = useBookStore((state) => state.bookTitle);
   const sourceText = useBookStore((state) => state.sourceText);
   const aiConfiguration = useBookStore((state) => state.aiConfiguration);
-  const loadingState = useBookStore((state) => state.loadingState);
-  const isLoading = loadingState === "generating_toc";
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
 
-  const { setSelectedModel, regenerateTOC, updateDraft } = bookStoreActions;
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const { setSelectedModel, setTocResult, updateDraft } = bookStoreActions;
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
@@ -100,6 +100,27 @@ export default function TOCReviewStep() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleRegenerateTOC = async () => {
+    if (!sourceText?.trim() || isRegenerating) return;
+
+    setIsRegenerating(true);
+    try {
+      const result = await generateTocAction({
+        sourceText,
+        language,
+        chapterCount,
+        userPreference,
+        provider: aiConfiguration.toc.provider,
+        model: aiConfiguration.toc.model,
+      });
+      setTocResult(result.title, result.chapters);
+    } catch (err) {
+      console.error("TOC regeneration failed:", err);
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -276,14 +297,14 @@ export default function TOCReviewStep() {
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <Button
                   variant="outline"
-                  onClick={regenerateTOC}
-                  disabled={isLoading}
+                  onClick={handleRegenerateTOC}
+                  disabled={isRegenerating}
                   className="w-full sm:w-auto gap-2 px-6 h-12 bg-white border-2 border-neutral-200 text-black hover:border-black hover:bg-white rounded-full font-bold uppercase tracking-wide text-xs"
                 >
                   <RefreshCw
                     size={14}
                     strokeWidth={3}
-                    className={isLoading ? "animate-spin" : ""}
+                    className={isRegenerating ? "animate-spin" : ""}
                   />
                   Regenerate
                 </Button>
@@ -291,7 +312,7 @@ export default function TOCReviewStep() {
                   variant="primary"
                   onClick={handleStartWriting}
                   disabled={
-                    isLoading || isSaving || tableOfContents.length === 0
+                    isRegenerating || isSaving || tableOfContents.length === 0
                   }
                   className="w-full sm:w-auto gap-2 px-8 h-12 rounded-full font-bold uppercase tracking-wide text-xs shadow-none"
                 >

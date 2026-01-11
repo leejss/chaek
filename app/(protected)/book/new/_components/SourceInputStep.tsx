@@ -1,29 +1,48 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
+import { useSettingsStore } from "@/lib/book/settingsStore";
+import { generateTocAction } from "@/lib/actions/ai";
 import Button from "@/components/Button";
 
 export default function SourceInputStep() {
   const router = useRouter();
-  const sourceText = useBookStore((state) => state.sourceText);
-  const loadingState = useBookStore((state) => state.loadingState);
-  const tableOfContents = useBookStore((state) => state.tableOfContents);
-  const { updateDraft, generateTOC } = bookStoreActions;
-  const isLoading = loadingState === "generating_toc";
-  const wasLoadingRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (
-      wasLoadingRef.current &&
-      loadingState === "idle" &&
-      tableOfContents.length > 0
-    ) {
+  const sourceText = useBookStore((state) => state.sourceText);
+  const aiConfiguration = useBookStore((state) => state.aiConfiguration);
+  const { updateDraft, setTocResult } = bookStoreActions;
+
+  const settings = useSettingsStore();
+
+  const handleGenerateTOC = async () => {
+    if (!sourceText?.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await generateTocAction({
+        sourceText,
+        language: settings.language,
+        chapterCount: settings.chapterCount,
+        userPreference: settings.userPreference,
+        provider: aiConfiguration.toc.provider,
+        model: aiConfiguration.toc.model,
+      });
+
+      setTocResult(result.title, result.chapters);
       router.push("/book/new?step=toc_review");
+    } catch (err) {
+      console.error("TOC generation failed:", err);
+      setError("TOC 생성에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsLoading(false);
     }
-    wasLoadingRef.current = loadingState === "generating_toc";
-  }, [loadingState, tableOfContents.length, router]);
+  };
 
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
@@ -49,10 +68,16 @@ export default function SourceInputStep() {
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-medium">
+          {error}
+        </div>
+      )}
+
       <div className="flex justify-end pt-6">
         <Button
-          onClick={() => generateTOC(sourceText || "")}
-          disabled={!sourceText}
+          onClick={handleGenerateTOC}
+          disabled={!sourceText?.trim() || isLoading}
           isLoading={isLoading}
           className="w-full md:w-auto h-14 px-12 text-lg font-bold rounded-full"
         >
