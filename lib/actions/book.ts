@@ -29,7 +29,12 @@ export async function createBookAction(
     })
     .returning({ id: books.id });
 
-  redirect(`/book/new/${result[0].id}`);
+  const inserted = result[0];
+  if (!inserted) {
+    throw new Error("Failed to create book");
+  }
+
+  redirect(`/book/new/${inserted.id}`);
 }
 
 export async function updateBookAction(

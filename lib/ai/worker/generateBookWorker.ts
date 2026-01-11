@@ -196,6 +196,11 @@ async function generateChapter(job: GenerateBookJob) {
     sectionIndex < outline.sections.length;
     sectionIndex++
   ) {
+    const section = outline.sections[sectionIndex];
+    if (!section) {
+      throw new Error("Invalid section");
+    }
+
     const sectionText = await generateDraftText(
       {
         chapterNumber,
@@ -212,8 +217,8 @@ async function generateChapter(job: GenerateBookJob) {
 
     chapterContent += sectionText + "\n\n";
     completedSummaries.push({
-      title: outline.sections[sectionIndex].title,
-      summary: outline.sections[sectionIndex].summary,
+      title: section.title,
+      summary: section.summary,
     });
   }
 

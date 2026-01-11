@@ -20,9 +20,14 @@ export async function getUserBalance(userId: string) {
     return { balance: 0, freeCredits: 0 };
   }
 
+  const row = result[0];
+  if (!row) {
+    return { balance: 0, freeCredits: 0 };
+  }
+
   return {
-    balance: result[0].balance,
-    freeCredits: result[0].freeCredits,
+    balance: row.balance,
+    freeCredits: row.freeCredits,
   };
 }
 
@@ -123,11 +128,12 @@ export async function deductCredits(
       .where(eq(creditBalances.userId, userId))
       .limit(1);
 
-    if (currentBalance.length === 0 || currentBalance[0].balance < amount) {
+    const current = currentBalance[0];
+    if (!current || current.balance < amount) {
       throw new Error("Insufficient credits");
     }
 
-    const newBalance = currentBalance[0].balance - amount;
+    const newBalance = current.balance - amount;
 
     await tx
       .update(creditBalances)
@@ -189,7 +195,12 @@ export async function refundCredits(
         throw new Error("User credit balance not found");
       }
 
-      const newBalance = Math.max(0, currentBalance[0].balance - amount);
+      const current = currentBalance[0];
+      if (!current) {
+        throw new Error("User credit balance not found");
+      }
+
+      const newBalance = Math.max(0, current.balance - amount);
 
       await tx
         .update(creditBalances)
@@ -254,7 +265,12 @@ export async function refundUsageCredits(
       throw new Error("User credit balance not found");
     }
 
-    const newBalance = currentBalance[0].balance + amount;
+    const current = currentBalance[0];
+    if (!current) {
+      throw new Error("User credit balance not found");
+    }
+
+    const newBalance = current.balance + amount;
 
     await tx
       .update(creditBalances)
@@ -282,7 +298,8 @@ export async function grantFreeSignupCredits(userId: string): Promise<void> {
     .where(eq(creditBalances.userId, userId))
     .limit(1);
 
-  if (existingBalance.length > 0 && existingBalance[0].freeCredits > 0) {
+  const existingRow = existingBalance[0];
+  if (existingRow && existingRow.freeCredits > 0) {
     return;
   }
 
@@ -338,7 +355,8 @@ export async function initializeBookAndDeductCredits(
       .where(eq(books.id, bookId))
       .limit(1);
 
-    if (existingBook.length > 0 && existingBook[0].status === "completed") {
+    const existingBookRow = existingBook[0];
+    if (existingBookRow && existingBookRow.status === "completed") {
       throw new HttpError(409, "Book already completed");
     }
 
@@ -348,7 +366,8 @@ export async function initializeBookAndDeductCredits(
       .where(eq(creditBalances.userId, userId))
       .limit(1);
 
-    if (currentBalance.length === 0 || currentBalance[0].balance < cost) {
+    const current = currentBalance[0];
+    if (!current || current.balance < cost) {
       throw new HttpError(402, "Insufficient credits");
     }
 
@@ -383,7 +402,7 @@ export async function initializeBookAndDeductCredits(
         .where(eq(books.id, bookId));
     }
 
-    const newBalance = currentBalance[0].balance - cost;
+    const newBalance = current.balance - cost;
     await tx
       .update(creditBalances)
       .set({

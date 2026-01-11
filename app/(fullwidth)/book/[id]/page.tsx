@@ -38,6 +38,9 @@ export default async function BookDetailPage({ params }: PageProps) {
   }
 
   const bookData = foundBooks[0];
+  if (!bookData) {
+    notFound();
+  }
 
   let content = bookData.content;
 

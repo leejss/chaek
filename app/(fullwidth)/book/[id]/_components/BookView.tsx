@@ -54,6 +54,7 @@ export default function BookView({
           });
 
           const topEntry = sortedEntries[0];
+          if (!topEntry) return;
           const text = topEntry.target.getAttribute("data-heading-text");
           if (text) {
             setActiveText(text);

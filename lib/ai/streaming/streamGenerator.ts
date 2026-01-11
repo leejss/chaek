@@ -149,10 +149,15 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
           chapterNum <= toc.length;
           chapterNum++
         ) {
+          const chapterTitle = toc[chapterNum - 1];
+          if (!chapterTitle) {
+            throw new Error("Invalid chapter title");
+          }
+
           yield* streamChapter(
             bookId,
             chapterNum,
-            toc[chapterNum - 1],
+            chapterTitle,
             bookPlan,
             toc,
             sourceText,
@@ -267,6 +272,9 @@ async function* streamChapter(
     sectionIndex++
   ) {
     const section = outlineResult.sections[sectionIndex];
+    if (!section) {
+      throw new Error("Invalid section");
+    }
 
     yield {
       type: "section_start",

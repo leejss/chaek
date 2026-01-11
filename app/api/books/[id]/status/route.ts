@@ -25,6 +25,7 @@ export async function GET(
     if (found.length === 0) throw new HttpError(404, "Book not found");
 
     const book = found[0];
+    if (!book) throw new HttpError(404, "Book not found");
 
     const chapterRows = await db
       .select()
@@ -36,7 +37,9 @@ export async function GET(
       ? book.tableOfContents.length
       : chapterRows.length;
 
-    const completedChapters = chapterRows.filter((c) => c.status === "completed").length;
+    const completedChapters = chapterRows.filter(
+      (c) => c.status === "completed",
+    ).length;
 
     return NextResponse.json({
       ok: true,
@@ -69,4 +72,3 @@ export async function GET(
     );
   }
 }
-

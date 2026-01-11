@@ -55,9 +55,15 @@ export function extractTOC(markdown: string): TOCItem[] {
   let match;
 
   while ((match = regex.exec(markdown)) !== null) {
-    const text = match[2].trim();
+    const levelMarks = match[1];
+    const rawText = match[2];
+    if (!levelMarks || !rawText) {
+      continue;
+    }
+
+    const text = rawText.trim();
     extracted.push({
-      level: match[1].length,
+      level: levelMarks.length,
       text,
       id: `heading-${text}`,
     });

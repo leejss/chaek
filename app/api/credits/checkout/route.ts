@@ -46,13 +46,18 @@ export async function POST(req: NextRequest) {
       throw new HttpError(404, "User not found");
     }
 
+    const userRow = user[0];
+    if (!userRow) {
+      throw new HttpError(404, "User not found");
+    }
+
     const origin = req.headers.get("origin") || "";
     const checkout = await createCheckout({
       variantId: pkg.variantId,
       userId,
       packageId: pkg.id,
       credits: pkg.credits,
-      userEmail: user[0].email,
+      userEmail: userRow.email,
       successUrl: `${origin}/credits/success`,
       cancelUrl: `${origin}/credits`,
     });

@@ -70,7 +70,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (found[0].status === "completed" || found[0].status === "failed") {
+  const bookRow = found[0];
+  if (!bookRow) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (bookRow.status === "completed" || bookRow.status === "failed") {
     return NextResponse.json({ ok: true });
   }
 
@@ -79,7 +84,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     await refundUsageCredits({
-      userId: found[0].userId,
+      userId: bookRow.userId,
       amount: BOOK_CREATION_COST,
       bookId: job.bookId,
       metadata: {

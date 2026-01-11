@@ -63,7 +63,12 @@ export async function POST(
         updatedAt: new Date(),
       });
     } else {
-      const status = existing[0].status;
+      const existingBook = existing[0];
+      if (!existingBook) {
+        throw new HttpError(404, "Book not found");
+      }
+
+      const status = existingBook.status;
       if (status === "completed") {
         return NextResponse.json(
           { ok: false, error: "Book already completed" },
