@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { bookStoreActions, useBookStore } from "@/lib/book/bookContext";
-import Button from "../../../_components/Button";
+import Button from "@/components/Button";
 
 export default function SourceInputStep() {
   const router = useRouter();

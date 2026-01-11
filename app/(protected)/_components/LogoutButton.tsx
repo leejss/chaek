@@ -13,7 +13,7 @@ import {
 } from "@/lib/authTokens";
 import { sha256Hex } from "@/utils";
 
-import Button from "./Button";
+import Button from "@/components/Button";
 
 import { cn } from "@/utils";
 

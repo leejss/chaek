@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import Button from "@/app/(protected)/_components/Button";
+import Button from "@/components/Button";
 import type { Book } from "@/lib/book/types";
 import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 

@@ -6,7 +6,7 @@ import { desc, eq } from "drizzle-orm";
 import { Library, Plus } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import Button from "../_components/Button";
+import Button from "@/components/Button";
 import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 
 export default async function LibraryPage() {

@@ -7,7 +7,7 @@ import {
   useSettingsStore,
 } from "@/lib/book/settingsStore";
 import { cn } from "@/utils";
-import Button from "@/app/(protected)/_components/Button";
+import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 
 export default function SettingsStep() {

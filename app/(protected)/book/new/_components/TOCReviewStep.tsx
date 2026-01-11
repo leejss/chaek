@@ -20,7 +20,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import Button from "../../../_components/Button";
+import Button from "@/components/Button";
 
 export default function TOCReviewStep() {
   const tableOfContents = useBookStore((state) => state.tableOfContents);
