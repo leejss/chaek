@@ -1,8 +1,18 @@
 import { db } from "@/db";
-import { bookGenerationStates, books } from "@/db/schema";
+import { bookGenerationStates, books, chapters } from "@/db/schema";
 import { ValidationError } from "@/lib/errors";
 import { BookGenerationSettingsSchema } from "@/lib/ai/schemas/settings";
-import { and, eq } from "drizzle-orm";
+import { and, eq, asc } from "drizzle-orm";
+
+export async function aggregateBookContent(bookId: string) {
+  const result = await db
+    .select({ content: chapters.content })
+    .from(chapters)
+    .where(eq(chapters.bookId, bookId))
+    .orderBy(asc(chapters.chapterNumber));
+
+  return result.map((c) => c.content).join("\n\n");
+}
 
 export async function findBookByIdAndUserId(bookId: string, userId: string) {
   const result = await db

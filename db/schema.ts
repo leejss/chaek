@@ -84,7 +84,8 @@ export const books = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("books_user_id_idx").on(table.userId),
@@ -109,7 +110,8 @@ export const bookGenerationStates = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("book_generation_states_status_idx").on(table.status),
@@ -134,7 +136,8 @@ export const chapters = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     uniqueIndex("chapters_book_id_chapter_number_uq").on(
@@ -166,7 +169,8 @@ export const creditBalances = pgTable("credit_balances", {
   freeCredits: integer("free_credits").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
-    .defaultNow(),
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
 
 export const creditTransactions = pgTable(

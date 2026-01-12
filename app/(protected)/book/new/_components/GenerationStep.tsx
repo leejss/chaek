@@ -6,9 +6,7 @@ import {
   useGenerationStore,
 } from "@/context/generationContext";
 import { Section } from "@/context/types/book";
-import { useCopy } from "@/lib/hooks/useCopy";
-import { useDownload } from "@/lib/hooks/useDownload";
-import { BookOpen, Check, Copy, Download } from "lucide-react";
+import { Check } from "lucide-react";
 import ChapterContentDisplay from "./ChapterContentDisplay";
 import ChapterTabs from "./ChapterTabs";
 
@@ -32,14 +30,11 @@ export default function GenerationStep({
   const awaitingChapterDecision = useGenerationStore(
     (state) => state.awaitingChapterDecision,
   );
-  const currentChapterContent = useGenerationStore(
-    (state) => state.currentChapterContent,
-  );
+  // const currentChapterContent = useGenerationStore(
+  //   (state) => state.currentChapterContent,
+  // );
   const { cancel, confirmChapter } = generationActions;
   const { currentSection, currentOutline } = generationProgress;
-
-  const { isCopied, copyToClipboard } = useCopy();
-  const { downloadMarkdown } = useDownload();
 
   const isViewingCurrentChapter =
     currentChapterIndex >= 0 && viewingChapterIndex === currentChapterIndex;
@@ -49,42 +44,42 @@ export default function GenerationStep({
       ? chapters[viewingChapterIndex]
       : null;
 
-  const getContentToShare = () => {
-    if (isViewingCurrentChapter) {
-      return currentChapterContent;
-    } else if (viewingChapter) {
-      return viewingChapter.content;
-    }
-    return "";
-  };
+  // const getContentToShare = () => {
+  //   if (isViewingCurrentChapter) {
+  //     return currentChapterContent;
+  //   } else if (viewingChapter) {
+  //     return viewingChapter.content;
+  //   }
+  //   return "";
+  // };
 
-  const getChapterTitle = () => {
-    if (
-      isViewingCurrentChapter &&
-      tableOfContents &&
-      currentChapterIndex >= 0
-    ) {
-      return tableOfContents[currentChapterIndex] || "chapter";
-    } else if (viewingChapter) {
-      return viewingChapter.chapterTitle;
-    }
-    return "chapter";
-  };
+  // const getChapterTitle = () => {
+  //   if (
+  //     isViewingCurrentChapter &&
+  //     tableOfContents &&
+  //     currentChapterIndex >= 0
+  //   ) {
+  //     return tableOfContents[currentChapterIndex] || "chapter";
+  //   } else if (viewingChapter) {
+  //     return viewingChapter.chapterTitle;
+  //   }
+  //   return "chapter";
+  // };
 
-  const handleCopy = () => {
-    const content = getContentToShare();
-    if (content) {
-      copyToClipboard(content);
-    }
-  };
+  // const handleCopy = () => {
+  //   const content = getContentToShare();
+  //   if (content) {
+  //     copyToClipboard(content);
+  //   }
+  // };
 
-  const handleDownload = () => {
-    const content = getContentToShare();
-    const title = getChapterTitle();
-    if (content) {
-      downloadMarkdown(content, title);
-    }
-  };
+  // const handleDownload = () => {
+  //   const content = getContentToShare();
+  //   const title = getChapterTitle();
+  //   if (content) {
+  //     downloadMarkdown(content, title);
+  //   }
+  // };
 
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] bg-white">
