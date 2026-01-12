@@ -1,10 +1,14 @@
 "use client";
 
-import { generationActions, useGenerationStore } from '@/context/generationContext';
-import { Section } from "@/context/types/book";
-import { BookOpen, Check, Copy, Download } from "lucide-react";
-import { useState } from "react";
 import Button from "@/components/Button";
+import {
+  generationActions,
+  useGenerationStore,
+} from "@/context/generationContext";
+import { Section } from "@/context/types/book";
+import { useCopy } from "@/lib/hooks/useCopy";
+import { useDownload } from "@/lib/hooks/useDownload";
+import { BookOpen, Check, Copy, Download } from "lucide-react";
 import ChapterContentDisplay from "./ChapterContentDisplay";
 import ChapterTabs from "./ChapterTabs";
 
@@ -12,14 +16,15 @@ export interface GenerationStepProps {
   tableOfContents: string[];
 }
 
-export default function GenerationStep(props: GenerationStepProps) {
-  const { tableOfContents } = props;
+export default function GenerationStep({
+  tableOfContents,
+}: GenerationStepProps) {
   const generationProgress = useGenerationStore(
     (state) => state.generationProgress,
-  ) || { phase: "idle" };
+  );
   const chapters = useGenerationStore((state) => state.chapters);
   const viewingChapterIndex = useGenerationStore(
-    (state) => state.chapters.length,
+    (state) => state.viewingChapterIndex,
   );
   const currentChapterIndex = useGenerationStore(
     (state) => state.currentChapterIndex,
@@ -31,10 +36,10 @@ export default function GenerationStep(props: GenerationStepProps) {
     (state) => state.currentChapterContent,
   );
   const { cancel, confirmChapter } = generationActions;
-
   const { currentSection, currentOutline } = generationProgress;
 
-  const [isCopied, setIsCopied] = useState(false);
+  const { isCopied, copyToClipboard } = useCopy();
+  const { downloadMarkdown } = useDownload();
 
   const isViewingCurrentChapter =
     currentChapterIndex >= 0 && viewingChapterIndex === currentChapterIndex;
@@ -44,58 +49,41 @@ export default function GenerationStep(props: GenerationStepProps) {
       ? chapters[viewingChapterIndex]
       : null;
 
-  const handleCopy = async () => {
-    let contentToCopy = "";
+  const getContentToShare = () => {
     if (isViewingCurrentChapter) {
-      contentToCopy = currentChapterContent;
+      return currentChapterContent;
     } else if (viewingChapter) {
-      contentToCopy = viewingChapter.content;
+      return viewingChapter.content;
     }
-
-    if (!contentToCopy) return;
-    try {
-      await navigator.clipboard.writeText(contentToCopy);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy", err);
-    }
+    return "";
   };
 
-  const handleDownload = () => {
-    let contentToDownload = "";
-    if (isViewingCurrentChapter) {
-      contentToDownload = currentChapterContent;
-    } else if (viewingChapter) {
-      contentToDownload = viewingChapter.content;
-    }
-
-    if (!contentToDownload) return;
-
-    let title = "chapter";
+  const getChapterTitle = () => {
     if (
       isViewingCurrentChapter &&
       tableOfContents &&
       currentChapterIndex >= 0
     ) {
-      const tocTitle = tableOfContents[currentChapterIndex];
-      if (tocTitle) {
-        title = tocTitle;
-      }
+      return tableOfContents[currentChapterIndex] || "chapter";
     } else if (viewingChapter) {
-      title = viewingChapter.chapterTitle;
+      return viewingChapter.chapterTitle;
     }
+    return "chapter";
+  };
 
-    const filename = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.md`;
-    const blob = new Blob([contentToDownload], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleCopy = () => {
+    const content = getContentToShare();
+    if (content) {
+      copyToClipboard(content);
+    }
+  };
+
+  const handleDownload = () => {
+    const content = getContentToShare();
+    const title = getChapterTitle();
+    if (content) {
+      downloadMarkdown(content, title);
+    }
   };
 
   return (
@@ -107,39 +95,37 @@ export default function GenerationStep(props: GenerationStepProps) {
       <div className="max-w-4xl mx-auto py-8 px-4 md:px-6 pb-40">
         {/* Header Section */}
         <div className="mb-8 space-y-6">
-            {isViewingCurrentChapter &&
-              tableOfContents &&
-              currentChapterIndex >= 0 && (
-              <div className="bg-white p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="inline-flex items-center gap-2 text-sm font-bold px-3 py-1 bg-black text-white rounded-full">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-                    </span>
-                    WRITING NOW
+          {isViewingCurrentChapter && currentChapterIndex >= 0 && (
+            <div className="bg-white p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-bold px-3 py-1 bg-black text-white rounded-full">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
                   </span>
-                  <span className="text-sm font-bold text-neutral-500">
-                    CHAPTER {currentChapterIndex + 1} / {tableOfContents.length}
-                  </span>
-                </div>
+                  WRITING NOW
+                </span>
+                <span className="text-sm font-bold text-neutral-500">
+                  CHAPTER {currentChapterIndex + 1} / {tableOfContents.length}
+                </span>
+              </div>
 
-                <h2 className="font-sans text-3xl md:text-4xl text-black font-extrabold mb-8 tracking-tight">
-                  {tableOfContents[currentChapterIndex]}
-                </h2>
+              <h2 className="font-sans text-3xl md:text-4xl text-black font-extrabold mb-8 tracking-tight">
+                {tableOfContents[currentChapterIndex]}
+              </h2>
 
-                {currentOutline && (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {currentOutline.sections.map(
-                        (section: Section, idx: number) => {
-                          const isActive = currentSection === idx + 1;
-                          const isPast = currentSection && idx < currentSection;
+              {currentOutline && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {currentOutline.sections.map(
+                      (section: Section, idx: number) => {
+                        const isActive = currentSection === idx + 1;
+                        const isPast = currentSection && idx < currentSection;
 
-                          return (
-                            <div
-                              key={idx}
-                              className={`
+                        return (
+                          <div
+                            key={idx}
+                            className={`
                                 flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors border
                                 ${
                                   isPast
@@ -149,22 +135,22 @@ export default function GenerationStep(props: GenerationStepProps) {
                                     : "bg-white border-neutral-200 text-neutral-400"
                                 }
                               `}
-                            >
-                              {isPast ? (
-                                <Check size={14} strokeWidth={3} />
-                              ) : null}
-                              <span className="truncate max-w-[200px]">
-                                {section.title}
-                              </span>
-                            </div>
-                          );
-                        },
-                      )}
-                    </div>
+                          >
+                            {isPast ? (
+                              <Check size={14} strokeWidth={3} />
+                            ) : null}
+                            <span className="truncate max-w-[200px]">
+                              {section.title}
+                            </span>
+                          </div>
+                        );
+                      },
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+          )}
 
           {!isViewingCurrentChapter && viewingChapter && (
             <div className="bg-white p-6">
@@ -177,15 +163,35 @@ export default function GenerationStep(props: GenerationStepProps) {
                   CHAPTER {viewingChapter.chapterNumber}
                 </span>
               </div>
-              <h2 className="font-sans text-3xl md:text-4xl text-black font-extrabold tracking-tight">
+              <h2 className="font-sans text-3xl md:text-4xl text-black font-extrabold tracking-tight mb-8">
                 {viewingChapter.chapterTitle}
               </h2>
+
+              {viewingChapter.outline && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {viewingChapter.outline.sections.map(
+                      (section: Section, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors border bg-neutral-100 border-neutral-200 text-neutral-500 font-medium"
+                        >
+                          <Check size={14} strokeWidth={3} />
+                          <span className="truncate max-w-[200px]">
+                            {section.title}
+                          </span>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Action Bar */}
-        <div className="flex items-center justify-between mb-4 px-1 border-b border-neutral-100 pb-4">
+        {/* <div className="flex items-center justify-between mb-4 px-1 border-b border-neutral-100 pb-4">
           <div className="text-sm text-black font-bold flex items-center gap-2">
             <BookOpen size={18} strokeWidth={2.5} />
             <span>MARKDOWN PREVIEW</span>
@@ -219,7 +225,7 @@ export default function GenerationStep(props: GenerationStepProps) {
               EXPORT
             </Button>
           </div>
-        </div>
+        </div> */}
 
         {/* Content Display */}
         <div className="bg-white overflow-hidden min-h-[60vh]">

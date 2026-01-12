@@ -30,19 +30,15 @@ export default function IdleView({
   onStart,
 }: IdleViewProps) {
   return (
-    <div className="max-w-3xl mx-auto pb-32">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-black mb-4 tracking-tight">
-          {bookTitle || "Untitled Book"}
-        </h1>
-      </div>
+    <div className="max-w-3xl mx-auto">
+      <h1 className="text-4xl text-center md:text-5xl font-bold text-black mb-4 md:mb-6">
+        {bookTitle}
+      </h1>
 
-      <div className="bg-white border border-neutral-200 rounded-2xl p-8 mb-8">
-        <div className="flex items-center gap-2 mb-6 border-b border-neutral-100 pb-4">
-          <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
-            Table of Contents
-          </h3>
-        </div>
+      <div className="bg-white border border-neutral-200 rounded-lg p-6 mb-8">
+        <h3 className="text-lg md:text-2xl font-bold text-neutral-800 text-center mb-4">
+          Table of Contents
+        </h3>
         <div className="space-y-2">
           {tableOfContents.map((chapter, idx) => {
             const isFinished = chapters.some(
@@ -53,20 +49,20 @@ export default function IdleView({
                 key={idx}
                 className={cn(
                   "flex items-baseline gap-4 text-base p-3 rounded-lg transition-colors",
-                  isFinished ? "bg-green-50" : "hover:bg-neutral-50",
+                  isFinished ? "bg-green-50" : "",
                 )}
               >
                 <span
                   className={cn(
-                    "font-mono text-sm font-bold w-8 text-right",
-                    isFinished ? "text-green-600" : "text-neutral-400",
+                    "text-base md:text-lg font-bold w-8 text-right",
+                    isFinished ? "text-green-600" : "text-neutral-800",
                   )}
                 >
                   {isFinished ? "✓" : `${String(idx + 1).padStart(2, "0")}.`}
                 </span>
                 <span
                   className={cn(
-                    "font-bold",
+                    "font-bold text-lg md:text-xl",
                     isFinished ? "text-green-800" : "text-black",
                   )}
                 >
@@ -83,17 +79,17 @@ export default function IdleView({
           onClick={onStart}
           disabled={isProcessing}
           className={cn(
-            "w-full h-16 text-lg font-bold rounded-full",
+            "w-full h-16 text-xl md:text-2xl font-bold rounded-full",
             isResumable && "bg-black hover:bg-neutral-800 text-white",
           )}
         >
           {isDeductingCredits
-            ? "PROCESSING..."
+            ? "Processing..."
             : isProcessing
-            ? "PROCESSING..."
+            ? "Processing..."
             : isResumable
-            ? "RESUME GENERATION"
-            : "START GENERATION"}
+            ? "Resume Writing"
+            : "Start Writing"}
         </Button>
       </div>
 

@@ -1,16 +1,17 @@
-'use client';
+"use client";
 
-import { PlanOutput } from '@/lib/ai/schemas/plan';
-import { ChapterContent, GenerationProgress } from '@/context/types/generation';
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { PlanOutput } from "@/lib/ai/schemas/plan";
+import { ChapterContent, GenerationProgress } from "@/context/types/generation";
+import { createStore } from "zustand/vanilla";
+import { useStore } from "zustand";
+import { devtools } from "zustand/middleware";
 
 export interface GenerationState {
   generationProgress: GenerationProgress;
   chapters: ChapterContent[];
   currentChapterIndex: number;
   currentChapterContent: string;
+  viewingChapterIndex: number;
   awaitingChapterDecision: boolean;
   error: string | null;
   bookPlan?: PlanOutput;
@@ -21,13 +22,17 @@ export type GenerationStoreState = GenerationState & {
     init: (bookPlan?: PlanOutput, chapters?: ChapterContent[]) => void;
     updateProgress: (progress: Partial<GenerationProgress>) => void;
     startGeneration: (totalChapters: number) => void;
-    syncProgress: (chapters: ChapterContent[], currentChapterIndex: number) => void;
+    syncProgress: (
+      chapters: ChapterContent[],
+      currentChapterIndex: number,
+    ) => void;
     fail: (error: string) => void;
     complete: () => void;
     finishChapter: (title: string, content: string) => void;
     appendDraftChunk: (delta: string) => void;
     cancel: () => void;
     confirmChapter: () => Promise<void>;
+    setViewingChapterIndex: (index: number) => void;
     reset: () => void;
   };
 };
@@ -38,13 +43,14 @@ export type GenerationInit = {
 };
 
 const createInitialState = (): GenerationState => ({
-  generationProgress: { phase: 'idle' },
+  generationProgress: { phase: "idle" },
   chapters: [],
   currentChapterIndex: -1,
-  currentChapterContent: '',
+  currentChapterContent: "",
+  viewingChapterIndex: -1,
   awaitingChapterDecision: false,
   error: null,
-  bookPlan: undefined
+  bookPlan: undefined,
 });
 
 let chapterConfirmResolver: (() => void) | null = null;
@@ -62,20 +68,23 @@ const createGenerationStore = (init?: GenerationInit) => {
               ...baseState,
               chapters: initialChapters,
               bookPlan,
-              currentChapterIndex: initialChapters.length
+              chapters: initialChapters,
+              bookPlan,
+              currentChapterIndex: initialChapters.length,
+              viewingChapterIndex: initialChapters.length,
             },
             false,
-            'generation/init'
+            "generation/init",
           );
         },
 
         updateProgress: (progress: Partial<GenerationProgress>) => {
           set(
             (state) => ({
-              generationProgress: { ...state.generationProgress, ...progress }
+              generationProgress: { ...state.generationProgress, ...progress },
             }),
             false,
-            'generation/updateProgress'
+            "generation/updateProgress",
           );
         },
 
@@ -84,35 +93,41 @@ const createGenerationStore = (init?: GenerationInit) => {
             {
               error: null,
               generationProgress: {
-                phase: 'deducting_credits',
+                phase: "deducting_credits",
                 currentChapter: 1,
                 totalChapters,
                 currentSection: 0,
-                totalSections: 0
+                totalSections: 0,
               },
               currentChapterIndex: 0,
-              currentChapterContent: ''
+              viewingChapterIndex: 0,
+              currentChapterContent: "",
             },
             false,
-            'generation/startGeneration'
+            "generation/startGeneration",
           );
         },
 
-        syncProgress: (chapters: ChapterContent[], currentChapterIndex: number) => {
+        syncProgress: (
+          chapters: ChapterContent[],
+          currentChapterIndex: number,
+        ) => {
           set(
             {
               chapters,
+              chapters,
               currentChapterIndex,
+              viewingChapterIndex: currentChapterIndex,
               generationProgress: {
-                phase: 'generating_sections',
+                phase: "generating_sections",
                 currentChapter: currentChapterIndex + 1,
                 totalChapters: get().generationProgress.totalChapters || 0,
                 currentSection: 0,
-                totalSections: 0
-              }
+                totalSections: 0,
+              },
             },
             false,
-            'generation/syncProgress'
+            "generation/syncProgress",
           );
         },
 
@@ -121,19 +136,22 @@ const createGenerationStore = (init?: GenerationInit) => {
             {
               error,
               awaitingChapterDecision: false,
+              error,
+              awaitingChapterDecision: false,
               currentChapterIndex: -1,
-              generationProgress: { phase: 'error', error }
+              viewingChapterIndex: -1,
+              generationProgress: { phase: "error", error },
             },
             false,
-            'generation/fail'
+            "generation/fail",
           );
         },
 
         complete: () => {
           set(
-            { generationProgress: { phase: 'completed' } },
+            { generationProgress: { phase: "completed" } },
             false,
-            'generation/complete'
+            "generation/complete",
           );
         },
 
@@ -143,17 +161,20 @@ const createGenerationStore = (init?: GenerationInit) => {
             chapterNumber: state.currentChapterIndex + 1,
             chapterTitle: title,
             content,
-            isComplete: true
+            isComplete: true,
+            outline: state.generationProgress.currentOutline,
           };
 
           set(
             {
               chapters: [...state.chapters, newChapter],
-              currentChapterContent: '',
-              currentChapterIndex: state.currentChapterIndex + 1
+              chapters: [...state.chapters, newChapter],
+              currentChapterContent: "",
+              currentChapterIndex: state.currentChapterIndex + 1,
+              viewingChapterIndex: state.currentChapterIndex + 1,
             },
             false,
-            'generation/finishChapter'
+            "generation/finishChapter",
           );
         },
 
@@ -161,10 +182,10 @@ const createGenerationStore = (init?: GenerationInit) => {
           if (!delta) return;
           set(
             (state) => ({
-              currentChapterContent: state.currentChapterContent + delta
+              currentChapterContent: state.currentChapterContent + delta,
             }),
             false,
-            'generation/appendDraftChunk'
+            "generation/appendDraftChunk",
           );
         },
 
@@ -176,20 +197,34 @@ const createGenerationStore = (init?: GenerationInit) => {
           set(
             {
               awaitingChapterDecision: false,
+              awaitingChapterDecision: false,
               currentChapterIndex: -1,
-              currentChapterContent: '',
-              generationProgress: { phase: 'idle' }
+              viewingChapterIndex: -1,
+              currentChapterContent: "",
+              generationProgress: { phase: "idle" },
             },
             false,
-            'generation/cancel'
+            "generation/cancel",
           );
         },
 
         confirmChapter: () => {
           return new Promise<void>((resolve) => {
             chapterConfirmResolver = resolve;
-            set({ awaitingChapterDecision: false }, false, 'generation/confirmChapter');
+            set(
+              { awaitingChapterDecision: false },
+              false,
+              "generation/confirmChapter",
+            );
           });
+        },
+
+        setViewingChapterIndex: (index: number) => {
+          set(
+            { viewingChapterIndex: index },
+            false,
+            "generation/setViewingChapterIndex",
+          );
         },
 
         reset: () => {
@@ -197,31 +232,34 @@ const createGenerationStore = (init?: GenerationInit) => {
             chapterConfirmResolver();
             chapterConfirmResolver = null;
           }
-          set(createInitialState(), false, 'generation/reset');
-        }
+          set(createInitialState(), false, "generation/reset");
+        },
       };
 
       const state: GenerationStoreState = {
         ...createInitialState(),
-        actions
+        actions,
       };
 
       if (init) {
         const initialChapters = init.chapters || [];
         state.chapters = initialChapters;
         state.bookPlan = init.bookPlan;
-        state.currentChapterContent = '';
+        state.currentChapterContent = "";
         state.currentChapterIndex = initialChapters.length;
+        state.viewingChapterIndex = initialChapters.length;
       }
 
       return state;
-    })
+    }),
   );
 };
 
 export const generationStore = createGenerationStore();
 export const generationActions = generationStore.getState().actions;
 
-export function useGenerationStore<T>(selector: (state: GenerationStoreState) => T): T {
+export function useGenerationStore<T>(
+  selector: (state: GenerationStoreState) => T,
+): T {
   return useStore(generationStore, selector);
 }

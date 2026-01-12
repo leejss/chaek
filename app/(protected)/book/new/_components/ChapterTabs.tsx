@@ -1,6 +1,9 @@
 "use client";
 
-import { useGenerationStore } from "@/context/generationContext";
+import {
+  generationActions,
+  useGenerationStore,
+} from "@/context/generationContext";
 import { Check, Lock, Loader2, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { cn } from "@/utils";
@@ -9,10 +12,9 @@ export interface ChapterTabsProps {
   tableOfContents: string[];
 }
 
-export default function ChapterTabs(props: ChapterTabsProps) {
-  const { tableOfContents } = props;
+export default function ChapterTabs({ tableOfContents }: ChapterTabsProps) {
   const viewingChapterIndex = useGenerationStore(
-    (state) => state.chapters.length,
+    (state) => state.viewingChapterIndex,
   );
   const chapters = useGenerationStore((state) => state.chapters);
   const currentChapterIndex = useGenerationStore(
@@ -59,7 +61,7 @@ export default function ChapterTabs(props: ChapterTabsProps) {
               key={index}
               onClick={() => {
                 if (!isLocked) {
-                  // Viewing index is computed from chapters.length
+                  generationActions.setViewingChapterIndex(index);
                 }
               }}
               disabled={isLocked}

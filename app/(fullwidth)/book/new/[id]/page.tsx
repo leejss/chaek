@@ -65,17 +65,19 @@ async function BookGenerationContent({ params }: PageProps) {
   const { title, id, status, tableOfContents, sourceText, bookPlan } = bookData;
 
   return (
-    <GenerationView
-      bookId={id}
-      bookTitle={title}
-      bookStatus={status}
-      tableOfContents={tableOfContents ?? []}
-      sourceText={sourceText || ''}
-      chapters={initialChapters}
-      generationSettings={
-        bookData.generationSettings as BookGenerationSettings
-      }
-      bookPlan={(bookPlan as PlanOutput | null) || undefined}
-    />
+    <div className="p-8">
+      <GenerationView
+        bookId={id}
+        bookTitle={title}
+        bookStatus={status}
+        tableOfContents={tableOfContents ?? []}
+        sourceText={sourceText || ""}
+        chapters={initialChapters}
+        generationSettings={
+          bookData.generationSettings as BookGenerationSettings
+        }
+        bookPlan={(bookPlan as PlanOutput | null) || undefined}
+      />
+    </div>
   );
 }
