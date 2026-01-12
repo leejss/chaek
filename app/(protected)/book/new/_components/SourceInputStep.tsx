@@ -61,7 +61,7 @@ export default function SourceInputStep() {
       <div className="relative">
         <textarea
           className="w-full h-96 p-6 bg-white border-2 border-neutral-200 rounded-xl focus:border-black focus:ring-0 transition-all text-lg leading-relaxed resize-none placeholder:text-neutral-400 font-medium text-black shadow-none"
-          placeholder="PASTE YOUR SOURCE TEXT HERE..."
+          placeholder="Paste your source text here..."
           value={sourceText || ""}
           onChange={(e) => updateDraft({ sourceText: e.target.value })}
         />

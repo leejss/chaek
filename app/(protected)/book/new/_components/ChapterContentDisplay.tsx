@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 
 export default function ChapterContentDisplay() {
   const viewingChapterIndex = useGenerationStore(
-    (state) => state.chapters.length,
+    (state) => state.viewingChapterIndex,
   );
   const currentChapterIndex = useGenerationStore(
     (state) => state.currentChapterIndex,

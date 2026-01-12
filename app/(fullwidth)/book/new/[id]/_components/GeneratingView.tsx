@@ -2,6 +2,7 @@
 
 import { BookGenerationSettings } from "@/context/types/settings";
 import StatusOverviewGeneration from "@/app/(protected)/book/new/_components/StatusOverviewGeneration";
+import GenerationStep from "@/app/(protected)/book/new/_components/GenerationStep";
 
 interface GeneratingViewProps {
   bookTitle: string;
@@ -23,8 +24,8 @@ export default function GeneratingView({
   error,
 }: GeneratingViewProps) {
   return (
-    <div className="max-w-3xl mx-auto pb-32">
-      {/* <GenerationStep tableOfContents={tableOfContents} /> */}
+    <div className="max-w-3xl mx-auto">
+      <GenerationStep tableOfContents={tableOfContents} />
       <StatusOverviewGeneration
         bookTitle={bookTitle}
         sourceText={sourceText}

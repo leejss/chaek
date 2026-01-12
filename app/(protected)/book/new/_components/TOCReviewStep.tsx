@@ -265,7 +265,7 @@ export default function TOCReviewStep() {
           <div className="pt-6 space-y-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 bg-white border-2 border-neutral-200 rounded-xl">
               <div className="space-y-2 text-center md:text-left w-full md:w-auto">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-black">
+                <h3 className="text-sm font-bold text-black">
                   Intelligence Engine
                 </h3>
                 <div className="relative inline-block w-full md:w-auto">

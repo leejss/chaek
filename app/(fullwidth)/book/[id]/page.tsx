@@ -1,12 +1,13 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
-import { bookGenerationStates, books, chapters } from "@/db/schema";
+import { bookGenerationStates, books } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { extractTOC } from "@/lib/serverMarkdown";
 import type { Book } from "@/context/types/book";
 import { serverEnv } from "@/lib/env";
+import { aggregateBookContent } from "@/lib/repositories/bookRepository";
 import BookView from "./_components/BookView";
 import BookMarkdown from "./_components/BookMarkdown";
 
@@ -45,26 +46,19 @@ export default async function BookDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  let content = bookData.content;
-
   const status = state?.status ?? "waiting";
 
-  if (status !== "completed") {
-    const bookChapters = await db
-      .select()
-      .from(chapters)
-      .where(eq(chapters.bookId, bookData.id))
-      .orderBy(asc(chapters.chapterNumber));
-
-    if (bookChapters.length > 0) {
-      content = bookChapters.map((c) => c.content).join("\n\n");
-    }
-  }
+  // If status is not completed, we aggregate chapters from DB to show current progress.
+  // For completed books, we can trust bookData.content as a cache.
+  const content =
+    status !== "completed"
+      ? await aggregateBookContent(bookData.id)
+      : bookData.content;
 
   const book: Book = {
     id: bookData.id,
     title: bookData.title,
-    content: content,
+    content: content || bookData.content,
     tableOfContents: bookData.tableOfContents || [],
     sourceText: bookData.sourceText || undefined,
     createdAt: bookData.createdAt.toISOString(),

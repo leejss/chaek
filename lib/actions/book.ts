@@ -3,10 +3,11 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { bookGenerationStates, books, BookStatus, chapters } from "@/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { BookGenerationSettings } from "@/context/types/settings";
 import { ChapterOutline } from "@/context/types/book";
+import { aggregateBookContent } from "@/lib/repositories/bookRepository";
 
 export async function createBookAction(
   title: string,
@@ -25,7 +26,6 @@ export async function createBookAction(
         content: "",
         tableOfContents,
         sourceText: sourceText ?? undefined,
-        updatedAt: new Date(),
       })
       .returning({ id: books.id });
 
@@ -36,7 +36,6 @@ export async function createBookAction(
       bookId: row.id,
       status: "waiting",
       generationSettings: generationSettings ?? undefined,
-      updatedAt: new Date(),
     });
 
     return row;
@@ -52,7 +51,6 @@ export async function createBookAction(
 export async function updateBookAction(
   bookId: string,
   data: {
-    content?: string;
     status?: BookStatus;
   },
 ) {
@@ -75,24 +73,25 @@ export async function updateBookAction(
         .values({
           bookId,
           status: data.status,
-          updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: [bookGenerationStates.bookId],
           set: {
             status: data.status,
-            updatedAt: new Date(),
           },
         });
     }
 
-    await tx
-      .update(books)
-      .set({
-        ...(data.content ? { content: data.content } : {}),
-        updatedAt: new Date(),
-      })
-      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+    // If status is completed, aggregate all chapters and update book content
+    if (data.status === "completed") {
+      const fullContent = await aggregateBookContent(bookId);
+      await tx
+        .update(books)
+        .set({
+          content: fullContent,
+        })
+        .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+    }
   });
 }
 
@@ -125,7 +124,6 @@ export async function saveChapterAction(
       content,
       outline,
       status: "completed",
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [chapters.bookId, chapters.chapterNumber],
@@ -133,18 +131,11 @@ export async function saveChapterAction(
         content,
         outline,
         status: "completed",
-        updatedAt: new Date(),
       },
     });
 
   // 2. Update book content by aggregating all chapters
-  const allChapters = await db
-    .select()
-    .from(chapters)
-    .where(eq(chapters.bookId, bookId))
-    .orderBy(asc(chapters.chapterNumber));
-
-  const fullContent = allChapters.map((c) => c.content).join("\n\n");
+  const fullContent = await aggregateBookContent(bookId);
 
   await db.transaction(async (tx) => {
     await tx
@@ -153,14 +144,12 @@ export async function saveChapterAction(
         bookId,
         status: "generating",
         currentChapterIndex: chapterNumber,
-        updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: [bookGenerationStates.bookId],
         set: {
           status: "generating",
           currentChapterIndex: chapterNumber,
-          updatedAt: new Date(),
         },
       });
 
@@ -168,7 +157,6 @@ export async function saveChapterAction(
       .update(books)
       .set({
         content: fullContent,
-        updatedAt: new Date(),
       })
       .where(and(eq(books.id, bookId), eq(books.userId, userId)));
   });

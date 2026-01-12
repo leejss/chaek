@@ -25,6 +25,7 @@ export type ChapterContent = {
   chapterTitle: string;
   content: string;
   isComplete: boolean;
+  outline?: ChapterOutline;
 };
 
 export type StreamingStatus = {

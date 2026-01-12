@@ -311,10 +311,16 @@ export default function GenerationView(props: GenerationViewProps) {
       actions.complete();
       flushDraft();
       const completedChapters = generationStore.getState().chapters;
-      const content = completedChapters.map((c) => c.content).join("\n\n");
+
+      // Verify that all chapters are completed before finalizing
+      if (completedChapters.length < totalChapters) {
+        throw new Error(
+          `모든 챕터가 생성되지 않았습니다. (완료: ${completedChapters.length}/${totalChapters})`,
+        );
+      }
+
       await updateBookAction(bookId, {
         status: "completed",
-        content,
       });
 
       actions.updateProgress({
