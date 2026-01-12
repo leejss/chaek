@@ -4,12 +4,13 @@ import { useBookStore } from "@/context/bookStore";
 import { Step } from "@/context/types/book";
 import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import AILoadingStep from "./_components/AILoadingStep";
 import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 
-export default function CreateBookPage() {
+function CreateBookContent() {
   const searchParams = useSearchParams();
   const currentStep = (searchParams.get("step") as Step) || "settings";
 
@@ -38,5 +39,13 @@ export default function CreateBookPage() {
       {currentStep === "source_input" && <SourceInputStep />}
       {currentStep === "toc_review" && <TOCReviewStep />}
     </div>
+  );
+}
+
+export default function CreateBookPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 bg-white" />}>
+      <CreateBookContent />
+    </Suspense>
   );
 }

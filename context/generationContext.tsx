@@ -68,8 +68,6 @@ const createGenerationStore = (init?: GenerationInit) => {
               ...baseState,
               chapters: initialChapters,
               bookPlan,
-              chapters: initialChapters,
-              bookPlan,
               currentChapterIndex: initialChapters.length,
               viewingChapterIndex: initialChapters.length,
             },
@@ -115,7 +113,6 @@ const createGenerationStore = (init?: GenerationInit) => {
           set(
             {
               chapters,
-              chapters,
               currentChapterIndex,
               viewingChapterIndex: currentChapterIndex,
               generationProgress: {
@@ -134,8 +131,6 @@ const createGenerationStore = (init?: GenerationInit) => {
         fail: (error: string) => {
           set(
             {
-              error,
-              awaitingChapterDecision: false,
               error,
               awaitingChapterDecision: false,
               currentChapterIndex: -1,
@@ -168,7 +163,6 @@ const createGenerationStore = (init?: GenerationInit) => {
           set(
             {
               chapters: [...state.chapters, newChapter],
-              chapters: [...state.chapters, newChapter],
               currentChapterContent: "",
               currentChapterIndex: state.currentChapterIndex + 1,
               viewingChapterIndex: state.currentChapterIndex + 1,
@@ -196,7 +190,6 @@ const createGenerationStore = (init?: GenerationInit) => {
           }
           set(
             {
-              awaitingChapterDecision: false,
               awaitingChapterDecision: false,
               currentChapterIndex: -1,
               viewingChapterIndex: -1,
