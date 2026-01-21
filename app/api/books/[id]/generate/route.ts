@@ -7,7 +7,6 @@ import { readJson, normalizeToHttpError } from "@/utils";
 import { and, eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { AIProvider } from "@/lib/ai/config";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import {
   deductCredits,
@@ -19,7 +18,7 @@ const requestSchema = z.object({
   title: z.string().min(1),
   tableOfContents: z.array(z.string().min(1)).min(1),
   sourceText: z.string().min(1),
-  provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
+  provider: z.enum(["google", "anthropic"]),
   model: z.string().min(1),
   language: z
     .enum(["Korean", "English", "Japanese", "Chinese", "Auto"])

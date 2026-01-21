@@ -1,6 +1,5 @@
 import { streamBook } from "@/lib/ai/streaming/streamGenerator";
 import { StreamingConfig } from "@/lib/ai/types/streaming";
-import { AIProvider } from "@/lib/ai/config";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
 import { readJson, normalizeToHttpError } from "@/utils";
@@ -11,7 +10,7 @@ const streamRequestSchema = z.object({
   title: z.string().min(1),
   tableOfContents: z.array(z.string().min(1)).min(1),
   sourceText: z.string().min(1),
-  provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
+  provider: z.enum(["google", "anthropic"]),
   model: z.string().min(1),
   language: z
     .enum(["Korean", "English", "Japanese", "Chinese", "Auto"])

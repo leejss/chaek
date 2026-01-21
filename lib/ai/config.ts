@@ -1,17 +1,23 @@
-export enum GeminiModel {
-  FLASH = "gemini-3-flash-preview",
-  PRO = "gemini-3-pro-preview",
-}
+export const geminiModel = {
+  FLASH: "gemini-3-flash-preview",
+  PRO: "gemini-3-pro-preview",
+} as const;
 
-export enum ClaudeModel {
-  SONNET = "claude-sonnet-4-5-20250929",
-  HAIKU = "claude-haiku-4-5-20251001",
-}
+export type GeminiModel = (typeof geminiModel)[keyof typeof geminiModel];
 
-export enum AIProvider {
-  GOOGLE = "google",
-  ANTHROPIC = "anthropic",
-}
+export const claudeModel = {
+  SONNET: "claude-sonnet-4-5-20250929",
+  HAIKU: "claude-haiku-4-5-20251001",
+} as const;
+
+export type ClaudeModel = (typeof claudeModel)[keyof typeof claudeModel];
+
+export const aiProvider = {
+  GOOGLE: "google",
+  ANTHROPIC: "anthropic",
+} as const;
+
+export type AIProvider = (typeof aiProvider)[keyof typeof aiProvider];
 
 type ModelConfig = {
   id: string;
@@ -27,32 +33,32 @@ type ProviderConfig = {
 
 export const AI_CONFIG: ProviderConfig[] = [
   {
-    id: AIProvider.GOOGLE,
+    id: aiProvider.GOOGLE,
     name: "Google",
     models: [
       {
-        id: GeminiModel.FLASH,
+        id: geminiModel.FLASH,
         name: "Gemini 3 Flash",
         description: "Fast and efficient for most tasks",
       },
       {
-        id: GeminiModel.PRO,
+        id: geminiModel.PRO,
         name: "Gemini 3 Pro",
         description: "High quality reasoning and writing",
       },
     ],
   },
   {
-    id: AIProvider.ANTHROPIC,
+    id: aiProvider.ANTHROPIC,
     name: "Anthropic",
     models: [
       {
-        id: ClaudeModel.SONNET,
+        id: claudeModel.SONNET,
         name: "Claude 4.5 Sonnet",
         description: "Balanced performance and quality",
       },
       {
-        id: ClaudeModel.HAIKU,
+        id: claudeModel.HAIKU,
         name: "Claude 4.5 Haiku",
         description: "Lightweight and fast",
       },
@@ -60,8 +66,8 @@ export const AI_CONFIG: ProviderConfig[] = [
   },
 ];
 
-export const DEFAULT_PROVIDER = AIProvider.ANTHROPIC;
-export const DEFAULT_MODEL = ClaudeModel.HAIKU;
+export const DEFAULT_PROVIDER = aiProvider.ANTHROPIC;
+export const DEFAULT_MODEL = claudeModel.HAIKU;
 
 export function getProviderByModel(modelId: string): AIProvider | undefined {
   for (const provider of AI_CONFIG) {

@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  AI_CONFIG,
-  getProviderByModel,
-  AIProvider,
-  ClaudeModel,
-  GeminiModel,
-} from "@/lib/ai/config";
+import { AI_CONFIG, getProviderByModel, aiProvider } from "@/lib/ai/config";
 import { bookStoreActions, useBookStore } from "@/context/bookStore";
 import {
   settingsStoreActions,
@@ -87,7 +81,7 @@ export default function TOCReviewStep() {
       const provider =
         aiConfiguration.content.provider ||
         getProviderByModel(selectedModel) ||
-        AIProvider.ANTHROPIC;
+        aiProvider.ANTHROPIC;
 
       const generationSettings: BookGenerationSettings = {
         language,
@@ -276,10 +270,7 @@ export default function TOCReviewStep() {
                       const modelId = e.target.value;
                       const providerId = getProviderByModel(modelId);
                       if (providerId) {
-                        setContentAiConfiguration(
-                          providerId,
-                          modelId as GeminiModel | ClaudeModel,
-                        );
+                        setContentAiConfiguration(providerId, modelId);
                       }
                     }}
                   >

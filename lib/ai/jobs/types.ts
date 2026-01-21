@@ -1,4 +1,3 @@
-import { AIProvider } from "@/lib/ai/config";
 import { z } from "zod";
 
 const languageSchema = z.enum([
@@ -13,7 +12,7 @@ export const generateBookJobSchema = z.object({
   bookId: z.string().min(1),
   step: z.enum(["init", "chapter", "finalize"]),
   chapterNumber: z.number().int().min(1).optional(),
-  provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
+  provider: z.enum(["google", "anthropic"]),
   model: z.string().min(1),
   language: languageSchema.default("Korean"),
   userPreference: z.string().default(""),

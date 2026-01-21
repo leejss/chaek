@@ -38,6 +38,10 @@ export default function SettingsStep() {
     router.push("/book/new?step=source_input");
   };
 
+  // set("language", value)
+  // set("chapterCount", value)
+  // set("userPreference", value)
+
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
       <div className="text-center mb-12">
@@ -62,69 +66,13 @@ export default function SettingsStep() {
             >
               <option value="Korean">Korean (한국어)</option>
               <option value="English">English</option>
-              <option value="Japanese">Japanese (日本語)</option>
-              <option value="Chinese">Chinese (中文)</option>
             </select>
             <p className="text-xs text-neutral-500 font-medium">
               The language used for generating content.
             </p>
           </div>
 
-          {/* <div className="space-y-3">
-            <label className="block text-xs font-bold text-black uppercase tracking-widest">
-              Chapter Review Mode
-            </label>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setRequireConfirm(true)}
-                className={cn(
-                  "flex-1 px-5 py-4 rounded-xl border-2 transition-all text-left group",
-                  requireConfirm
-                    ? "bg-black border-black text-white"
-                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300",
-                )}
-              >
-                <div
-                  className={cn(
-                    "font-bold text-sm",
-                    requireConfirm ? "text-white" : "text-black",
-                  )}
-                >
-                  REVIEW EACH CHAPTER
-                </div>
-                <div className="text-xs mt-1 font-medium text-neutral-400">
-                  Confirm each chapter before proceeding
-                </div>
-              </button>
-              <button
-                onClick={() => setRequireConfirm(false)}
-                className={cn(
-                  "flex-1 px-5 py-4 rounded-xl border-2 transition-all text-left group",
-                  !requireConfirm
-                    ? "bg-black border-black text-white"
-                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300",
-                )}
-              >
-                <div
-                  className={cn(
-                    "font-bold text-sm",
-                    !requireConfirm ? "text-white" : "text-black",
-                  )}
-                >
-                  AUTO-GENERATE
-                </div>
-                <div className="text-xs mt-1 font-medium text-neutral-400">
-                  Generate entire book automatically
-                </div>
-              </button>
-            </div>
-            <p className="text-xs text-neutral-500 font-medium">
-              Choose whether to review chapters one by one or generate all at
-              once.
-            </p>
-          </div> */}
-
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-black uppercase tracking-widest">
                 Chapter Count
@@ -198,7 +146,7 @@ export default function SettingsStep() {
           onClick={handleContinue}
           className="w-full md:w-auto h-14 px-12 text-lg font-bold rounded-full"
         >
-          CONTINUE
+          Continue
         </Button>
       </div>
     </div>

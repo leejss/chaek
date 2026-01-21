@@ -1,6 +1,5 @@
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { readJson } from "@/utils";
-import { isString } from "@/lib/typeGuards";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
 import { issueAccessJWT, verifyGoogleIdToken } from "@/lib/auth";
@@ -24,7 +23,7 @@ export async function POST(req: Request) {
     const body = jsonResult.data;
 
     const idToken = (body as { id_token?: unknown })?.id_token;
-    if (!isString(idToken) || idToken.length === 0) {
+    if (typeof idToken !== "string" || idToken.length === 0) {
       throw new HttpError(400, "Missing id_token");
     }
 
@@ -108,8 +107,8 @@ export async function POST(req: Request) {
       error instanceof InvalidJsonError
         ? new HttpError(400, "Invalid JSON")
         : error instanceof HttpError
-        ? error
-        : null;
+          ? error
+          : null;
 
     if (httpError) {
       return NextResponse.json(

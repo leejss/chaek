@@ -1,5 +1,5 @@
 import { Section } from "@/context/types/book";
-import { getProviderByModel, isValidModel, AIProvider } from "@/lib/ai/config";
+import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
 import { streamDraft } from "@/lib/ai/prompts/draft";
 import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";
@@ -21,8 +21,8 @@ const sectionRequestSchema = z
     previousSections: z.array(sectionSchema),
     toc: z.array(z.string().min(1)).min(1),
     sourceText: z.string().min(1),
-    bookPlan: z.any().optional(), // Add plan
-    provider: z.enum([AIProvider.GOOGLE, AIProvider.ANTHROPIC]),
+    bookPlan: z.any().optional(),
+    provider: z.enum(["google", "anthropic"]),
     model: z.string().min(1).refine(isValidModel, { message: "Unknown model" }),
     language: z.string().default("Korean"),
     userPreference: z.string().optional(),

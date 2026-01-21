@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { HttpError } from "@/lib/errors";
-import { isString } from "@/lib/typeGuards";
 import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
 import { accessTokenConfig } from "./authTokens";
 import { serverEnv } from "@/lib/env";
@@ -29,7 +28,7 @@ export async function verifyGoogleIdToken(
     if (payload.email_verified !== true) {
       throw new HttpError(401, "Invalid credentials");
     }
-    if (!isString(payload.sub) || !isString(payload.email)) {
+    if (typeof payload.sub !== "string" || typeof payload.email !== "string") {
       throw new HttpError(401, "Invalid credentials");
     }
 
@@ -70,7 +69,7 @@ export async function verifyAccessJWT(token: string, secret: Uint8Array) {
       audience: "bookmaker-web",
     });
     const { sub } = payload;
-    if (!isString(sub)) {
+    if (typeof sub !== "string") {
       throw new HttpError(401, "Invalid credentials");
     }
     return { userId: sub };
