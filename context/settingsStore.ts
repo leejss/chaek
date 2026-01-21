@@ -7,7 +7,6 @@ import {
   ClaudeModel,
   GeminiModel,
 } from "@/lib/ai/config";
-import { AIConfiguration } from "@/context/types/settings";
 import { create } from "zustand";
 import { persist, devtools } from "zustand/middleware";
 
@@ -19,22 +18,17 @@ interface SettingsState {
   chapterCount: ChapterCount;
   userPreference: string;
   requireConfirm: boolean;
-  aiConfiguration: AIConfiguration;
+  tocProvider: AIProvider;
+  tocModel: GeminiModel | ClaudeModel;
+  contentProvider: AIProvider;
+  contentModel: GeminiModel | ClaudeModel;
 }
 
 interface SettingsStore extends SettingsState {
   actions: {
-    setLanguage: (lang: Language) => void;
-    setChapterCount: (count: ChapterCount) => void;
-    setUserPreference: (pref: string) => void;
-    setRequireConfirm: (value: boolean) => void;
-    setTocAiConfiguration: (
-      provider: AIProvider,
-      model: GeminiModel | ClaudeModel,
-    ) => void;
-    setContentAiConfiguration: (
-      provider: AIProvider,
-      model: GeminiModel | ClaudeModel,
+    set: <K extends keyof SettingsState>(
+      key: K,
+      value: SettingsState[K],
     ) => void;
   };
 }
@@ -47,47 +41,17 @@ export const useSettingsStore = create<SettingsStore>()(
         chapterCount: "Auto",
         userPreference: "",
         requireConfirm: true,
-        aiConfiguration: {
-          toc: {
-            provider: DEFAULT_PROVIDER,
-            model: DEFAULT_MODEL,
-          },
-          content: {
-            provider: DEFAULT_PROVIDER,
-            model: DEFAULT_MODEL,
-          },
-        },
+        tocProvider: DEFAULT_PROVIDER,
+        tocModel: DEFAULT_MODEL,
+        contentProvider: DEFAULT_PROVIDER,
+        contentModel: DEFAULT_MODEL,
 
         actions: {
-          setLanguage: (language) =>
-            set({ language }, false, "settings/setLanguage"),
-          setChapterCount: (chapterCount) =>
-            set({ chapterCount }, false, "settings/setChapterCount"),
-          setUserPreference: (userPreference) =>
-            set({ userPreference }, false, "settings/setUserPreference"),
-          setRequireConfirm: (requireConfirm) =>
-            set({ requireConfirm }, false, "settings/setRequireConfirm"),
-          setTocAiConfiguration: (provider, model) =>
+          set: (key, value) =>
             set(
-              (state) => ({
-                aiConfiguration: {
-                  ...state.aiConfiguration,
-                  toc: { provider, model },
-                },
-              }),
+              { [key]: value } as Partial<SettingsState>,
               false,
-              "settings/setTocAiConfiguration",
-            ),
-          setContentAiConfiguration: (provider, model) =>
-            set(
-              (state) => ({
-                aiConfiguration: {
-                  ...state.aiConfiguration,
-                  content: { provider, model },
-                },
-              }),
-              false,
-              "settings/setContentAiConfiguration",
+              `settings/set/${key}`,
             ),
         },
       }),

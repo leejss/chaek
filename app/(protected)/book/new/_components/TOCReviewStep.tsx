@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { AI_CONFIG, getProviderByModel, aiProvider } from "@/lib/ai/config";
+import {
+  AI_CONFIG,
+  getProviderByModel,
+  aiProvider,
+  GeminiModel,
+  ClaudeModel,
+} from "@/lib/ai/config";
 import { bookStoreActions, useBookStore } from "@/context/bookStore";
 import {
   settingsStoreActions,
@@ -25,21 +31,22 @@ export default function TOCReviewStep() {
   const tableOfContents = useBookStore((state) => state.tableOfContents);
   const bookTitle = useBookStore((state) => state.bookTitle);
   const sourceText = useBookStore((state) => state.sourceText);
-  const aiConfiguration = useSettingsStore((state) => state.aiConfiguration);
+  const tocProvider = useSettingsStore((state) => state.tocProvider);
+  const tocModel = useSettingsStore((state) => state.tocModel);
+  const contentProvider = useSettingsStore((state) => state.contentProvider);
+  const contentModel = useSettingsStore((state) => state.contentModel);
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
 
   const [isRegenerating, setIsRegenerating] = useState(false);
   const { setTocResult, updateDraft } = bookStoreActions;
-  const { setContentAiConfiguration } = settingsStoreActions;
+  const { set } = settingsStoreActions;
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const [tempTOC, setTempTOC] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  const selectedModel = aiConfiguration.content.model;
 
   const handleEditStart = () => {
     setTempTitle(bookTitle);
@@ -79,8 +86,8 @@ export default function TOCReviewStep() {
     setIsSaving(true);
     try {
       const provider =
-        aiConfiguration.content.provider ||
-        getProviderByModel(selectedModel) ||
+        contentProvider ||
+        getProviderByModel(contentModel) ||
         aiProvider.ANTHROPIC;
 
       const generationSettings: BookGenerationSettings = {
@@ -88,7 +95,7 @@ export default function TOCReviewStep() {
         chapterCount,
         userPreference,
         provider,
-        model: selectedModel,
+        model: contentModel,
       };
 
       await createBookAction(
@@ -112,8 +119,8 @@ export default function TOCReviewStep() {
         language,
         chapterCount,
         userPreference,
-        provider: aiConfiguration.toc.provider,
-        model: aiConfiguration.toc.model,
+        provider: tocProvider,
+        model: tocModel,
       });
       setTocResult(result.title, result.chapters);
     } catch (err) {
@@ -265,12 +272,15 @@ export default function TOCReviewStep() {
                 <div className="relative inline-block w-full md:w-auto">
                   <select
                     className="appearance-none bg-transparent py-2 pl-0 pr-8 text-base font-bold text-black focus:outline-none cursor-pointer hover:text-neutral-600 transition-colors w-full md:w-auto border-b border-neutral-200 focus:border-black"
-                    value={selectedModel}
+                    value={contentModel}
                     onChange={(e) => {
-                      const modelId = e.target.value;
+                      const modelId = e.target.value as
+                        | GeminiModel
+                        | ClaudeModel;
                       const providerId = getProviderByModel(modelId);
                       if (providerId) {
-                        setContentAiConfiguration(providerId, modelId);
+                        set("contentProvider", providerId);
+                        set("contentModel", modelId);
                       }
                     }}
                   >

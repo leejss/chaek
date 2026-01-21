@@ -17,7 +17,10 @@ export default function StatusOverview(props: StatusOverviewProps) {
 
   const sourceText = bookStore.sourceText;
   const tableOfContents = bookStore.tableOfContents;
-  const aiConfiguration = useSettingsStore((state) => state.aiConfiguration);
+  const tocProvider = useSettingsStore((state) => state.tocProvider);
+  const tocModel = useSettingsStore((state) => state.tocModel);
+  const contentProvider = useSettingsStore((state) => state.contentProvider);
+  const contentModel = useSettingsStore((state) => state.contentModel);
 
   const language = useSettingsStore((state) => state.language);
   const chapterCount = useSettingsStore((state) => state.chapterCount);
@@ -163,10 +166,10 @@ export default function StatusOverview(props: StatusOverviewProps) {
                 </p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-black uppercase">
-                    {aiConfiguration.toc.provider}
+                    {tocProvider}
                   </span>
                   <span className="text-[10px] bg-neutral-100 px-2 py-1 rounded text-black font-mono font-bold">
-                    {aiConfiguration.toc.model}
+                    {tocModel}
                   </span>
                 </div>
               </div>
@@ -176,10 +179,10 @@ export default function StatusOverview(props: StatusOverviewProps) {
                 </p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-black uppercase">
-                    {aiConfiguration.content.provider}
+                    {contentProvider}
                   </span>
                   <span className="text-[10px] bg-neutral-100 px-2 py-1 rounded text-black font-mono font-bold">
-                    {aiConfiguration.content.model}
+                    {contentModel}
                   </span>
                 </div>
               </div>

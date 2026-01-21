@@ -13,7 +13,8 @@ export default function SourceInputStep() {
   const [error, setError] = useState<string | null>(null);
 
   const sourceText = useBookStore((state) => state.sourceText);
-  const aiConfiguration = useSettingsStore((state) => state.aiConfiguration);
+  const tocProvider = useSettingsStore((state) => state.tocProvider);
+  const tocModel = useSettingsStore((state) => state.tocModel);
   const { updateDraft, setTocResult } = bookStoreActions;
 
   const language = useSettingsStore((state) => state.language);
@@ -32,8 +33,8 @@ export default function SourceInputStep() {
         language,
         chapterCount,
         userPreference,
-        provider: aiConfiguration.toc.provider,
-        model: aiConfiguration.toc.model,
+        provider: tocProvider,
+        model: tocModel,
       });
 
       setTocResult(result.title, result.chapters);

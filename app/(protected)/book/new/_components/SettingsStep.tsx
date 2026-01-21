@@ -17,19 +17,18 @@ export default function SettingsStep() {
   const userPreference = useSettingsStore((state) => state.userPreference);
 
   const { completeStep } = bookStoreActions;
-  const { setChapterCount, setLanguage, setUserPreference } =
-    settingsStoreActions;
+  const { set } = settingsStoreActions;
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
-    setChapterCount(val as number);
+    set("chapterCount", val as number);
   };
 
   const toggleAutoChapters = (checked: boolean) => {
     if (checked) {
-      setChapterCount("Auto");
+      set("chapterCount", "Auto");
     } else {
-      setChapterCount(5);
+      set("chapterCount", 5);
     }
   };
 
@@ -37,10 +36,6 @@ export default function SettingsStep() {
     completeStep("settings");
     router.push("/book/new?step=source_input");
   };
-
-  // set("language", value)
-  // set("chapterCount", value)
-  // set("userPreference", value)
 
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
@@ -61,7 +56,7 @@ export default function SettingsStep() {
             </label>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as Language)}
+              onChange={(e) => set("language", e.target.value as Language)}
               className="mt-1 block w-full rounded-lg border-neutral-200 bg-white text-black focus:border-black focus:ring-black sm:text-sm p-3 border font-medium"
             >
               <option value="Korean">Korean (한국어)</option>
@@ -128,7 +123,7 @@ export default function SettingsStep() {
             </label>
             <textarea
               value={userPreference}
-              onChange={(e) => setUserPreference(e.target.value)}
+              onChange={(e) => set("userPreference", e.target.value)}
               rows={4}
               className="mt-1 block w-full rounded-xl border-neutral-200 bg-white text-black shadow-none focus:border-black focus:ring-black sm:text-sm p-4 border placeholder:text-neutral-400 font-medium resize-none"
               placeholder="E.g., Maintain a humorous tone, use simple analogies, focus on technical depth..."
