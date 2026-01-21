@@ -40,7 +40,7 @@ export default function TOCReviewStep() {
   const userPreference = useSettingsStore((state) => state.userPreference);
 
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const { setTocResult, updateDraft } = bookStoreActions;
+  const { setTocResult, update: updateDraft } = bookStoreActions;
   const { set } = settingsStoreActions;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -55,10 +55,10 @@ export default function TOCReviewStep() {
   };
 
   const handleSave = () => {
-    updateDraft({
-      bookTitle: tempTitle.trim() || "Untitled Book",
-      tableOfContents: tempTOC.filter((t) => t.trim() !== ""),
-    });
+    const newTitle = tempTitle.trim() || "Untitled Book";
+    const newTOC = tempTOC.filter((t) => t.trim() !== "");
+    updateDraft("bookTitle", newTitle);
+    updateDraft("tableOfContents", newTOC);
     setIsEditing(false);
   };
 

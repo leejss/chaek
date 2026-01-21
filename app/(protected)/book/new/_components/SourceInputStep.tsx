@@ -1,25 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Button from "@/components/Button";
 import { bookStoreActions, useBookStore } from "@/context/bookStore";
 import { useSettingsStore } from "@/context/settingsStore";
 import { generateTocAction } from "@/lib/actions/ai";
-import Button from "@/components/Button";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function SourceInputStep() {
   const router = useRouter();
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sourceText = useBookStore((state) => state.sourceText);
-  const tocProvider = useSettingsStore((state) => state.tocProvider);
-  const tocModel = useSettingsStore((state) => state.tocModel);
-  const { updateDraft, setTocResult } = bookStoreActions;
+  const setting = useSettingsStore();
 
-  const language = useSettingsStore((state) => state.language);
-  const chapterCount = useSettingsStore((state) => state.chapterCount);
-  const userPreference = useSettingsStore((state) => state.userPreference);
+  const { update, setTocResult } = bookStoreActions;
 
   const handleGenerateTOC = async () => {
     if (!sourceText?.trim()) return;
@@ -30,11 +27,11 @@ export default function SourceInputStep() {
     try {
       const result = await generateTocAction({
         sourceText,
-        language,
-        chapterCount,
-        userPreference,
-        provider: tocProvider,
-        model: tocModel,
+        language: setting.language,
+        chapterCount: setting.chapterCount,
+        userPreference: setting.userPreference,
+        provider: setting.tocProvider,
+        model: setting.tocModel,
       });
 
       setTocResult(result.title, result.chapters);
@@ -64,7 +61,7 @@ export default function SourceInputStep() {
           className="w-full h-96 p-6 bg-white border-2 border-neutral-200 rounded-xl focus:border-black focus:ring-0 transition-all text-lg leading-relaxed resize-none placeholder:text-neutral-400 font-medium text-black shadow-none"
           placeholder="Paste your source text here..."
           value={sourceText || ""}
-          onChange={(e) => updateDraft({ sourceText: e.target.value })}
+          onChange={(e) => update("sourceText", e.target.value)}
         />
         <div className="absolute bottom-4 right-4 text-xs font-bold text-black bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200 uppercase tracking-wide">
           {sourceText?.length || 0} chars
