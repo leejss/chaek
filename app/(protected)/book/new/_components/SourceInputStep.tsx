@@ -17,7 +17,9 @@ export default function SourceInputStep() {
 
   const sourceText = useTocGenerationStore((state) => state.sourceText);
   const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
-  const setting = useSettingsStore();
+  const settings = useSettingsStore((state) => state.settings);
+  const tocProvider = useSettingsStore((state) => state.tocProvider);
+  const tocModel = useSettingsStore((state) => state.tocModel);
 
   const isLoading = tocGeneration.status === "loading";
   const error = tocGeneration.status === "error" ? tocGeneration.message : null;
@@ -30,11 +32,11 @@ export default function SourceInputStep() {
     try {
       const result = await generateTocAction({
         sourceText,
-        language: setting.language,
-        chapterCount: setting.chapterCount,
-        userPreference: setting.userPreference,
-        provider: setting.tocProvider,
-        model: setting.tocModel,
+        language: settings.language,
+        chapterCount: settings.chapterCount,
+        userPreference: settings.userPreference,
+        provider: tocProvider,
+        model: tocModel,
       });
 
       setTocResult(result.title, result.chapters);

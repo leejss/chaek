@@ -1,31 +1,30 @@
 "use client";
 
-import {
-  Language,
-  updateSettingsStore,
-  useSettingsStore,
-} from "@/context/settingsStore";
+import { updateSettingsStore, useSettingsStore } from "@/context/settingsStore";
 import { cn } from "@/utils";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import { completeStep } from "@/context/tocStore";
+import { Language } from "@/lib/ai/schemas/settings";
 
 export default function SettingsStep() {
   const router = useRouter();
-  const language = useSettingsStore((state) => state.language);
-  const chapterCount = useSettingsStore((state) => state.chapterCount);
-  const userPreference = useSettingsStore((state) => state.userPreference);
+  const settings = useSettingsStore((state) => state.settings);
+  const { language, chapterCount, userPreference } = settings;
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
-    updateSettingsStore("chapterCount", val as number);
+    updateSettingsStore("settings", {
+      ...settings,
+      chapterCount: val as number,
+    });
   };
 
   const toggleAutoChapters = (checked: boolean) => {
     if (checked) {
-      updateSettingsStore("chapterCount", "Auto");
+      updateSettingsStore("settings", { ...settings, chapterCount: "Auto" });
     } else {
-      updateSettingsStore("chapterCount", 5);
+      updateSettingsStore("settings", { ...settings, chapterCount: 5 });
     }
   };
 
@@ -54,7 +53,10 @@ export default function SettingsStep() {
             <select
               value={language}
               onChange={(e) =>
-                updateSettingsStore("language", e.target.value as Language)
+                updateSettingsStore("settings", {
+                  ...settings,
+                  language: e.target.value as Language,
+                })
               }
               className="mt-1 block w-full rounded-lg border-neutral-200 bg-white text-black focus:border-black focus:ring-black sm:text-sm p-3 border font-medium"
             >
@@ -123,7 +125,10 @@ export default function SettingsStep() {
             <textarea
               value={userPreference}
               onChange={(e) =>
-                updateSettingsStore("userPreference", e.target.value)
+                updateSettingsStore("settings", {
+                  ...settings,
+                  userPreference: e.target.value,
+                })
               }
               rows={4}
               className="mt-1 block w-full rounded-xl border-neutral-200 bg-white text-black shadow-none focus:border-black focus:ring-black sm:text-sm p-4 border placeholder:text-neutral-400 font-medium resize-none"

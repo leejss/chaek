@@ -6,16 +6,15 @@ import {
   type GeminiModel,
   getDefaultConfig,
 } from "@/lib/ai/config";
-import type { Language } from "@/lib/ai/schemas/settings";
 import { create } from "zustand";
 import { persist, devtools } from "zustand/middleware";
+import { BookSettings } from "./types/settings";
 
 export type ChapterCount = number | "Auto";
 
 interface SettingsState {
-  language: Language;
-  chapterCount: ChapterCount;
-  userPreference: string;
+  settings: BookSettings;
+
   requireConfirm: boolean;
   tocProvider: AIProvider;
   tocModel: GeminiModel | ClaudeModel;
@@ -36,9 +35,11 @@ export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist(
       (set) => ({
-        language: "Korean",
-        chapterCount: "Auto",
-        userPreference: "",
+        settings: {
+          language: "Korean",
+          chapterCount: "Auto",
+          userPreference: "",
+        },
         requireConfirm: true,
         tocProvider: getDefaultConfig().provider,
         tocModel: getDefaultConfig().model,

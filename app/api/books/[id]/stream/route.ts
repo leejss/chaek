@@ -5,6 +5,7 @@ import { HttpError } from "@/lib/errors";
 import { readJson, normalizeToHttpError } from "@/utils";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { LanguageSchema } from "@/lib/ai/schemas/settings";
 
 const streamRequestSchema = z.object({
   title: z.string().min(1),
@@ -12,9 +13,7 @@ const streamRequestSchema = z.object({
   sourceText: z.string().min(1),
   provider: z.enum(["google", "anthropic"]),
   model: z.string().min(1),
-  language: z
-    .enum(["Korean", "English", "Japanese", "Chinese", "Auto"])
-    .default("Korean"),
+  language: LanguageSchema.default("Korean"),
   userPreference: z.string().default(""),
   startFromChapter: z.number().int().min(1).optional(),
 });

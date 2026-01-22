@@ -13,6 +13,7 @@ import {
   getUserBalance,
   refundUsageCredits,
 } from "@/lib/credits/operations";
+import { LanguageSchema } from "@/lib/ai/schemas/settings";
 
 const requestSchema = z.object({
   title: z.string().min(1),
@@ -20,9 +21,7 @@ const requestSchema = z.object({
   sourceText: z.string().min(1),
   provider: z.enum(["google", "anthropic"]),
   model: z.string().min(1),
-  language: z
-    .enum(["Korean", "English", "Japanese", "Chinese", "Auto"])
-    .default("Korean"),
+  language: LanguageSchema.default("Korean"),
   userPreference: z.string().default(""),
 });
 

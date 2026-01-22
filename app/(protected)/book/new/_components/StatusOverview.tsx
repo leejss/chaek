@@ -21,10 +21,8 @@ export default function StatusOverview(props: StatusOverviewProps) {
   const tocModel = useSettingsStore((state) => state.tocModel);
   const contentProvider = useSettingsStore((state) => state.contentProvider);
   const contentModel = useSettingsStore((state) => state.contentModel);
-
-  const language = useSettingsStore((state) => state.language);
-  const chapterCount = useSettingsStore((state) => state.chapterCount);
-  const userPreference = useSettingsStore((state) => state.userPreference);
+  const settings = useSettingsStore((state) => state.settings);
+  const { language, chapterCount, userPreference } = settings;
   const requireConfirm = useSettingsStore((state) => state.requireConfirm);
 
   if (!isOpen) {

@@ -234,15 +234,12 @@ const ActionButtons = ({
 export default function TOCReviewStep() {
   const { tableOfContents, bookTitle, sourceText, tocGeneration } =
     useTocGenerationStore();
-  const {
-    tocProvider,
-    tocModel,
-    contentProvider,
-    contentModel,
-    language,
-    chapterCount,
-    userPreference,
-  } = useSettingsStore();
+  const tocProvider = useSettingsStore((state) => state.tocProvider);
+  const tocModel = useSettingsStore((state) => state.tocModel);
+  const contentProvider = useSettingsStore((state) => state.contentProvider);
+  const contentModel = useSettingsStore((state) => state.contentModel);
+  const settings = useSettingsStore((state) => state.settings);
+  const { language, chapterCount, userPreference } = settings;
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
