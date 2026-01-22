@@ -12,19 +12,3 @@ export interface BookGenerationSettings extends BookSettings {
   provider: AIProvider;
   model: GeminiModel | ClaudeModel;
 }
-
-export const defaultSettings: BookSettings = {
-  language: "Korean",
-  chapterCount: "Auto",
-  userPreference: "",
-};
-
-export type AIModelConfig = {
-  provider: AIProvider;
-  model: GeminiModel | ClaudeModel;
-};
-
-export type AIConfiguration = {
-  toc: AIModelConfig;
-  content: AIModelConfig;
-};

@@ -27,9 +27,3 @@ export type ChapterContent = {
   isComplete: boolean;
   outline?: ChapterOutline;
 };
-
-export type StreamingStatus = {
-  lastStreamedChapter: number | null;
-  lastStreamedSection: number | null;
-  lastUpdated: string;
-};
