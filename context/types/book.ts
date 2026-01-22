@@ -27,5 +27,3 @@ export interface Book {
   content: string;
   status?: string;
 }
-
-export type Step = "settings" | "source_input" | "toc_review";

@@ -312,7 +312,7 @@ export default function TOCReviewStep() {
     }
   };
 
-  const handleRegenerateTOC = async () => {
+  const handleRegenerate = async () => {
     if (!sourceText?.trim() || isRegenerating) return;
 
     startTocGeneration("regenerate");
@@ -425,7 +425,7 @@ export default function TOCReviewStep() {
             </div>
             <ActionButtons
               isRegenerating={isRegenerating}
-              onRegenerate={handleRegenerateTOC}
+              onRegenerate={handleRegenerate}
               isSaving={isSaving}
               onStartWriting={handleStartWriting}
               hasChapters={tableOfContents.length > 0}

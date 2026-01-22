@@ -1,12 +1,15 @@
 "use client";
 
-import { canAccessStep, useTocGenerationStore } from "@/context/tocStore";
-import { Step } from "@/context/types/book";
+import {
+  canAccessStep,
+  TocGenerationStep,
+  useTocGenerationStore,
+} from "@/context/tocStore";
 import { cn } from "@/utils";
 import { ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const STEPS_CONFIG: { id: Step; label: string }[] = [
+const STEPS_CONFIG: { id: TocGenerationStep; label: string }[] = [
   { id: "settings", label: "Settings" },
   { id: "source_input", label: "Source" },
   { id: "toc_review", label: "Review" },
@@ -15,7 +18,7 @@ const STEPS_CONFIG: { id: Step; label: string }[] = [
 export default function StepNavigation() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentStep = (searchParams.get("step") as Step) || "settings";
+  const currentStep = searchParams.get("step") || "settings";
 
   const tocGenerationStatus = useTocGenerationStore(
     (state) => state.tocGeneration.status,
@@ -43,7 +46,7 @@ export default function StepNavigation() {
     }
   };
 
-  const handleStepClick = (step: Step) => {
+  const handleStepClick = (step: TocGenerationStep) => {
     if (!canAccessStep(step)) return;
     router.push(`/book/new?step=${step}`);
   };

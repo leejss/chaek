@@ -1,10 +1,10 @@
 "use client";
 
-import { Step } from "@/context/types/book";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 
-const STEPS: Step[] = ["settings", "source_input", "toc_review"];
+export type TocGenerationStep = "settings" | "source_input" | "toc_review";
+const STEPS: TocGenerationStep[] = ["settings", "source_input", "toc_review"];
 
 type TocGenerationState =
   | { status: "idle" }
@@ -16,7 +16,7 @@ type BookState = {
   bookTitle: string;
   tableOfContents: string[];
   tocGeneration: TocGenerationState;
-  completedSteps: Set<Step>;
+  completedSteps: Set<TocGenerationStep>;
 };
 
 const initialState: BookState = {
@@ -24,7 +24,7 @@ const initialState: BookState = {
   bookTitle: "",
   tableOfContents: [],
   tocGeneration: { status: "idle" },
-  completedSteps: new Set<Step>(["settings"]),
+  completedSteps: new Set<TocGenerationStep>(["settings"]),
 };
 
 type UpdatableBookFields = "sourceText" | "bookTitle" | "tableOfContents";
@@ -73,18 +73,13 @@ export const useTocGenerationStore = create(
               bookTitle: title,
               tableOfContents: chapters,
               tocGeneration: { status: "idle" },
-              completedSteps: new Set<Step>([
-                ...get().completedSteps,
-                "source_input",
-                "toc_review",
-              ]),
             },
             false,
             "book/setTocResult",
           );
         },
 
-        canAccessStep: (step: Step): boolean => {
+        canAccessStep: (step: TocGenerationStep): boolean => {
           const state = get();
           if (!STEPS.includes(step)) return false;
           if (state.completedSteps.has(step)) return true;
@@ -101,10 +96,13 @@ export const useTocGenerationStore = create(
           }
         },
 
-        completeStep: (step: Step) => {
+        completeStep: (step: TocGenerationStep) => {
           set(
             {
-              completedSteps: new Set<Step>([...get().completedSteps, step]),
+              completedSteps: new Set<TocGenerationStep>([
+                ...get().completedSteps,
+                step,
+              ]),
             },
             false,
             "book/completeStep",
