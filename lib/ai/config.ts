@@ -78,9 +78,14 @@ export const AI_CONFIG = [
   },
 ];
 
-export const DEFAULT_PROVIDER = getAIProvider("ANTHROPIC");
-
-export const DEFAULT_MODEL = getClaudeModel("HAIKU-4.5");
+export function getDefaultConfig() {
+  const DEFAULT_PROVIDER = getAIProvider("ANTHROPIC");
+  const DEFAULT_MODEL = getClaudeModel("HAIKU-4.5");
+  return {
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+  };
+}
 
 // TODO: delete it
 export function getProviderByModel(modelId: string): AIProvider | undefined {

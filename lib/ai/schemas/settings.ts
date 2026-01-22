@@ -1,23 +1,21 @@
 import { z } from "zod";
+import { getAIProvider, getClaudeModel, getGeminiModel } from "../config";
 
-export const LanguageSchema = z.enum([
-  "Korean",
-  "English",
-  "Japanese",
-  "Chinese",
-  "Auto",
+export const LanguageSchema = z.enum(["Korean", "English", "Auto"]);
+
+export const AIProviderSchema = z.enum([
+  getAIProvider("GOOGLE"),
+  getAIProvider("ANTHROPIC"),
 ]);
 
-export const AIProviderSchema = z.enum(["google", "anthropic"]);
-
 export const GeminiModelSchema = z.enum([
-  "gemini-3-flash-preview",
-  "gemini-3-pro-preview",
+  getGeminiModel("FLASH-3"),
+  getGeminiModel("PRO-3"),
 ]);
 
 export const ClaudeModelSchema = z.enum([
-  "claude-sonnet-4-5-20250929",
-  "claude-haiku-4-5-20251001",
+  getClaudeModel("HAIKU-4.5"),
+  getClaudeModel("SONNET-4.5"),
 ]);
 
 export const ModelSchema = z.union([GeminiModelSchema, ClaudeModelSchema]);
@@ -29,7 +27,3 @@ export const BookGenerationSettingsSchema = z.object({
   provider: AIProviderSchema,
   model: ModelSchema,
 });
-
-export type BookGenerationSettingsValidated = z.infer<
-  typeof BookGenerationSettingsSchema
->;

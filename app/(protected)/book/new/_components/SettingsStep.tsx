@@ -2,7 +2,7 @@
 
 import {
   Language,
-  settingsStoreActions,
+  updateSettingsStore,
   useSettingsStore,
 } from "@/context/settingsStore";
 import { cn } from "@/utils";
@@ -16,18 +16,16 @@ export default function SettingsStep() {
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
 
-  const { set } = settingsStoreActions;
-
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
-    set("chapterCount", val as number);
+    updateSettingsStore("chapterCount", val as number);
   };
 
   const toggleAutoChapters = (checked: boolean) => {
     if (checked) {
-      set("chapterCount", "Auto");
+      updateSettingsStore("chapterCount", "Auto");
     } else {
-      set("chapterCount", 5);
+      updateSettingsStore("chapterCount", 5);
     }
   };
 
@@ -55,7 +53,9 @@ export default function SettingsStep() {
             </label>
             <select
               value={language}
-              onChange={(e) => set("language", e.target.value as Language)}
+              onChange={(e) =>
+                updateSettingsStore("language", e.target.value as Language)
+              }
               className="mt-1 block w-full rounded-lg border-neutral-200 bg-white text-black focus:border-black focus:ring-black sm:text-sm p-3 border font-medium"
             >
               <option value="Korean">Korean (한국어)</option>
@@ -122,7 +122,9 @@ export default function SettingsStep() {
             </label>
             <textarea
               value={userPreference}
-              onChange={(e) => set("userPreference", e.target.value)}
+              onChange={(e) =>
+                updateSettingsStore("userPreference", e.target.value)
+              }
               rows={4}
               className="mt-1 block w-full rounded-xl border-neutral-200 bg-white text-black shadow-none focus:border-black focus:ring-black sm:text-sm p-4 border placeholder:text-neutral-400 font-medium resize-none"
               placeholder="E.g., Maintain a humorous tone, use simple analogies, focus on technical depth..."

@@ -14,10 +14,7 @@ import {
   updateTocStore,
   useTocGenerationStore,
 } from "@/context/tocStore";
-import {
-  settingsStoreActions,
-  useSettingsStore,
-} from "@/context/settingsStore";
+import { updateSettingsStore, useSettingsStore } from "@/context/settingsStore";
 import { createBookAction } from "@/lib/actions/book";
 import { generateTocAction } from "@/lib/actions/ai";
 import {
@@ -247,8 +244,6 @@ export default function TOCReviewStep() {
     userPreference,
   } = useSettingsStore();
 
-  const { set } = settingsStoreActions;
-
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const [tempTOC, setTempTOC] = useState<string[]>([]);
@@ -333,8 +328,8 @@ export default function TOCReviewStep() {
   const handleModelChange = (modelId: GeminiModel | ClaudeModel) => {
     const providerId = getProviderByModel(modelId);
     if (providerId) {
-      set("contentProvider", providerId);
-      set("contentModel", modelId);
+      updateSettingsStore("contentProvider", providerId);
+      updateSettingsStore("contentModel", modelId);
     }
   };
 

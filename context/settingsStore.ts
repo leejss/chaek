@@ -1,11 +1,10 @@
 "use client";
 
 import {
-  DEFAULT_MODEL,
-  DEFAULT_PROVIDER,
-  AIProvider,
-  ClaudeModel,
-  GeminiModel,
+  type AIProvider,
+  type ClaudeModel,
+  type GeminiModel,
+  getDefaultConfig,
 } from "@/lib/ai/config";
 import { create } from "zustand";
 import { persist, devtools } from "zustand/middleware";
@@ -26,7 +25,7 @@ interface SettingsState {
 
 interface SettingsStore extends SettingsState {
   actions: {
-    set: <K extends keyof SettingsState>(
+    update: <K extends keyof SettingsState>(
       key: K,
       value: SettingsState[K],
     ) => void;
@@ -41,13 +40,13 @@ export const useSettingsStore = create<SettingsStore>()(
         chapterCount: "Auto",
         userPreference: "",
         requireConfirm: true,
-        tocProvider: DEFAULT_PROVIDER,
-        tocModel: DEFAULT_MODEL,
-        contentProvider: DEFAULT_PROVIDER,
-        contentModel: DEFAULT_MODEL,
+        tocProvider: getDefaultConfig().provider,
+        tocModel: getDefaultConfig().model,
+        contentProvider: getDefaultConfig().provider,
+        contentModel: getDefaultConfig().model,
 
         actions: {
-          set: (key, value) =>
+          update: (key, value) =>
             set(
               { [key]: value } as Partial<SettingsState>,
               false,
@@ -67,4 +66,4 @@ export const useSettingsStore = create<SettingsStore>()(
   ),
 );
 
-export const settingsStoreActions = useSettingsStore.getState().actions;
+export const updateSettingsStore = useSettingsStore.getState().actions.update;
