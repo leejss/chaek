@@ -1,6 +1,5 @@
 "use client";
 
-import { bookStoreActions } from "@/context/bookStore";
 import {
   Language,
   settingsStoreActions,
@@ -9,6 +8,7 @@ import {
 import { cn } from "@/utils";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
+import { completeStep } from "@/context/bookStore";
 
 export default function SettingsStep() {
   const router = useRouter();
@@ -16,7 +16,6 @@ export default function SettingsStep() {
   const chapterCount = useSettingsStore((state) => state.chapterCount);
   const userPreference = useSettingsStore((state) => state.userPreference);
 
-  const { completeStep } = bookStoreActions;
   const { set } = settingsStoreActions;
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +39,7 @@ export default function SettingsStep() {
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-extrabold text-black mb-4 tracking-tight uppercase">
+        <h2 className="text-4xl font-extrabold text-black mb-4 tracking-tight">
           Settings
         </h2>
         <p className="text-neutral-500 font-medium">
@@ -51,7 +50,7 @@ export default function SettingsStep() {
       <div className="bg-white border border-neutral-200 rounded-xl p-8 space-y-10">
         <div className="space-y-8">
           <div className="space-y-3">
-            <label className="block text-xs font-bold text-black uppercase tracking-widest">
+            <label className="block font-bold text-black">
               Output Language
             </label>
             <select
@@ -69,7 +68,7 @@ export default function SettingsStep() {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-black uppercase tracking-widest">
+              <label className="block font-bold text-black">
                 Chapter Count
               </label>
               <div className="flex items-center gap-2">
@@ -118,7 +117,7 @@ export default function SettingsStep() {
           </div>
 
           <div className="space-y-3">
-            <label className="block text-xs font-bold text-black uppercase tracking-widest">
+            <label className="block font-bold text-black">
               Custom Instructions
             </label>
             <textarea

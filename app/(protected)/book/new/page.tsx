@@ -1,7 +1,6 @@
 "use client";
 
 import { useBookStore } from "@/context/bookStore";
-import { Step } from "@/context/types/book";
 import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -12,17 +11,17 @@ import TOCReviewStep from "./_components/TOCReviewStep";
 
 function CreateBookContent() {
   const searchParams = useSearchParams();
-  const currentStep = (searchParams.get("step") as Step) || "settings";
+  const currentStep = searchParams.get("step") || "settings";
 
-  const bookStore = useBookStore();
-  const loadingState = bookStore.loadingState;
+  const tocGeneration = useBookStore((state) => state.tocGeneration);
 
-  const isLoading =
-    loadingState === "generating_toc" || loadingState === "generating";
+  const isLoading = tocGeneration.status === "loading";
+  const isInitialTocGeneration =
+    tocGeneration.status === "loading" && tocGeneration.variant === "initial";
 
   useBeforeUnload({ isEnabled: isLoading });
 
-  if (loadingState === "generating_toc") {
+  if (isInitialTocGeneration) {
     return (
       <div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
         <AILoadingStep

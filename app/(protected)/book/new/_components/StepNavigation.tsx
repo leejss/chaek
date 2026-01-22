@@ -17,13 +17,11 @@ export default function StepNavigation() {
   const searchParams = useSearchParams();
   const currentStep = (searchParams.get("step") as Step) || "settings";
 
-  const bookStore = useBookStore();
-  const loadingState = bookStore.loadingState;
-  const completedSteps = bookStore.completedSteps;
-  const canAccessStep = bookStore.actions.canAccessStep;
+  const tocGeneration = useBookStore((state) => state.tocGeneration);
+  const completedSteps = useBookStore((state) => state.completedSteps);
+  const canAccessStep = useBookStore((state) => state.actions.canAccessStep);
 
-  const isLoading =
-    loadingState === "generating_toc" || loadingState === "generating";
+  const isLoading = tocGeneration.status === "loading";
 
   const handleBack = () => {
     if (isLoading) {
@@ -78,7 +76,7 @@ export default function StepNavigation() {
                 {index > 0 && (
                   <div
                     className={cn(
-                      "w-8 h-[2px] mx-2 rounded-full",
+                      "w-8 h-0.5 mx-2 rounded-full",
                       isCompleted || isCurrent ? "bg-black" : "bg-neutral-200",
                     )}
                   />
@@ -92,8 +90,8 @@ export default function StepNavigation() {
                     isCurrent
                       ? "bg-black text-white border-black"
                       : isCompleted
-                      ? "bg-white text-black border-black hover:bg-neutral-50"
-                      : "bg-white text-neutral-400 border-neutral-200",
+                        ? "bg-white text-black border-black hover:bg-neutral-50"
+                        : "bg-white text-neutral-400 border-neutral-200",
                   )}
                 >
                   <span

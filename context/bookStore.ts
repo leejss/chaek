@@ -1,26 +1,61 @@
 "use client";
 
-import { BookState, Step } from "@/context/types/book";
+import { Step } from "@/context/types/book";
 import { create } from "zustand";
 import { combine, devtools } from "zustand/middleware";
 
 const STEPS: Step[] = ["settings", "source_input", "toc_review"];
 
+type TocGenerationState =
+  | { status: "idle" }
+  | { status: "loading"; variant: "initial" | "regenerate" }
+  | { status: "error"; message: string };
+
+type BookState = {
+  sourceText: string;
+  bookTitle: string;
+  tableOfContents: string[];
+  tocGeneration: TocGenerationState;
+  completedSteps: Set<Step>;
+};
+
 const initialState: BookState = {
   sourceText: "",
   bookTitle: "",
   tableOfContents: [],
-  loadingState: "idle",
-  error: null,
+  tocGeneration: { status: "idle" },
   completedSteps: new Set<Step>(["settings"]),
 };
 
 type UpdatableBookFields = "sourceText" | "bookTitle" | "tableOfContents";
-
 export const useBookStore = create(
   devtools(
     combine(initialState, (set, get) => {
       const actions = {
+        startTocGeneration: (variant: "initial" | "regenerate") => {
+          set(
+            { tocGeneration: { status: "loading", variant } },
+            false,
+            `book/tocGeneration/start/${variant}`,
+          );
+        },
+
+        failTocGeneration: (message: string) => {
+          set(
+            { tocGeneration: { status: "error", message } },
+            false,
+            "book/tocGeneration/fail",
+          );
+        },
+
+        clearTocGenerationError: () => {
+          set(
+            { tocGeneration: { status: "idle" } },
+            false,
+            "book/tocGeneration/clearError",
+          );
+        },
+
         update: <K extends UpdatableBookFields>(
           key: K,
           value: BookState[K],
@@ -37,6 +72,7 @@ export const useBookStore = create(
             {
               bookTitle: title,
               tableOfContents: chapters,
+              tocGeneration: { status: "idle" },
               completedSteps: new Set<Step>([
                 ...get().completedSteps,
                 "source_input",
@@ -74,10 +110,6 @@ export const useBookStore = create(
             "book/completeStep",
           );
         },
-
-        clearError: () => {
-          set({ error: null, loadingState: "idle" }, false, "book/clearError");
-        },
       };
 
       return { actions };
@@ -85,4 +117,13 @@ export const useBookStore = create(
   ),
 );
 
-export const bookStoreActions = useBookStore.getState().actions;
+export const update = useBookStore.getState().actions.update;
+export const setTocResult = useBookStore.getState().actions.setTocResult;
+export const canAccessStep = useBookStore.getState().actions.canAccessStep;
+export const completeStep = useBookStore.getState().actions.completeStep;
+export const startTocGeneration =
+  useBookStore.getState().actions.startTocGeneration;
+export const failTocGeneration =
+  useBookStore.getState().actions.failTocGeneration;
+export const clearTocGenerationError =
+  useBookStore.getState().actions.clearTocGenerationError;

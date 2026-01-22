@@ -1,28 +1,31 @@
 "use client";
 
 import Button from "@/components/Button";
-import { bookStoreActions, useBookStore } from "@/context/bookStore";
+import {
+  failTocGeneration,
+  setTocResult,
+  startTocGeneration,
+  update,
+  useBookStore,
+} from "@/context/bookStore";
 import { useSettingsStore } from "@/context/settingsStore";
 import { generateTocAction } from "@/lib/actions/ai";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export default function SourceInputStep() {
   const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const sourceText = useBookStore((state) => state.sourceText);
+  const tocGeneration = useBookStore((state) => state.tocGeneration);
   const setting = useSettingsStore();
 
-  const { update, setTocResult } = bookStoreActions;
+  const isLoading = tocGeneration.status === "loading";
+  const error = tocGeneration.status === "error" ? tocGeneration.message : null;
 
   const handleGenerateTOC = async () => {
     if (!sourceText?.trim()) return;
 
-    setIsLoading(true);
-    setError(null);
+    startTocGeneration("initial");
 
     try {
       const result = await generateTocAction({
@@ -38,18 +41,14 @@ export default function SourceInputStep() {
       router.push("/book/new?step=toc_review");
     } catch (err) {
       console.error("TOC generation failed:", err);
-      setError("TOC 생성에 실패했습니다. 다시 시도해 주세요.");
-    } finally {
-      setIsLoading(false);
+      failTocGeneration("TOC 생성에 실패했습니다. 다시 시도해 주세요.");
     }
   };
 
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-extrabold text-black mb-4 tracking-tight uppercase">
-          Source Text
-        </h2>
+        <h2 className="text-4xl font-extrabold text-black mb-4">Source Text</h2>
         <p className="text-neutral-500 font-medium">
           Paste your source text below. The AI will organize this into a
           coherent book structure.
@@ -81,7 +80,7 @@ export default function SourceInputStep() {
           isLoading={isLoading}
           className="w-full md:w-auto h-14 px-12 text-lg font-bold rounded-full"
         >
-          GENERATE STRUCTURE
+          Generate
         </Button>
       </div>
     </div>
