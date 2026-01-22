@@ -1,4 +1,4 @@
-import { aiProvider, claudeModel, geminiModel } from "@/lib/ai/config";
+import { getAIProvider, getClaudeModel, getGeminiModel } from "@/lib/ai/config";
 import type { AIProvider } from "@/lib/ai/config";
 import { serverEnv } from "@/lib/env";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -33,12 +33,12 @@ export function getModel(
   provider: AIProvider | undefined,
   modelName: string | undefined,
 ): LanguageModel {
-  if (provider === aiProvider.ANTHROPIC) {
-    return getAnthropicClient()(modelName || claudeModel.HAIKU);
+  if (provider === getAIProvider("ANTHROPIC")) {
+    return getAnthropicClient()(modelName || getClaudeModel("HAIKU-4.5"));
   }
 
-  if (provider === aiProvider.GOOGLE) {
-    return getGoogleClient()(modelName || geminiModel.FLASH);
+  if (provider === getAIProvider("GOOGLE")) {
+    return getGoogleClient()(modelName || getGeminiModel("FLASH-3"));
   }
 
   throw new Error(`Unknown provider: ${provider}`);

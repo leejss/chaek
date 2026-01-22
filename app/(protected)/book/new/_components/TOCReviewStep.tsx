@@ -4,9 +4,8 @@ import { useState } from "react";
 import {
   AI_CONFIG,
   getProviderByModel,
-  aiProvider,
-  GeminiModel,
-  ClaudeModel,
+  type GeminiModel,
+  type ClaudeModel,
 } from "@/lib/ai/config";
 import {
   failTocGeneration,
@@ -59,8 +58,7 @@ const resolveGenerationSettings = (
   language,
   chapterCount,
   userPreference,
-  provider:
-    contentProvider || getProviderByModel(contentModel) || aiProvider.ANTHROPIC,
+  provider: contentProvider,
   model: contentModel,
 });
 
