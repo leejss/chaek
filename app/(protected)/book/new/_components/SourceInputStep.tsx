@@ -5,9 +5,9 @@ import {
   failTocGeneration,
   setTocResult,
   startTocGeneration,
-  update,
-  useBookStore,
-} from "@/context/bookStore";
+  updateTocStore,
+  useTocGenerationStore,
+} from "@/context/tocStore";
 import { useSettingsStore } from "@/context/settingsStore";
 import { generateTocAction } from "@/lib/actions/ai";
 import { useRouter } from "next/navigation";
@@ -15,8 +15,8 @@ import { useRouter } from "next/navigation";
 export default function SourceInputStep() {
   const router = useRouter();
 
-  const sourceText = useBookStore((state) => state.sourceText);
-  const tocGeneration = useBookStore((state) => state.tocGeneration);
+  const sourceText = useTocGenerationStore((state) => state.sourceText);
+  const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
   const setting = useSettingsStore();
 
   const isLoading = tocGeneration.status === "loading";
@@ -60,7 +60,7 @@ export default function SourceInputStep() {
           className="w-full h-96 p-6 bg-white border-2 border-neutral-200 rounded-xl focus:border-black focus:ring-0 transition-all text-lg leading-relaxed resize-none placeholder:text-neutral-400 font-medium text-black shadow-none"
           placeholder="Paste your source text here..."
           value={sourceText || ""}
-          onChange={(e) => update("sourceText", e.target.value)}
+          onChange={(e) => updateTocStore("sourceText", e.target.value)}
         />
         <div className="absolute bottom-4 right-4 text-xs font-bold text-black bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200 uppercase tracking-wide">
           {sourceText?.length || 0} chars

@@ -1,6 +1,6 @@
 "use client";
 
-import { useBookStore } from "@/context/bookStore";
+import { useTocGenerationStore } from "@/context/tocStore";
 import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -13,7 +13,7 @@ function CreateBookContent() {
   const searchParams = useSearchParams();
   const currentStep = searchParams.get("step") || "settings";
 
-  const tocGeneration = useBookStore((state) => state.tocGeneration);
+  const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
 
   const isLoading = tocGeneration.status === "loading";
   const isInitialTocGeneration =

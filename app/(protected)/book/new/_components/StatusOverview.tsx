@@ -1,6 +1,6 @@
 "use client";
 
-import { useBookStore } from "@/context/bookStore";
+import { useTocGenerationStore } from "@/context/tocStore";
 import { useSettingsStore } from "@/context/settingsStore";
 import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
 import { useState } from "react";
@@ -13,7 +13,7 @@ interface StatusOverviewProps {
 export default function StatusOverview(props: StatusOverviewProps) {
   const { onCancel, isGenerating } = props;
   const [isOpen, setIsOpen] = useState(false);
-  const bookStore = useBookStore();
+  const bookStore = useTocGenerationStore();
 
   const sourceText = bookStore.sourceText;
   const tableOfContents = bookStore.tableOfContents;

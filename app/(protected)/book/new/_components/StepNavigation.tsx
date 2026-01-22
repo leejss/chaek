@@ -1,6 +1,6 @@
 "use client";
 
-import { useBookStore } from "@/context/bookStore";
+import { canAccessStep, useTocGenerationStore } from "@/context/tocStore";
 import { Step } from "@/context/types/book";
 import { cn } from "@/utils";
 import { ChevronLeft } from "lucide-react";
@@ -17,14 +17,13 @@ export default function StepNavigation() {
   const searchParams = useSearchParams();
   const currentStep = (searchParams.get("step") as Step) || "settings";
 
-  const tocGeneration = useBookStore((state) => state.tocGeneration);
-  const completedSteps = useBookStore((state) => state.completedSteps);
-  const canAccessStep = useBookStore((state) => state.actions.canAccessStep);
-
-  const isLoading = tocGeneration.status === "loading";
+  const tocGenerationStatus = useTocGenerationStore(
+    (state) => state.tocGeneration.status,
+  );
+  const completedSteps = useTocGenerationStore((state) => state.completedSteps);
 
   const handleBack = () => {
-    if (isLoading) {
+    if (tocGenerationStatus === "loading") {
       if (!confirm("진행 중인 작업을 중단하고 이전 단계로 돌아가시겠습니까?")) {
         return;
       }

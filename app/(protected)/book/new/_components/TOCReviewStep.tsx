@@ -12,9 +12,9 @@ import {
   failTocGeneration,
   setTocResult,
   startTocGeneration,
-  update,
-  useBookStore,
-} from "@/context/bookStore";
+  updateTocStore,
+  useTocGenerationStore,
+} from "@/context/tocStore";
 import {
   settingsStoreActions,
   useSettingsStore,
@@ -238,7 +238,7 @@ const ActionButtons = ({
 
 export default function TOCReviewStep() {
   const { tableOfContents, bookTitle, sourceText, tocGeneration } =
-    useBookStore();
+    useTocGenerationStore();
   const {
     tocProvider,
     tocModel,
@@ -267,8 +267,8 @@ export default function TOCReviewStep() {
   };
 
   const handleSave = () => {
-    update("bookTitle", TOC.formatTitle(tempTitle));
-    update("tableOfContents", TOC.normalize(tempTOC));
+    updateTocStore("bookTitle", TOC.formatTitle(tempTitle));
+    updateTocStore("tableOfContents", TOC.normalize(tempTOC));
     setIsEditing(false);
   };
 

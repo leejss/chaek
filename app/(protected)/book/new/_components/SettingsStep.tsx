@@ -8,7 +8,7 @@ import {
 import { cn } from "@/utils";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
-import { completeStep } from "@/context/bookStore";
+import { completeStep } from "@/context/tocStore";
 
 export default function SettingsStep() {
   const router = useRouter();

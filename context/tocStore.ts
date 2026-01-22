@@ -28,7 +28,7 @@ const initialState: BookState = {
 };
 
 type UpdatableBookFields = "sourceText" | "bookTitle" | "tableOfContents";
-export const useBookStore = create(
+export const useTocGenerationStore = create(
   devtools(
     combine(initialState, (set, get) => {
       const actions = {
@@ -117,13 +117,16 @@ export const useBookStore = create(
   ),
 );
 
-export const update = useBookStore.getState().actions.update;
-export const setTocResult = useBookStore.getState().actions.setTocResult;
-export const canAccessStep = useBookStore.getState().actions.canAccessStep;
-export const completeStep = useBookStore.getState().actions.completeStep;
+export const updateTocStore = useTocGenerationStore.getState().actions.update;
+export const setTocResult =
+  useTocGenerationStore.getState().actions.setTocResult;
+export const canAccessStep =
+  useTocGenerationStore.getState().actions.canAccessStep;
+export const completeStep =
+  useTocGenerationStore.getState().actions.completeStep;
 export const startTocGeneration =
-  useBookStore.getState().actions.startTocGeneration;
+  useTocGenerationStore.getState().actions.startTocGeneration;
 export const failTocGeneration =
-  useBookStore.getState().actions.failTocGeneration;
+  useTocGenerationStore.getState().actions.failTocGeneration;
 export const clearTocGenerationError =
-  useBookStore.getState().actions.clearTocGenerationError;
+  useTocGenerationStore.getState().actions.clearTocGenerationError;
