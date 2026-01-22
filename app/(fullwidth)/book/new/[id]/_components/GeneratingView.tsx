@@ -1,8 +1,8 @@
 "use client";
 
-import { BookGenerationSettings } from "@/context/types/settings";
 import StatusOverviewGeneration from "@/app/(protected)/book/new/_components/StatusOverviewGeneration";
 import GenerationStep from "@/app/(protected)/book/new/_components/GenerationStep";
+import { BookGenerationSettings } from "@/lib/ai/schemas/settings";
 
 interface GeneratingViewProps {
   bookTitle: string;

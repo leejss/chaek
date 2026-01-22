@@ -1,5 +1,4 @@
 import { ChapterContent } from "@/context/types/generation";
-import { BookGenerationSettings } from "@/context/types/settings";
 import type { PlanOutput } from "@/lib/ai/schemas/plan";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
@@ -73,9 +72,7 @@ async function BookGenerationContent({ params }: PageProps) {
         tableOfContents={tableOfContents ?? []}
         sourceText={sourceText || ""}
         chapters={initialChapters}
-        generationSettings={
-          bookData.generationSettings as BookGenerationSettings
-        }
+        generationSettings={bookData.generationSettings}
         bookPlan={(bookPlan as PlanOutput | null) || undefined}
       />
     </div>

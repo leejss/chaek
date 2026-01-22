@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
 import { useGenerationStore } from "@/context/generationContext";
-import { BookGenerationSettings } from "@/context/types/settings";
+import { BookGenerationSettings } from "@/lib/ai/schemas/settings";
 
 interface StatusOverviewGenerationProps {
   bookTitle: string;

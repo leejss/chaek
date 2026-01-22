@@ -6,7 +6,7 @@ import {
   generationStore,
   useGenerationStore,
 } from "@/context/generationContext";
-import { BookSettings, BookGenerationSettings } from "@/context/types/settings";
+import { BookSettings } from "@/context/types/settings";
 import { Section } from "@/context/types/book";
 import { fetchStreamSection } from "@/lib/ai/fetch";
 import { deductCreditsAction } from "@/lib/actions/credits";
@@ -16,6 +16,7 @@ import CompletedView from "./CompletedView";
 import GeneratingView from "./GeneratingView";
 import IdleView from "./IdleView";
 import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import { BookGenerationSettings } from "@/lib/ai/schemas/settings";
 
 const CANCELLED_MESSAGE = "생성이 취소되었습니다.";
 

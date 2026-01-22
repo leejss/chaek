@@ -27,7 +27,6 @@ import {
   Trash2,
 } from "lucide-react";
 import Button from "@/components/Button";
-import { BookGenerationSettings } from "@/context/types/settings";
 import { AIProvider } from "@/lib/ai/config";
 import { Language } from "@/lib/ai/schemas/settings";
 
@@ -52,7 +51,7 @@ const resolveGenerationSettings = (
   language: Language,
   chapterCount: number | "Auto",
   userPreference: string,
-): BookGenerationSettings => ({
+) => ({
   language,
   chapterCount,
   userPreference,
