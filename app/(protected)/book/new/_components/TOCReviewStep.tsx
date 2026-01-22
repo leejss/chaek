@@ -27,8 +27,9 @@ import {
   Trash2,
 } from "lucide-react";
 import Button from "@/components/Button";
-import { BookGenerationSettings, Language } from "@/context/types/settings";
+import { BookGenerationSettings } from "@/context/types/settings";
 import { AIProvider } from "@/lib/ai/config";
+import { Language } from "@/lib/ai/schemas/settings";
 
 /**
  * Pure functions for TOC manipulation (FP Domain Logic)

@@ -9,7 +9,7 @@ import { HttpError } from "@/lib/errors";
 import { and, desc, eq } from "drizzle-orm";
 import { FREE_SIGNUP_CREDITS } from "./config";
 import { AIProvider } from "@/lib/ai/config";
-import { Language } from "@/context/types/settings";
+import { Language } from "../ai/schemas/settings";
 
 function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;

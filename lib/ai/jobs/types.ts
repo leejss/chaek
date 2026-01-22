@@ -1,12 +1,5 @@
 import { z } from "zod";
-
-const languageSchema = z.enum([
-  "Korean",
-  "English",
-  "Japanese",
-  "Chinese",
-  "Auto",
-]);
+import { LanguageSchema } from "../schemas/settings";
 
 export const generateBookJobSchema = z.object({
   bookId: z.string().min(1),
@@ -14,7 +7,7 @@ export const generateBookJobSchema = z.object({
   chapterNumber: z.number().int().min(1).optional(),
   provider: z.enum(["google", "anthropic"]),
   model: z.string().min(1),
-  language: languageSchema.default("Korean"),
+  language: LanguageSchema.default("Korean"),
   userPreference: z.string().default(""),
 });
 

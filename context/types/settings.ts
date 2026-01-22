@@ -1,6 +1,5 @@
-import { AIProvider, ClaudeModel, GeminiModel } from "@/lib/ai/config";
-
-export type Language = "Korean" | "English" | "Japanese" | "Chinese" | "Auto";
+import type { AIProvider, ClaudeModel, GeminiModel } from "@/lib/ai/config";
+import type { Language } from "@/lib/ai/schemas/settings";
 
 export interface BookSettings {
   language: Language;

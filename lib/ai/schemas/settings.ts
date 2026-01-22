@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { getAIProvider, getClaudeModel, getGeminiModel } from "../config";
 
-export const LanguageSchema = z.enum(["Korean", "English", "Auto"]);
+export const LanguageSchema = z.enum(["Korean", "English"]);
+
+export type Language = z.infer<typeof LanguageSchema>;
 
 export const AIProviderSchema = z.enum([
   getAIProvider("GOOGLE"),
@@ -27,3 +29,7 @@ export const BookGenerationSettingsSchema = z.object({
   provider: AIProviderSchema,
   model: ModelSchema,
 });
+
+export type BookGenerationSettings = z.infer<
+  typeof BookGenerationSettingsSchema
+>;

@@ -6,10 +6,10 @@ import {
   type GeminiModel,
   getDefaultConfig,
 } from "@/lib/ai/config";
+import type { Language } from "@/lib/ai/schemas/settings";
 import { create } from "zustand";
 import { persist, devtools } from "zustand/middleware";
 
-export type Language = "Korean" | "English" | "Japanese" | "Chinese" | "Auto";
 export type ChapterCount = number | "Auto";
 
 interface SettingsState {
