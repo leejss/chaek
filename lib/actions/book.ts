@@ -15,10 +15,40 @@ import {
   BookGenerationSettings,
   BookGenerationSettingsSchema,
 } from "../ai/schemas/settings";
+import { ChapterOutlineSchema } from "../ai/schemas/outline";
+import { z } from "zod";
+
+const CreateBookInputSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200, "Title is too long"),
+  tableOfContents: z
+    .array(z.string().min(1, "TOC item cannot be empty"))
+    .min(1, "At least one TOC item is required")
+    .max(50, "Too many TOC items"),
+  sourceText: z.string().max(100000, "Source text is too long"),
+  generationSettings: BookGenerationSettingsSchema,
+});
+
+const SaveChapterInputSchema = z.object({
+  bookId: z.string().uuid("Invalid book ID"),
+  chapterNumber: z.number().int().positive("Chapter number must be positive"),
+  title: z.string().min(1, "Title is required").max(200, "Title is too long"),
+  content: z.string().max(500000, "Content is too long"),
+  outline: ChapterOutlineSchema,
+});
 
 export async function getBookWithValidation(bookId: string, userId: string) {
   const data = await findBookByIdAndUserId(bookId, userId);
-  if (!data?.books) return null;
+  if (!data?.books) {
+    console.warn(`Book not found: ${bookId} for user ${userId}`);
+    return null;
+  }
+
+  if (!data.book_generation_states) {
+    console.warn(
+      `Book generation state not found: ${bookId} for user ${userId}`,
+    );
+    return null;
+  }
 
   const { books: book, book_generation_states: state } = data;
   const generationSettings = state?.generationSettings;
@@ -33,7 +63,7 @@ export async function getBookWithValidation(bookId: string, userId: string) {
 
   return {
     ...book,
-    status: state?.status ?? "waiting",
+    status: state?.status,
     currentChapterIndex: state?.currentChapterIndex ?? null,
     error: state?.error ?? null,
     generationSettings: parsed.data,
@@ -45,9 +75,16 @@ export async function getBookWithValidation(bookId: string, userId: string) {
 export async function createBookAction(
   title: string,
   tableOfContents: string[],
-  sourceText?: string,
-  generationSettings?: BookGenerationSettings,
+  sourceText: string,
+  generationSettings: BookGenerationSettings,
 ) {
+  const parsed = CreateBookInputSchema.parse({
+    title,
+    tableOfContents,
+    sourceText,
+    generationSettings,
+  });
+
   const userId = await getUserId();
 
   const inserted = await db.transaction(async (tx) => {
@@ -55,10 +92,10 @@ export async function createBookAction(
       .insert(books)
       .values({
         userId,
-        title,
+        title: parsed.title,
         content: "",
-        tableOfContents,
-        sourceText: sourceText ?? undefined,
+        tableOfContents: parsed.tableOfContents,
+        sourceText: parsed.sourceText || undefined,
       })
       .returning({ id: books.id });
 
@@ -68,7 +105,7 @@ export async function createBookAction(
     await tx.insert(bookGenerationStates).values({
       bookId: row.id,
       status: "waiting",
-      generationSettings: generationSettings ?? undefined,
+      generationSettings: parsed.generationSettings,
     });
 
     return row;
@@ -135,12 +172,20 @@ export async function saveChapterAction(
   content: string,
   outline: ChapterOutline,
 ) {
+  const parsed = SaveChapterInputSchema.parse({
+    bookId,
+    chapterNumber,
+    title,
+    content,
+    outline,
+  });
+
   const userId = await getUserId();
 
   const bookFound = await db
     .select({ id: books.id })
     .from(books)
-    .where(and(eq(books.id, bookId), eq(books.userId, userId)))
+    .where(and(eq(books.id, parsed.bookId), eq(books.userId, userId)))
     .limit(1);
 
   if (bookFound.length === 0) {
@@ -151,38 +196,38 @@ export async function saveChapterAction(
   await db
     .insert(chapters)
     .values({
-      bookId,
-      chapterNumber,
-      title,
-      content,
-      outline,
+      bookId: parsed.bookId,
+      chapterNumber: parsed.chapterNumber,
+      title: parsed.title,
+      content: parsed.content,
+      outline: parsed.outline,
       status: "completed",
     })
     .onConflictDoUpdate({
       target: [chapters.bookId, chapters.chapterNumber],
       set: {
-        content,
-        outline,
+        content: parsed.content,
+        outline: parsed.outline,
         status: "completed",
       },
     });
 
   // 2. Update book content by aggregating all chapters
-  const fullContent = await aggregateBookContent(bookId);
+  const fullContent = await aggregateBookContent(parsed.bookId);
 
   await db.transaction(async (tx) => {
     await tx
       .insert(bookGenerationStates)
       .values({
-        bookId,
+        bookId: parsed.bookId,
         status: "generating",
-        currentChapterIndex: chapterNumber,
+        currentChapterIndex: parsed.chapterNumber,
       })
       .onConflictDoUpdate({
         target: [bookGenerationStates.bookId],
         set: {
           status: "generating",
-          currentChapterIndex: chapterNumber,
+          currentChapterIndex: parsed.chapterNumber,
         },
       });
 
@@ -191,6 +236,6 @@ export async function saveChapterAction(
       .set({
         content: fullContent,
       })
-      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+      .where(and(eq(books.id, parsed.bookId), eq(books.userId, userId)));
   });
 }

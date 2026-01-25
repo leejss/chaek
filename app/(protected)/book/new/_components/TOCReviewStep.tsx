@@ -27,8 +27,6 @@ import {
   Trash2,
 } from "lucide-react";
 import Button from "@/components/Button";
-import { AIProvider } from "@/lib/ai/config";
-import { Language } from "@/lib/ai/schemas/settings";
 
 /**
  * Pure functions for TOC manipulation (FP Domain Logic)
@@ -41,23 +39,6 @@ const TOC = {
   normalize: (toc: string[]) => toc.map((t) => t.trim()).filter(Boolean),
   formatTitle: (title: string) => title.trim() || "Untitled Book",
 };
-
-/**
- * Pure function to resolve generation settings
- */
-const resolveGenerationSettings = (
-  contentProvider: AIProvider,
-  contentModel: GeminiModel | ClaudeModel,
-  language: Language,
-  chapterCount: number | "Auto",
-  userPreference: string,
-) => ({
-  language,
-  chapterCount,
-  userPreference,
-  provider: contentProvider,
-  model: contentModel,
-});
 
 /**
  * Sub-components for declarative rendering
@@ -283,20 +264,13 @@ export default function TOCReviewStep() {
 
     setIsSaving(true);
     try {
-      const generationSettings = resolveGenerationSettings(
-        contentProvider,
-        contentModel,
+      await createBookAction(bookTitle, tableOfContents, sourceText, {
+        provider: contentProvider,
+        model: contentModel,
         language,
         chapterCount,
         userPreference,
-      );
-
-      await createBookAction(
-        bookTitle,
-        tableOfContents,
-        sourceText,
-        generationSettings,
-      );
+      });
     } finally {
       setIsSaving(false);
     }
