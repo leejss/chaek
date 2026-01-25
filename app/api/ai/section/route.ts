@@ -60,9 +60,9 @@ export async function POST(req: Request) {
       {
         chapterNumber,
         chapterTitle,
-        chapterOutline: chapterOutline as Section[],
+        chapterOutline,
         sectionIndex,
-        previousSections: previousSections as Section[],
+        previousSections,
         plan: bookPlan,
         language,
         userPreference,

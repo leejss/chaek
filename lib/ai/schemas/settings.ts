@@ -33,3 +33,11 @@ export const BookGenerationSettingsSchema = z.object({
 export type BookGenerationSettings = z.infer<
   typeof BookGenerationSettingsSchema
 >;
+
+export const DEFAULT_GENERATION_SETTINGS: BookGenerationSettings = {
+  provider: "google",
+  model: "gemini-3-flash-preview",
+  language: "Korean",
+  chapterCount: "Auto",
+  userPreference: "",
+};

@@ -1,13 +1,46 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { ChapterOutline } from "@/context/types/book";
 import { db } from "@/db";
 import { bookGenerationStates, books, BookStatus, chapters } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
-import { ChapterOutline } from "@/context/types/book";
-import { aggregateBookContent } from "@/lib/repositories/bookRepository";
-import { BookGenerationSettings } from "../ai/schemas/settings";
+import { ValidationError } from "@/lib/errors";
+import {
+  aggregateBookContent,
+  findBookByIdAndUserId,
+} from "@/lib/repositories/bookRepository";
+import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import {
+  BookGenerationSettings,
+  BookGenerationSettingsSchema,
+} from "../ai/schemas/settings";
+
+export async function getBookWithValidation(bookId: string, userId: string) {
+  const data = await findBookByIdAndUserId(bookId, userId);
+  if (!data?.books) return null;
+
+  const { books: book, book_generation_states: state } = data;
+  const generationSettings = state?.generationSettings;
+
+  const parsed = BookGenerationSettingsSchema.safeParse(generationSettings);
+  if (!parsed.success) {
+    throw new ValidationError(
+      `Invalid generationSettings for book ${bookId}`,
+      parsed.error.flatten().fieldErrors,
+    );
+  }
+
+  return {
+    ...book,
+    status: state?.status ?? "waiting",
+    currentChapterIndex: state?.currentChapterIndex ?? null,
+    error: state?.error ?? null,
+    generationSettings: parsed.data,
+    bookPlan: state?.bookPlan ?? null,
+    streamingStatus: state?.streamingStatus ?? null,
+  };
+}
 
 export async function createBookAction(
   title: string,

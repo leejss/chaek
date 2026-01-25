@@ -2,7 +2,7 @@ import { ChapterContent } from "@/context/types/generation";
 import type { PlanOutput } from "@/lib/ai/schemas/plan";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
-import { findBookByIdAndUserId } from "@/lib/repositories/bookRepository";
+import { getBookWithValidation } from "@/lib/actions/book";
 import { findChaptersByBookIdAndStatus } from "@/lib/repositories/chapterRepository";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -34,7 +34,7 @@ async function BookGenerationContent({ params }: PageProps) {
   const secret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
   const { userId } = await verifyAccessJWT(accessToken, secret);
 
-  const bookData = await findBookByIdAndUserId(bookId, userId);
+  const bookData = await getBookWithValidation(bookId, userId);
 
   if (!bookData) {
     notFound();

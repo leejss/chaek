@@ -8,7 +8,12 @@ export async function findChaptersByBookIdAndStatus(
   status: ChapterStatus,
 ) {
   return db
-    .select()
+    .select({
+      chapterNumber: chapters.chapterNumber,
+      title: chapters.title,
+      content: chapters.content,
+      outline: chapters.outline,
+    })
     .from(chapters)
     .where(and(eq(chapters.bookId, bookId), eq(chapters.status, status)))
     .orderBy(asc(chapters.chapterNumber));
