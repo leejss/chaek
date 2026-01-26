@@ -15,17 +15,6 @@ export default function CompletedView({
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 bg-neutral-50/50">
       <div className="max-w-2xl w-full text-center animate-in fade-in zoom-in-95 duration-500">
-        <div className="mb-8 relative inline-flex">
-          <div className="absolute inset-0 bg-green-200 rounded-full opacity-20 animate-ping" />
-          <div className="relative inline-flex items-center justify-center w-24 h-24 bg-white rounded-full text-green-600 shadow-sm border border-green-100">
-            <Check size={48} strokeWidth={3} />
-          </div>
-        </div>
-
-        <h1 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-6">
-          Generation Complete
-        </h1>
-
         <div className="mb-12">
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-neutral-900 mb-6 leading-tight">
             {bookTitle || "Untitled Book"}

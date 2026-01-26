@@ -241,7 +241,7 @@ export default function BookView({
                   </span>
                 )}
               </div>
-              <h1 className="text-5xl md:text-7xl font-black text-black mb-8 leading-none tracking-tighter uppercase">
+              <h1 className="text-3xl md:text-5xl font-black text-black mb-8 leading-none tracking-tighter uppercase">
                 {book.title}
               </h1>
               <div className="flex items-center justify-center gap-2 text-neutral-500 text-sm uppercase tracking-widest font-bold">
