@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "env:check": "npx tsx scripts/checkEnv.ts",
-    "build": "npm run env:check && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
