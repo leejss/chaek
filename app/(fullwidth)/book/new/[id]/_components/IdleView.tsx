@@ -30,7 +30,7 @@ export default function IdleView({
   onStart,
 }: IdleViewProps) {
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto p-8">
       <h1 className="text-4xl text-center md:text-5xl font-bold text-black mb-4 md:mb-6">
         {bookTitle}
       </h1>
@@ -86,10 +86,10 @@ export default function IdleView({
           {isDeductingCredits
             ? "Processing..."
             : isProcessing
-            ? "Processing..."
-            : isResumable
-            ? "Resume Writing"
-            : "Start Writing"}
+              ? "Processing..."
+              : isResumable
+                ? "Resume Writing"
+                : "Start Writing"}
         </Button>
       </div>
 

@@ -87,10 +87,10 @@ const TOCActions = ({
       <Button
         variant="outline"
         onClick={onEditStart}
-        className="h-8 px-4 text-xs gap-2 font-bold bg-white border-neutral-300 text-black hover:bg-neutral-50 rounded-full"
+        className="h-8 px-4 text-sm gap-2 font-bold bg-white border-neutral-300 text-black hover:bg-neutral-50 rounded-full"
       >
         <Edit2 size={12} strokeWidth={3} />
-        EDIT LIST
+        Edit Outline
       </Button>
     )}
   </div>

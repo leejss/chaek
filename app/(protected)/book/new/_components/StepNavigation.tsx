@@ -98,7 +98,7 @@ export default function StepNavigation() {
                 >
                   <span
                     className={cn(
-                      "text-xs font-bold tracking-wide uppercase",
+                      "text-sm font-bold",
                       !isCurrent && !isCompleted && "hidden sm:inline-block",
                     )}
                   >

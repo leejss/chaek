@@ -24,8 +24,13 @@ export default function GeneratingView({
   error,
 }: GeneratingViewProps) {
   return (
-    <div className="max-w-3xl mx-auto">
-      <GenerationStep tableOfContents={tableOfContents} />
+    <div className="w-full h-full">
+      <GenerationStep
+        tableOfContents={tableOfContents}
+        bookTitle={bookTitle}
+        sourceText={sourceText}
+        generationSettings={generationSettings}
+      />
       <StatusOverviewGeneration
         bookTitle={bookTitle}
         sourceText={sourceText}

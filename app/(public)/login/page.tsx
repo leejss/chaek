@@ -78,7 +78,7 @@ function LoginContent() {
     return () => {
       document.head.removeChild(script);
     };
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -119,7 +119,7 @@ function LoginContent() {
           >
             <div
               ref={googleBtnRef}
-              className={`min-h-[44px] flex justify-center transition-all duration-300 ${
+              className={`min-h-11 flex justify-center transition-all duration-300 ${
                 loading
                   ? "pointer-events-none opacity-60 scale-95"
                   : "hover:scale-105"

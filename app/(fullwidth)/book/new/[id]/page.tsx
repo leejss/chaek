@@ -64,7 +64,7 @@ async function BookGenerationContent({ params }: PageProps) {
   const { title, id, status, tableOfContents, sourceText, bookPlan } = bookData;
 
   return (
-    <div className="p-8">
+    <div className="h-[calc(100vh-4rem)]">
       <GenerationView
         bookId={id}
         bookTitle={title}
