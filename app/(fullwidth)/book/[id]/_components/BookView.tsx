@@ -7,6 +7,7 @@ import {
   Home,
   List,
   Play,
+  Upload,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@/components/Button";
 import type { Book } from "@/context/types/book";
 import { STATUS_LABELS } from "@/utils/status";
+import { publishBookAction } from "@/lib/actions/book";
 
 interface TOCItem {
   id: string;
@@ -26,6 +28,9 @@ interface BookViewProps {
   headings: TOCItem[];
   markdownHtml: React.ReactNode;
   status?: string;
+  isPublished?: boolean;
+  canPublish?: boolean;
+  homeHref?: string;
 }
 
 export default function BookView({
@@ -33,11 +38,21 @@ export default function BookView({
   headings,
   markdownHtml,
   status,
+  isPublished,
+  canPublish,
+  homeHref,
 }: BookViewProps) {
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeText, setActiveText] = useState<string>("");
   const [showMobileTOC, setShowMobileTOC] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [localPublished, setLocalPublished] = useState(!!isPublished);
+
+  useEffect(() => {
+    setLocalPublished(!!isPublished);
+  }, [isPublished]);
 
   useEffect(() => {
     if (!headings.length) return;
@@ -93,6 +108,30 @@ export default function BookView({
     URL.revokeObjectURL(url);
   };
 
+  const handlePublish = async () => {
+    if (isPublishing || localPublished) return;
+    const confirmed = window.confirm("Publish this book?");
+    if (!confirmed) return;
+
+    setIsPublishing(true);
+    setPublishError(null);
+
+    try {
+      const result = await publishBookAction(book.id);
+      if (!result?.ok) {
+        throw new Error("Failed to publish");
+      }
+      setLocalPublished(true);
+      router.refresh();
+    } catch (error) {
+      setPublishError(
+        error instanceof Error ? error.message : "Failed to publish",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const scrollToSection = (text: string) => {
     const element = document.querySelector(
       `[data-heading-text="${CSS.escape(text)}"]`,
@@ -111,7 +150,7 @@ export default function BookView({
       <div className="flex-none px-4 py-2 border-b border-neutral-200 flex items-center justify-between bg-background/80 backdrop-blur-sm z-20 relative">
         <div className="flex items-center gap-2">
           <Link
-            href="/book"
+            href={homeHref || "/book"}
             className="group flex items-center justify-center w-10 h-10 rounded-full hover:bg-neutral-100 transition-colors"
             title="Go Home"
           >
@@ -148,6 +187,17 @@ export default function BookView({
             >
               <Play size={14} className="mr-2" />
               Resume Generation
+            </Button>
+          )}
+          {canPublish && status === "completed" && !localPublished && (
+            <Button
+              variant="outline"
+              onClick={handlePublish}
+              isLoading={isPublishing}
+              className="text-xs h-8 px-3 bg-background hover:bg-neutral-100 border-neutral-300 text-neutral-600"
+            >
+              <Upload size={14} className="mr-2" />
+              Publish
             </Button>
           )}
           <Button
@@ -240,7 +290,17 @@ export default function BookView({
                     {STATUS_LABELS[status] || status}
                   </span>
                 )}
+                {localPublished && (
+                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-widest border border-black bg-white text-black">
+                    Published
+                  </span>
+                )}
               </div>
+              {publishError && (
+                <div className="text-xs text-red-600 font-bold uppercase tracking-widest mb-6">
+                  {publishError}
+                </div>
+              )}
               <h1 className="text-3xl md:text-5xl font-black text-black mb-8 leading-none tracking-tighter uppercase">
                 {book.title}
               </h1>

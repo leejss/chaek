@@ -2,7 +2,13 @@
 
 import { ChapterOutline } from "@/context/types/book";
 import { db } from "@/db";
-import { bookGenerationStates, books, BookStatus, chapters } from "@/db/schema";
+import {
+  bookGenerationStates,
+  books,
+  BookStatus,
+  chapters,
+  publishedBooks,
+} from "@/db/schema";
 import { getUserId } from "@/lib/auth";
 import { ValidationError } from "@/lib/errors";
 import {
@@ -34,6 +40,10 @@ const SaveChapterInputSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title is too long"),
   content: z.string().max(500000, "Content is too long"),
   outline: ChapterOutlineSchema,
+});
+
+const PublishBookInputSchema = z.object({
+  bookId: z.string().uuid("Invalid book ID"),
 });
 
 export async function getBookWithValidation(bookId: string, userId: string) {
@@ -238,4 +248,50 @@ export async function saveChapterAction(
       })
       .where(and(eq(books.id, parsed.bookId), eq(books.userId, userId)));
   });
+}
+
+export async function publishBookAction(bookId: string) {
+  const parsed = PublishBookInputSchema.parse({ bookId });
+  const userId = await getUserId();
+
+  const found = await db
+    .select({ book: books, state: bookGenerationStates })
+    .from(books)
+    .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
+    .where(and(eq(books.id, parsed.bookId), eq(books.userId, userId)))
+    .limit(1);
+
+  const row = found[0];
+  if (!row?.book) {
+    throw new Error("Book not found");
+  }
+
+  const status = row.state?.status ?? "waiting";
+  if (status !== "completed") {
+    throw new ValidationError("Only completed books can be published");
+  }
+
+  const existing = await db
+    .select({ id: publishedBooks.id })
+    .from(publishedBooks)
+    .where(eq(publishedBooks.bookId, parsed.bookId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return { ok: true, alreadyPublished: true, publishedId: existing[0]?.id };
+  }
+
+  const content = await aggregateBookContent(parsed.bookId);
+  const inserted = await db
+    .insert(publishedBooks)
+    .values({
+      bookId: parsed.bookId,
+      publisherUserId: userId,
+      title: row.book.title,
+      content: content || row.book.content,
+    })
+    .returning({ id: publishedBooks.id });
+
+  const created = inserted[0];
+  return { ok: true, alreadyPublished: false, publishedId: created?.id };
 }

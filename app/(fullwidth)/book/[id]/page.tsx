@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
-import { bookGenerationStates, books } from "@/db/schema";
+import { bookGenerationStates, books, publishedBooks } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { extractTOC } from "@/lib/serverMarkdown";
 import type { Book } from "@/context/types/book";
@@ -29,9 +29,14 @@ export default async function BookDetailPage({ params }: PageProps) {
   const { id: bookId } = await params;
 
   const foundBooks = await db
-    .select({ book: books, state: bookGenerationStates })
+    .select({
+      book: books,
+      state: bookGenerationStates,
+      published: publishedBooks,
+    })
     .from(books)
     .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
+    .leftJoin(publishedBooks, eq(publishedBooks.bookId, books.id))
     .where(and(eq(books.id, bookId), eq(books.userId, userId)))
     .limit(1);
 
@@ -42,6 +47,7 @@ export default async function BookDetailPage({ params }: PageProps) {
   const row = foundBooks[0];
   const bookData = row?.book;
   const state = row?.state;
+  const published = row?.published;
   if (!bookData) {
     notFound();
   }
@@ -65,6 +71,8 @@ export default async function BookDetailPage({ params }: PageProps) {
     status,
   };
 
+  const isPublished = !!published?.id;
+
   const headings = extractTOC(book.content);
   const markdownHtml = <BookMarkdown content={book.content} />;
 
@@ -74,6 +82,8 @@ export default async function BookDetailPage({ params }: PageProps) {
       headings={headings}
       markdownHtml={markdownHtml}
       status={book.status}
+      isPublished={isPublished}
+      canPublish
     />
   );
 }

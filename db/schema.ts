@@ -93,6 +93,29 @@ export const books = pgTable(
   ],
 );
 
+export const publishedBooks = pgTable(
+  "published_books",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookId: uuid("book_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    publisherUserId: uuid("publisher_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    content: text("content").notNull().default(""),
+    publishedAt: timestamp("published_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("published_books_book_id_uq").on(table.bookId),
+    index("published_books_published_at_idx").on(table.publishedAt),
+    index("published_books_publisher_user_id_idx").on(table.publisherUserId),
+  ],
+);
+
 export const bookGenerationStates = pgTable(
   "book_generation_states",
   {
