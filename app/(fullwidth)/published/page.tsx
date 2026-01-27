@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { publishedBooks } from "@/db/schema";
+import { getUserId } from "@/lib/auth";
 import { desc } from "drizzle-orm";
 import { Library } from "lucide-react";
 import Link from "next/link";
@@ -9,6 +10,14 @@ export default async function PublishedPage() {
     .select()
     .from(publishedBooks)
     .orderBy(desc(publishedBooks.publishedAt));
+
+  let isAuthenticated = false;
+  try {
+    await getUserId();
+    isAuthenticated = true;
+  } catch {
+    isAuthenticated = false;
+  }
 
   return (
     <div className="min-h-screen bg-background font-sans text-ink-900 selection:bg-brand-600 selection:text-white flex flex-col">
@@ -22,12 +31,14 @@ export default async function PublishedPage() {
             Chaek
           </Link>
           <div className="flex items-center gap-6">
-            <Link
-              href="/login"
-              className="text-sm font-bold hover:text-brand-600 transition-colors"
-            >
-              Sign in
-            </Link>
+            {!isAuthenticated && (
+              <Link
+                href="/login"
+                className="text-sm font-bold hover:text-brand-600 transition-colors"
+              >
+                Sign in
+              </Link>
+            )}
             <Link
               href="/book/new"
               className="bg-ink-900 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-black transition-all"
