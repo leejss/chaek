@@ -1,13 +1,14 @@
 "use client";
 
 import { cn } from "@/utils";
-import { Home, PlusCircle } from "lucide-react";
+import { BookOpen, Home, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export const links = [
   { href: "/book", label: "Home", icon: Home },
   { href: "/book/new", label: "Create", icon: PlusCircle },
+  { href: "/published", label: "Published", icon: BookOpen },
   // { href: "/credits", label: "Credits", icon: CreditCard },
 ];
 
