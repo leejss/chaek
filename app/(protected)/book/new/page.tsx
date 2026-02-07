@@ -1,50 +1,50 @@
 "use client";
 
-import { useTocGenerationStore } from "@/context/tocStore";
-import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useTocGenerationStore } from "@/context/tocStore";
+import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
 import AILoadingStep from "./_components/AILoadingStep";
 import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 
 function CreateBookContent() {
-  const searchParams = useSearchParams();
-  const currentStep = searchParams.get("step") || "settings";
+	const searchParams = useSearchParams();
+	const currentStep = searchParams.get("step") || "settings";
 
-  const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
+	const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
 
-  const isLoading = tocGeneration.status === "loading";
-  const isInitialTocGeneration =
-    tocGeneration.status === "loading" && tocGeneration.variant === "initial";
+	const isLoading = tocGeneration.status === "loading";
+	const isInitialTocGeneration =
+		tocGeneration.status === "loading" && tocGeneration.variant === "initial";
 
-  useBeforeUnload({ isEnabled: isLoading });
+	useBeforeUnload({ isEnabled: isLoading });
 
-  if (isInitialTocGeneration) {
-    return (
-      <div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
-        <AILoadingStep
-          title="Generating Book Structure"
-          description="Analyzing your content and creating a table of contents..."
-        />
-      </div>
-    );
-  }
+	if (isInitialTocGeneration) {
+		return (
+			<div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
+				<AILoadingStep
+					title="Generating Book Structure"
+					description="Analyzing your content and creating a table of contents..."
+				/>
+			</div>
+		);
+	}
 
-  return (
-    <div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
-      {currentStep === "settings" && <SettingsStep />}
-      {currentStep === "source_input" && <SourceInputStep />}
-      {currentStep === "toc_review" && <TOCReviewStep />}
-    </div>
-  );
+	return (
+		<div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
+			{currentStep === "settings" && <SettingsStep />}
+			{currentStep === "source_input" && <SourceInputStep />}
+			{currentStep === "toc_review" && <TOCReviewStep />}
+		</div>
+	);
 }
 
 export default function CreateBookPage() {
-  return (
-    <Suspense fallback={<div className="flex-1 bg-white" />}>
-      <CreateBookContent />
-    </Suspense>
-  );
+	return (
+		<Suspense fallback={<div className="flex-1 bg-white" />}>
+			<CreateBookContent />
+		</Suspense>
+	);
 }

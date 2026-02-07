@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { bookGenerationStates, books } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
+import { cn, formatDate } from "@/utils";
 import { STATUS_COLORS, STATUS_LABELS } from "@/utils/status";
 
 export default async function LibraryPage() {
@@ -42,9 +43,8 @@ export default async function LibraryPage() {
 	}));
 
 	return (
-		<div className="space-y-8 animate-in fade-in duration-500">
-			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-bold text-foreground">Library</h2>
+		<div className="space-y-8">
+			<div className="flex items-center justify-end">
 				{userBooks.length > 0 && (
 					<Button asChild>
 						<Link href="/book/new">
@@ -73,35 +73,31 @@ export default async function LibraryPage() {
 					</Button>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
 					{userBooks.map((book) => (
 						<Link
 							key={book.id}
 							href={`/book/${book.id}`}
-							className="group bg-background border border-neutral-200 p-6 rounded-2xl hover:bg-neutral-50 transition-all cursor-pointer relative"
+							className="group bg-background border border-neutral-200 px-4 py-2 rounded-md hover:bg-neutral-50 transition-all cursor-pointer relative"
 						>
 							<div className="flex items-center gap-2 mb-2">
 								{book.status && (
 									<span
-										className={`px-2 py-1 text-xs font-medium rounded-full ${
-											STATUS_COLORS[book.status] || STATUS_COLORS.draft
-										}`}
+										className={cn(
+											"px-2 text-xs font-semibold rounded-md",
+											STATUS_COLORS[book.status] || STATUS_COLORS.draft,
+										)}
 									>
 										{STATUS_LABELS[book.status] || book.status}
 									</span>
 								)}
 							</div>
-							<h3 className="text-xl font-bold text-foreground mb-2 truncate group-hover:underline decoration-neutral-600 underline-offset-4">
+							<h3 className="text-lg font-bold text-foreground mb-2 truncate group-hover:underline decoration-neutral-600 underline-offset-4">
 								{book.title}
 							</h3>
 							<p className="text-xs text-neutral-500 uppercase tracking-wider mb-4">
-								{new Date(book.createdAt).toLocaleDateString()}
+								{formatDate(book.createdAt)}
 							</p>
-							<div className="text-neutral-600 text-sm line-clamp-3 mb-6 leading-relaxed">
-								{book.content
-									? book.content.substring(0, 150) + "..."
-									: "No content preview available."}
-							</div>
 						</Link>
 					))}
 				</div>
