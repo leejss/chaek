@@ -2,49 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
-import { useSettingsStore } from "@/context/settingsStore";
-import {
-  failTocGeneration,
-  setTocResult,
-  startTocGeneration,
-  updateTocStore,
-  useTocGenerationStore,
-} from "@/context/tocStore";
-import { generateTocAction } from "@/lib/actions/ai";
+import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
+import { useTocGeneration } from "@/lib/hooks/useTocGeneration";
+import { bookNewStepPath } from "@/lib/routes";
 
 export default function SourceInputStep() {
   const router = useRouter();
 
-  const sourceText = useTocGenerationStore((state) => state.sourceText);
-  const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
-  const settings = useSettingsStore((state) => state.settings);
-  const tocProvider = useSettingsStore((state) => state.tocProvider);
-  const tocModel = useSettingsStore((state) => state.tocModel);
+  const sourceText = useBookCreationStore((s) => s.sourceText);
+  const tocGeneration = useBookCreationStore((s) => s.tocGeneration);
+  const { generate } = useTocGeneration();
 
   const isLoading = tocGeneration.status === "loading";
   const error = tocGeneration.status === "error" ? tocGeneration.message : null;
 
   const handleGenerateTOC = async () => {
-    if (!sourceText?.trim()) return;
-
-    startTocGeneration("initial");
-
-    try {
-      const result = await generateTocAction({
-        sourceText,
-        language: settings.language,
-        chapterCount: settings.chapterCount,
-        userPreference: settings.userPreference,
-        provider: tocProvider,
-        model: tocModel,
-      });
-
-      setTocResult(result.title, result.chapters);
-      router.push("/book/new?step=toc_review");
-    } catch (err) {
-      console.error("TOC generation failed:", err);
-      failTocGeneration("TOC 생성에 실패했습니다. 다시 시도해 주세요.");
-    }
+    const success = await generate("initial");
+    if (success) router.push(bookNewStepPath("toc_review"));
   };
 
   return (
@@ -56,12 +30,12 @@ export default function SourceInputStep() {
         </p>
       </div>
 
-      <div>
+      <div className="relative">
         <textarea
           className="h-96 w-full resize-none rounded-md border border-neutral-200 bg-white p-6 font-medium text-black text-lg leading-relaxed placeholder:text-neutral-400 focus:border-black focus:ring-0"
           placeholder="Paste your source text here..."
           value={sourceText || ""}
-          onChange={(e) => updateTocStore("sourceText", e.target.value)}
+          onChange={(e) => setBookField("sourceText", e.target.value)}
         />
         <div className="absolute right-4 bottom-4 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-bold text-black text-xs uppercase tracking-wide">
           {sourceText?.length || 0} chars

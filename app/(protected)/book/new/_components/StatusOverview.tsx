@@ -2,8 +2,7 @@
 
 import { BookOpen, FileText, List, Settings, Sparkles, X } from "lucide-react";
 import { useState } from "react";
-import { useSettingsStore } from "@/context/settingsStore";
-import { useTocGenerationStore } from "@/context/tocStore";
+import { useBookCreationStore } from "@/context/bookCreationStore";
 
 interface StatusOverviewProps {
   onCancel?: () => void;
@@ -13,17 +12,15 @@ interface StatusOverviewProps {
 export default function StatusOverview(props: StatusOverviewProps) {
   const { onCancel, isGenerating } = props;
   const [isOpen, setIsOpen] = useState(false);
-  const bookStore = useTocGenerationStore();
-
-  const sourceText = bookStore.sourceText;
-  const tableOfContents = bookStore.tableOfContents;
-  const tocProvider = useSettingsStore((state) => state.tocProvider);
-  const tocModel = useSettingsStore((state) => state.tocModel);
-  const contentProvider = useSettingsStore((state) => state.contentProvider);
-  const contentModel = useSettingsStore((state) => state.contentModel);
-  const settings = useSettingsStore((state) => state.settings);
-  const { language, chapterCount, userPreference } = settings;
-  const requireConfirm = useSettingsStore((state) => state.requireConfirm);
+  const sourceText = useBookCreationStore((s) => s.sourceText);
+  const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
+  const tocProvider = useBookCreationStore((s) => s.tocProvider);
+  const tocModel = useBookCreationStore((s) => s.tocModel);
+  const contentProvider = useBookCreationStore((s) => s.contentProvider);
+  const contentModel = useBookCreationStore((s) => s.contentModel);
+  const language = useBookCreationStore((s) => s.language);
+  const chapterCount = useBookCreationStore((s) => s.chapterCount);
+  const userPreference = useBookCreationStore((s) => s.userPreference);
 
   if (!isOpen) {
     return (
@@ -72,12 +69,6 @@ export default function StatusOverview(props: StatusOverviewProps) {
               <div className="rounded-lg border border-neutral-200 bg-white p-3">
                 <p className="mb-1 font-bold text-[10px] text-neutral-500 uppercase">Chapters</p>
                 <p className="font-bold text-black">{chapterCount}</p>
-              </div>
-              <div className="rounded-lg border border-neutral-200 bg-white p-3">
-                <p className="mb-1 font-bold text-[10px] text-neutral-500 uppercase">Review Mode</p>
-                <p className="font-bold text-black">
-                  {requireConfirm ? "Review Each" : "Auto-Generate"}
-                </p>
               </div>
               {userPreference && (
                 <div className="col-span-2 rounded-lg border border-neutral-200 bg-white p-3">

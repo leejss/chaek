@@ -1,7 +1,6 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ChapterOutline } from "@/context/types/book";
 import { db } from "@/db";
@@ -117,7 +116,7 @@ export async function createBookAction(
     throw new Error("Failed to create book");
   }
 
-  redirect(`/book/new/${inserted.id}`);
+  return { bookId: inserted.id };
 }
 
 export async function updateBookAction(

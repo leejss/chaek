@@ -34,11 +34,6 @@ export type GenerationStoreState = GenerationState & {
   };
 };
 
-export type GenerationInit = {
-  chapters?: ChapterContent[];
-  bookPlan?: PlanOutput;
-};
-
 const createInitialState = (): GenerationState => ({
   generationProgress: { phase: "idle" },
   chapters: [],
@@ -50,9 +45,9 @@ const createInitialState = (): GenerationState => ({
   bookPlan: undefined,
 });
 
-let chapterConfirmResolver: (() => void) | null = null;
+const createGenerationStore = () => {
+  let chapterConfirmResolver: (() => void) | null = null;
 
-const createGenerationStore = (init?: GenerationInit) => {
   return createStore<GenerationStoreState>()(
     devtools((set, get) => {
       const actions = {
@@ -211,21 +206,10 @@ const createGenerationStore = (init?: GenerationInit) => {
         },
       };
 
-      const state: GenerationStoreState = {
+      return {
         ...createInitialState(),
         actions,
       };
-
-      if (init) {
-        const initialChapters = init.chapters || [];
-        state.chapters = initialChapters;
-        state.bookPlan = init.bookPlan;
-        state.currentChapterContent = "";
-        state.currentChapterIndex = initialChapters.length;
-        state.viewingChapterIndex = initialChapters.length;
-      }
-
-      return state;
     }),
   );
 };

@@ -1,25 +1,44 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { useTocGenerationStore } from "@/context/tocStore";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import {
+  canAccessStep,
+  type TocGenerationStep,
+  useBookCreationStore,
+} from "@/context/bookCreationStore";
 import { useBeforeUnload } from "@/lib/hooks/useBeforeUnload";
+import { bookNewStepPath } from "@/lib/routes";
 import AILoadingStep from "./_components/AILoadingStep";
 import SettingsStep from "./_components/SettingsStep";
 import SourceInputStep from "./_components/SourceInputStep";
 import TOCReviewStep from "./_components/TOCReviewStep";
 
 function CreateBookContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const currentStep = searchParams.get("step") || "settings";
 
-  const tocGeneration = useTocGenerationStore((state) => state.tocGeneration);
+  const tocGeneration = useBookCreationStore((s) => s.tocGeneration);
+  const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
+
+  const isAccessible = canAccessStep(currentStep as TocGenerationStep, tableOfContents);
+
+  useEffect(() => {
+    if (!isAccessible) {
+      router.replace(bookNewStepPath("settings"));
+    }
+  }, [isAccessible, router]);
 
   const isLoading = tocGeneration.status === "loading";
   const isInitialTocGeneration =
     tocGeneration.status === "loading" && tocGeneration.variant === "initial";
 
   useBeforeUnload({ isEnabled: isLoading });
+
+  if (!isAccessible) {
+    return <div className="flex-1 bg-white" />;
+  }
 
   if (isInitialTocGeneration) {
     return (

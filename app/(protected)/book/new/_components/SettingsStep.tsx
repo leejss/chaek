@@ -2,26 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
-import { updateSettingsStore, useSettingsStore } from "@/context/settingsStore";
-import { completeStep } from "@/context/tocStore";
+import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
 import type { Language } from "@/lib/ai/schemas/settings";
+import { bookNewStepPath } from "@/lib/routes";
 
 export default function SettingsStep() {
   const router = useRouter();
-  const settings = useSettingsStore((state) => state.settings);
-  const { language, chapterCount, userPreference } = settings;
+  const language = useBookCreationStore((s) => s.language);
+  const chapterCount = useBookCreationStore((s) => s.chapterCount);
+  const userPreference = useBookCreationStore((s) => s.userPreference);
 
   const handleChapterCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
-    updateSettingsStore("settings", {
-      ...settings,
-      chapterCount: val === "Auto" ? "Auto" : parseInt(val, 10),
-    });
+    setBookField("chapterCount", val === "Auto" ? "Auto" : parseInt(val, 10));
   };
 
   const handleContinue = () => {
-    completeStep("settings");
-    router.push("/book/new?step=source_input");
+    router.push(bookNewStepPath("source_input"));
   };
 
   return (
@@ -39,12 +36,7 @@ export default function SettingsStep() {
               <label className="block font-bold text-black">Language</label>
               <select
                 value={language}
-                onChange={(e) =>
-                  updateSettingsStore("settings", {
-                    ...settings,
-                    language: e.target.value as Language,
-                  })
-                }
+                onChange={(e) => setBookField("language", e.target.value as Language)}
                 className="mt-1 block w-full rounded-lg border border-neutral-200 bg-white p-2 font-medium text-black focus:border-black focus:ring-black sm:text-sm"
               >
                 <option value="Korean">Korean (한국어)</option>
@@ -79,12 +71,7 @@ export default function SettingsStep() {
             <label className="block font-bold text-black">Custom Instructions</label>
             <textarea
               value={userPreference}
-              onChange={(e) =>
-                updateSettingsStore("settings", {
-                  ...settings,
-                  userPreference: e.target.value,
-                })
-              }
+              onChange={(e) => setBookField("userPreference", e.target.value)}
               rows={4}
               className="mt-1 block w-full resize-none rounded-md border border-neutral-200 bg-white p-4 font-medium text-black shadow-none placeholder:text-neutral-400 focus:border-black focus:ring-black sm:text-sm"
               placeholder="E.g., Maintain a humorous tone, use simple analogies, focus on technical depth..."

@@ -2,7 +2,13 @@
 
 import { ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { canAccessStep, type TocGenerationStep, useTocGenerationStore } from "@/context/tocStore";
+import {
+  canAccessStep,
+  isStepCompleted,
+  type TocGenerationStep,
+  useBookCreationStore,
+} from "@/context/bookCreationStore";
+import { bookNewStepPath, ROUTES } from "@/lib/routes";
 import { cn } from "@/utils";
 
 const STEPS_CONFIG: { id: TocGenerationStep; label: string }[] = [
@@ -16,8 +22,8 @@ export default function StepNavigation() {
   const searchParams = useSearchParams();
   const currentStep = searchParams.get("step") || "settings";
 
-  const tocGenerationStatus = useTocGenerationStore((state) => state.tocGeneration.status);
-  const completedSteps = useTocGenerationStore((state) => state.completedSteps);
+  const tocGenerationStatus = useBookCreationStore((s) => s.tocGeneration.status);
+  const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
 
   const handleBack = () => {
     if (tocGenerationStatus === "loading") {
@@ -27,7 +33,7 @@ export default function StepNavigation() {
     }
 
     if (currentStep === "settings") {
-      router.push("/book");
+      router.push(ROUTES.BOOK_LIST);
       return;
     }
 
@@ -35,14 +41,13 @@ export default function StepNavigation() {
     if (currentIndex > 0) {
       const prevConfig = STEPS_CONFIG[currentIndex - 1];
       if (!prevConfig) return;
-      const prevStep = prevConfig.id;
-      router.push(`/book/new?step=${prevStep}`);
+      router.push(bookNewStepPath(prevConfig.id));
     }
   };
 
   const handleStepClick = (step: TocGenerationStep) => {
-    if (!canAccessStep(step)) return;
-    router.push(`/book/new?step=${step}`);
+    if (!canAccessStep(step, tableOfContents)) return;
+    router.push(bookNewStepPath(step));
   };
 
   return (
@@ -63,9 +68,9 @@ export default function StepNavigation() {
 
         <div className="flex items-center gap-4">
           {STEPS_CONFIG.map((step) => {
-            const isCompleted = completedSteps.has(step.id);
+            const isCompleted = isStepCompleted(step.id, tableOfContents);
             const isCurrent = currentStep === step.id;
-            const isClickable = canAccessStep(step.id);
+            const isClickable = canAccessStep(step.id, tableOfContents);
 
             return (
               <div key={step.id} className="flex items-center">

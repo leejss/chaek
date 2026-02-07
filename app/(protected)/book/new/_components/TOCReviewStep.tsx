@@ -1,19 +1,12 @@
 "use client";
 
-import { Check, ChevronDown, Edit2, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Edit2, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/Button";
-import { updateSettingsStore, useSettingsStore } from "@/context/settingsStore";
-import {
-  failTocGeneration,
-  setTocResult,
-  startTocGeneration,
-  updateTocStore,
-  useTocGenerationStore,
-} from "@/context/tocStore";
-import { generateTocAction } from "@/lib/actions/ai";
+import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
 import { createBookAction } from "@/lib/actions/book";
-import { AI_CONFIG, type ClaudeModel, type GeminiModel, getProviderByModel } from "@/lib/ai/config";
+import { useTocGeneration } from "@/lib/hooks/useTocGeneration";
 
 /**
  * Pure functions for TOC manipulation (FP Domain Logic)
@@ -55,11 +48,11 @@ const TOCActions = ({
     {isEditing ? (
       <>
         <Button variant="ghost" onClick={onCancel} className="h-8 px-4 font-bold text-xs">
-          CANCEL
+          Cancel
         </Button>
         <Button variant="primary" onClick={onSave} className="h-8 gap-2 px-4 font-bold text-xs">
           <Check size={14} strokeWidth={3} />
-          SAVE CHANGES
+          Save Changes
         </Button>
       </>
     ) : (
@@ -96,6 +89,7 @@ const ChapterInput = ({
       className="flex-1 border-neutral-200 border-b bg-transparent py-2 font-medium text-black text-lg transition-colors placeholder:text-neutral-300 focus:border-black focus:outline-none"
     />
     <button
+      type="button"
       onClick={onRemove}
       className="p-2 text-neutral-400 opacity-0 transition-colors hover:text-red-600 group-hover:opacity-100"
       title="Remove chapter"
@@ -111,38 +105,6 @@ const ChapterDisplay = ({ index, title }: { index: number; title: string }) => (
       {String(index + 1).padStart(2, "0")}
     </span>
     <span className="font-bold text-black text-lg leading-relaxed">{title}</span>
-  </div>
-);
-
-const ModelSelector = ({
-  model,
-  onModelChange,
-}: {
-  model: GeminiModel | ClaudeModel;
-  onModelChange: (modelId: GeminiModel | ClaudeModel) => void;
-}) => (
-  <div className="w-full space-y-2 text-center md:w-auto md:text-left">
-    <h3 className="font-bold text-black text-sm">Intelligence Engine</h3>
-    <div className="relative inline-block w-full md:w-auto">
-      <select
-        className="w-full cursor-pointer appearance-none border-neutral-200 border-b bg-transparent py-2 pr-8 pl-0 font-bold text-base text-black transition-colors hover:text-neutral-600 focus:border-black focus:outline-none md:w-auto"
-        value={model}
-        onChange={(e) => onModelChange(e.target.value as GeminiModel | ClaudeModel)}
-      >
-        {AI_CONFIG.map((provider) => (
-          <optgroup key={provider.id} label={provider.name}>
-            {provider.models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-      <div className="pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 text-black">
-        <ChevronDown size={16} strokeWidth={3} />
-      </div>
-    </div>
   </div>
 );
 
@@ -182,18 +144,23 @@ const ActionButtons = ({
 );
 
 export default function TOCReviewStep() {
-  const { tableOfContents, bookTitle, sourceText, tocGeneration } = useTocGenerationStore();
-  const tocProvider = useSettingsStore((state) => state.tocProvider);
-  const tocModel = useSettingsStore((state) => state.tocModel);
-  const contentProvider = useSettingsStore((state) => state.contentProvider);
-  const contentModel = useSettingsStore((state) => state.contentModel);
-  const settings = useSettingsStore((state) => state.settings);
-  const { language, chapterCount, userPreference } = settings;
+  const router = useRouter();
+  const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
+  const bookTitle = useBookCreationStore((s) => s.bookTitle);
+  const sourceText = useBookCreationStore((s) => s.sourceText);
+  const tocGeneration = useBookCreationStore((s) => s.tocGeneration);
+  const contentProvider = useBookCreationStore((s) => s.contentProvider);
+  const contentModel = useBookCreationStore((s) => s.contentModel);
+  const language = useBookCreationStore((s) => s.language);
+  const chapterCount = useBookCreationStore((s) => s.chapterCount);
+  const userPreference = useBookCreationStore((s) => s.userPreference);
+  const { generate } = useTocGeneration();
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const [tempTOC, setTempTOC] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isRegenerating =
     tocGeneration.status === "loading" && tocGeneration.variant === "regenerate";
@@ -205,8 +172,10 @@ export default function TOCReviewStep() {
   };
 
   const handleSave = () => {
-    updateTocStore("bookTitle", TOC.formatTitle(tempTitle));
-    updateTocStore("tableOfContents", TOC.normalize(tempTOC));
+    const normalized = TOC.normalize(tempTOC);
+    if (normalized.length === 0) return;
+    setBookField("bookTitle", TOC.formatTitle(tempTitle));
+    setBookField("tableOfContents", normalized);
     setIsEditing(false);
   };
 
@@ -229,50 +198,32 @@ export default function TOCReviewStep() {
   const handleStartWriting = async () => {
     if (isSaving) return;
 
+    setSaveError(null);
     setIsSaving(true);
     try {
-      await createBookAction(bookTitle, tableOfContents, sourceText, {
+      const { bookId } = await createBookAction(bookTitle, tableOfContents, sourceText, {
         provider: contentProvider,
         model: contentModel,
         language,
         chapterCount,
         userPreference,
       });
+      router.push(`/book/new/${bookId}`);
+    } catch (err) {
+      console.error("Book creation failed:", err);
+      setSaveError("책 생성에 실패했습니다. 다시 시도해 주세요.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleRegenerate = async () => {
-    if (!sourceText?.trim() || isRegenerating) return;
-
-    startTocGeneration("regenerate");
-    try {
-      const result = await generateTocAction({
-        sourceText,
-        language,
-        chapterCount,
-        userPreference,
-        provider: tocProvider,
-        model: tocModel,
-      });
-      setTocResult(result.title, result.chapters);
-    } catch (err) {
-      console.error("TOC regeneration failed:", err);
-      failTocGeneration("TOC 재생성에 실패했습니다. 다시 시도해 주세요.");
-    }
-  };
-
-  const handleModelChange = (modelId: GeminiModel | ClaudeModel) => {
-    const providerId = getProviderByModel(modelId);
-    if (providerId) {
-      updateSettingsStore("contentProvider", providerId);
-      updateSettingsStore("contentModel", modelId);
-    }
+    if (isRegenerating) return;
+    await generate("regenerate");
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 text-black">
+    <div className="mx-auto max-w-3xl py-12 text-black">
       <div className="space-y-10">
         <TOCHeader />
 
@@ -314,6 +265,7 @@ export default function TOCReviewStep() {
                     />
                   ))}
                   <button
+                    type="button"
                     onClick={addChapter}
                     className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-neutral-200 border-dashed py-4 font-bold text-neutral-500 text-xs uppercase tracking-widest transition-all hover:border-black hover:text-black"
                   >
@@ -347,10 +299,12 @@ export default function TOCReviewStep() {
 
         {/* Bottom Actions Section */}
         {!isEditing && (
-          <div className="space-y-8 pt-6">
-            <div className="flex flex-col items-center justify-between gap-8 rounded-xl border-2 border-neutral-200 bg-white p-8 md:flex-row">
-              <ModelSelector model={contentModel} onModelChange={handleModelChange} />
-            </div>
+          <div className="space-y-8">
+            {saveError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">
+                {saveError}
+              </div>
+            )}
             <ActionButtons
               isRegenerating={isRegenerating}
               onRegenerate={handleRegenerate}
@@ -359,8 +313,8 @@ export default function TOCReviewStep() {
               hasChapters={tableOfContents.length > 0}
             />
             <p className="text-center font-bold text-[11px] text-neutral-400 uppercase tracking-wide">
-              Click <span className="text-black">Start Writing</span> to begin generating the full
-              content for each chapter.
+              Click <span className="text-black">Start</span> to begin generating the full content
+              for each chapter.
             </p>
           </div>
         )}
