@@ -23,7 +23,7 @@ function CreateBookContent() {
 
 	if (isInitialTocGeneration) {
 		return (
-			<div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
+			<div className="flex-1 overflow-y-auto bg-white">
 				<AILoadingStep
 					title="Generating Book Structure"
 					description="Analyzing your content and creating a table of contents..."
@@ -33,7 +33,7 @@ function CreateBookContent() {
 	}
 
 	return (
-		<div className="flex-1 p-8 md:p-12 overflow-y-auto bg-white">
+		<div className="flex-1 overflow-y-auto bg-white">
 			{currentStep === "settings" && <SettingsStep />}
 			{currentStep === "source_input" && <SourceInputStep />}
 			{currentStep === "toc_review" && <TOCReviewStep />}
