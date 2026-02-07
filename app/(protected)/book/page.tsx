@@ -43,7 +43,7 @@ export default async function LibraryPage() {
   }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-4xl mx-auto p-4">
       <div className="flex items-center justify-end">
         {userBooks.length > 0 && (
           <Button asChild>
