@@ -48,17 +48,17 @@ export default function SourceInputStep() {
   };
 
   return (
-    <div className="mx-auto space-y-10">
+    <div className="space-y-10">
       <div className="mb-12 text-center">
-        <h2 className="mb-4 font-extrabold text-4xl text-black">Source Text</h2>
+        <h2 className="mb-4 font-bold text-4xl text-black">Source Text</h2>
         <p className="font-medium text-neutral-500">
           Paste your source text below. The AI will organize this into a coherent book structure.
         </p>
       </div>
 
-      <div className="relative">
+      <div>
         <textarea
-          className="h-96 w-full resize-none rounded-xl border-2 border-neutral-200 bg-white p-6 font-medium text-black text-lg leading-relaxed shadow-none transition-all placeholder:text-neutral-400 focus:border-black focus:ring-0"
+          className="h-96 w-full resize-none rounded-md border border-neutral-200 bg-white p-6 font-medium text-black text-lg leading-relaxed placeholder:text-neutral-400 focus:border-black focus:ring-0"
           placeholder="Paste your source text here..."
           value={sourceText || ""}
           onChange={(e) => updateTocStore("sourceText", e.target.value)}
@@ -74,7 +74,7 @@ export default function SourceInputStep() {
         </div>
       )}
 
-      <div className="flex justify-end pt-6">
+      <div className="flex justify-end">
         <Button
           onClick={handleGenerateTOC}
           disabled={!sourceText?.trim() || isLoading}
