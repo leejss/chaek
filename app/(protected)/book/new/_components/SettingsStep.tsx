@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/Button";
 import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
 import type { Language } from "@/lib/ai/schemas/settings";
@@ -8,6 +8,8 @@ import { bookNewStepPath } from "@/lib/routes";
 
 export default function SettingsStep() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get("draftId") || undefined;
   const language = useBookCreationStore((s) => s.language);
   const chapterCount = useBookCreationStore((s) => s.chapterCount);
   const userPreference = useBookCreationStore((s) => s.userPreference);
@@ -18,7 +20,7 @@ export default function SettingsStep() {
   };
 
   const handleContinue = () => {
-    router.push(bookNewStepPath("source_input"));
+    router.push(bookNewStepPath("source_input", draftId));
   };
 
   return (

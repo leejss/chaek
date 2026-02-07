@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/Button";
 import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
 import { useTocGeneration } from "@/lib/hooks/useTocGeneration";
@@ -8,6 +8,8 @@ import { bookNewStepPath } from "@/lib/routes";
 
 export default function SourceInputStep() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get("draftId") || undefined;
 
   const sourceText = useBookCreationStore((s) => s.sourceText);
   const tocGeneration = useBookCreationStore((s) => s.tocGeneration);
@@ -18,7 +20,7 @@ export default function SourceInputStep() {
 
   const handleGenerateTOC = async () => {
     const success = await generate("initial");
-    if (success) router.push(bookNewStepPath("toc_review"));
+    if (success) router.push(bookNewStepPath("toc_review", draftId));
   };
 
   return (

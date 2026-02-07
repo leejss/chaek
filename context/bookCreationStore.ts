@@ -3,74 +3,39 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import {
-  type AIProvider,
-  type ClaudeModel,
-  type GeminiModel,
-  getDefaultConfig,
-} from "@/lib/ai/config";
-import type { Language } from "@/lib/ai/schemas/settings";
+  type BookCreationDraftSnapshot,
+  type BookCreationState,
+  getBookCreationDraftResetState,
+  getDefaultBookCreationState,
+  selectBookCreationPersistedState,
+} from "@/context/types/bookCreation";
 
 export type TocGenerationStep = "settings" | "source_input" | "toc_review";
 
-type TocGenerationState =
-  | { status: "idle" }
-  | { status: "loading"; variant: "initial" | "regenerate" }
-  | { status: "error"; message: string };
-
-interface BookCreationState {
-  language: Language;
-  chapterCount: number | "Auto";
-  userPreference: string;
-  tocProvider: AIProvider;
-  tocModel: GeminiModel | ClaudeModel;
-  contentProvider: AIProvider;
-  contentModel: GeminiModel | ClaudeModel;
-
-  sourceText: string;
-  bookTitle: string;
-  tableOfContents: string[];
-  tocGeneration: TocGenerationState;
-}
-
-interface BookCreationStore extends BookCreationState {
+export interface BookCreationStore extends BookCreationState {
   actions: {
     set: <K extends keyof BookCreationState>(key: K, value: BookCreationState[K]) => void;
+    setMany: (value: Partial<BookCreationState>) => void;
+    setFromDraftSnapshot: (value: BookCreationDraftSnapshot) => void;
+    resetDraft: () => void;
     setTocResult: (title: string, chapters: string[]) => void;
     startTocGeneration: (variant: "initial" | "regenerate") => void;
     failTocGeneration: (message: string) => void;
   };
 }
 
-const PERSISTED_KEYS: (keyof BookCreationState)[] = [
-  "language",
-  "chapterCount",
-  "userPreference",
-  "tocProvider",
-  "tocModel",
-  "contentProvider",
-  "contentModel",
-];
-
 export const useBookCreationStore = create<BookCreationStore>()(
   devtools(
     persist(
       (set) => ({
-        language: "Korean",
-        chapterCount: "Auto",
-        userPreference: "",
-        tocProvider: getDefaultConfig().provider,
-        tocModel: getDefaultConfig().model,
-        contentProvider: getDefaultConfig().provider,
-        contentModel: getDefaultConfig().model,
-
-        sourceText: "",
-        bookTitle: "",
-        tableOfContents: [],
-        tocGeneration: { status: "idle" },
+        ...getDefaultBookCreationState(),
 
         actions: {
           set: (key, value) =>
             set({ [key]: value } as Partial<BookCreationState>, false, `book/${key}`),
+          setMany: (value) => set(value, false, "book/setMany"),
+          setFromDraftSnapshot: (value) => set(value, false, "book/setFromDraftSnapshot"),
+          resetDraft: () => set(getBookCreationDraftResetState(), false, "book/resetDraft"),
 
           setTocResult: (title, chapters) =>
             set(
@@ -92,13 +57,7 @@ export const useBookCreationStore = create<BookCreationStore>()(
       }),
       {
         name: "book-creation-storage",
-        partialize: (state) => {
-          const persisted: Record<string, unknown> = {};
-          for (const key of PERSISTED_KEYS) {
-            persisted[key] = state[key];
-          }
-          return persisted;
-        },
+        partialize: (state) => selectBookCreationPersistedState(state),
       },
     ),
   ),
@@ -106,6 +65,9 @@ export const useBookCreationStore = create<BookCreationStore>()(
 
 const { actions } = useBookCreationStore.getState();
 export const setBookField = actions.set;
+export const setBookFields = actions.setMany;
+export const setBookStateFromDraft = actions.setFromDraftSnapshot;
+export const resetBookDraft = actions.resetDraft;
 export const setTocResult = actions.setTocResult;
 export const startTocGeneration = actions.startTocGeneration;
 export const failTocGeneration = actions.failTocGeneration;

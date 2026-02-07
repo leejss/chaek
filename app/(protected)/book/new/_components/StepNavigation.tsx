@@ -20,6 +20,7 @@ const STEPS_CONFIG: { id: TocGenerationStep; label: string }[] = [
 export default function StepNavigation() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const draftId = searchParams.get("draftId") || undefined;
   const currentStep = searchParams.get("step") || "settings";
 
   const tocGenerationStatus = useBookCreationStore((s) => s.tocGeneration.status);
@@ -41,13 +42,13 @@ export default function StepNavigation() {
     if (currentIndex > 0) {
       const prevConfig = STEPS_CONFIG[currentIndex - 1];
       if (!prevConfig) return;
-      router.push(bookNewStepPath(prevConfig.id));
+      router.push(bookNewStepPath(prevConfig.id, draftId));
     }
   };
 
   const handleStepClick = (step: TocGenerationStep) => {
     if (!canAccessStep(step, tableOfContents)) return;
-    router.push(bookNewStepPath(step));
+    router.push(bookNewStepPath(step, draftId));
   };
 
   return (

@@ -1,11 +1,12 @@
 "use client";
 
 import { Check, Edit2, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/Button";
 import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
 import { createBookAction } from "@/lib/actions/book";
+import { clearBookCreationDraft } from "@/lib/bookCreationDraft";
 import { useTocGeneration } from "@/lib/hooks/useTocGeneration";
 
 /**
@@ -145,6 +146,8 @@ const ActionButtons = ({
 
 export default function TOCReviewStep() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get("draftId");
   const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
   const bookTitle = useBookCreationStore((s) => s.bookTitle);
   const sourceText = useBookCreationStore((s) => s.sourceText);
@@ -208,6 +211,9 @@ export default function TOCReviewStep() {
         chapterCount,
         userPreference,
       });
+      if (draftId) {
+        clearBookCreationDraft(draftId);
+      }
       router.push(`/book/new/${bookId}`);
     } catch (err) {
       console.error("Book creation failed:", err);
