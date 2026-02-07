@@ -13,9 +13,7 @@ export default function BookGenerationError({ error, reset }: ErrorProps) {
     console.error("BookGenerationPage error:", error);
   }, [error]);
 
-  const isValidationError = error.message.includes(
-    "Invalid generationSettings",
-  );
+  const isValidationError = error.message.includes("Invalid generationSettings");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -36,11 +34,11 @@ export default function BookGenerationError({ error, reset }: ErrorProps) {
           </svg>
         </div>
 
-        <h2 className="mb-2 text-xl font-semibold text-gray-900">
+        <h2 className="mb-2 font-semibold text-gray-900 text-xl">
           {isValidationError ? "잘못된 책 설정" : "오류가 발생했습니다"}
         </h2>
 
-        <p className="mb-6 text-sm text-gray-600">
+        <p className="mb-6 text-gray-600 text-sm">
           {isValidationError
             ? "책의 생성 설정 데이터가 손상되었거나 올바르지 않습니다. 새로운 책을 생성해 주세요."
             : "페이지를 로드하는 중 문제가 발생했습니다. 다시 시도해 주세요."}
@@ -49,13 +47,13 @@ export default function BookGenerationError({ error, reset }: ErrorProps) {
         <div className="flex gap-3">
           <button
             onClick={reset}
-            className="flex-1 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+            className="flex-1 rounded-md bg-gray-100 px-4 py-2 font-medium text-gray-700 text-sm transition-colors hover:bg-gray-200"
           >
             다시 시도
           </button>
           <Link
             href="/book"
-            className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-center font-medium text-sm text-white transition-colors hover:bg-blue-700"
           >
             책 목록으로
           </Link>

@@ -20,12 +20,8 @@ export default function CreditsCancelPage() {
               <path d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            Payment Cancelled
-          </h1>
-          <p className="text-gray-600">
-            Your payment was cancelled. No charges were made.
-          </p>
+          <h1 className="mb-2 font-bold text-3xl text-gray-900">Payment Cancelled</h1>
+          <p className="text-gray-600">Your payment was cancelled. No charges were made.</p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">

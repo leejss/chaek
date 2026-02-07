@@ -1,19 +1,19 @@
+import { asc, eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { bookGenerationStates, books, chapters } from "@/db/schema";
-import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
-import { AIProvider } from "@/lib/ai/config";
+import type { AIProvider } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
-import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
-import { generateOutline } from "@/lib/ai/prompts/outline";
 import { streamDraft } from "@/lib/ai/prompts/draft";
 import { streamDraftDev } from "@/lib/ai/prompts/draftDev";
+import { generateOutline } from "@/lib/ai/prompts/outline";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import type { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
+import { handleGenerationError, normalizeToc } from "@/lib/ai/utils";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import { initializeBookAndDeductCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
-import { normalizeToc, handleGenerationError } from "@/lib/ai/utils";
-import { asc, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
 import { createSSEResponse } from "./sse";
 
 async function saveChapterContent(
@@ -67,11 +67,7 @@ async function saveChapterContent(
     });
 }
 
-async function updateStreamingStatus(
-  bookId: string,
-  chapterNumber: number,
-  sectionIndex: number,
-) {
+async function updateStreamingStatus(bookId: string, chapterNumber: number, sectionIndex: number) {
   await db
     .insert(bookGenerationStates)
     .values({
@@ -142,11 +138,7 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
     createdNewBook = isNewBook;
     didDeductCredits = true;
 
-    const events = (async function* (): AsyncGenerator<
-      SSEEvent,
-      void,
-      unknown
-    > {
+    const events = (async function* (): AsyncGenerator<SSEEvent, void, unknown> {
       try {
         yield {
           type: "progress",
@@ -156,10 +148,7 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
         const existingBook = await db
           .select({ book: books, state: bookGenerationStates })
           .from(books)
-          .leftJoin(
-            bookGenerationStates,
-            eq(bookGenerationStates.bookId, books.id),
-          )
+          .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
           .where(eq(books.id, bookId))
           .limit(1);
         const row = existingBook[0];
@@ -168,10 +157,7 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
           bookPlan = savedPlan;
         } else {
           const languageModel = getModel(provider as AIProvider, model);
-          bookPlan = await generatePlanPrompt(
-            { sourceText, toc, language },
-            languageModel,
-          );
+          bookPlan = await generatePlanPrompt({ sourceText, toc, language }, languageModel);
 
           await db.transaction(async (tx) => {
             await tx
@@ -191,30 +177,18 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
           });
         }
 
-        for (
-          let chapterNum = startChapter;
-          chapterNum <= toc.length;
-          chapterNum++
-        ) {
+        for (let chapterNum = startChapter; chapterNum <= toc.length; chapterNum++) {
           const chapterTitle = toc[chapterNum - 1];
           if (!chapterTitle) {
             throw new Error("Invalid chapter title");
           }
 
-          yield* streamChapter(
-            bookId,
-            chapterNum,
-            chapterTitle,
-            bookPlan,
-            toc,
-            sourceText,
-            {
-              provider: provider as AIProvider,
-              model,
-              language,
-              userPreference,
-            },
-          );
+          yield* streamChapter(bookId, chapterNum, chapterTitle, bookPlan, toc, sourceText, {
+            provider: provider as AIProvider,
+            model,
+            language,
+            userPreference,
+          });
         }
 
         const chapterRows = await db
@@ -331,11 +305,7 @@ async function* streamChapter(
   let chapterContent = `## ${chapterTitle}\n\n`;
   const sectionContents: string[] = [];
 
-  for (
-    let sectionIndex = 0;
-    sectionIndex < outlineResult.sections.length;
-    sectionIndex++
-  ) {
+  for (let sectionIndex = 0; sectionIndex < outlineResult.sections.length; sectionIndex++) {
     const section = outlineResult.sections[sectionIndex];
     if (!section) {
       throw new Error("Invalid section");
@@ -346,12 +316,10 @@ async function* streamChapter(
       data: { chapterNumber, sectionIndex, title: section.title },
     };
 
-    const previousSections = outlineResult.sections
-      .slice(0, sectionIndex)
-      .map((s) => ({
-        title: s.title,
-        summary: s.summary,
-      }));
+    const previousSections = outlineResult.sections.slice(0, sectionIndex).map((s) => ({
+      title: s.title,
+      summary: s.summary,
+    }));
 
     const draftInput = {
       chapterNumber,
@@ -379,7 +347,7 @@ async function* streamChapter(
     }
 
     sectionContents.push(sectionText);
-    chapterContent += sectionText + "\n\n";
+    chapterContent += `${sectionText}\n\n`;
 
     await updateStreamingStatus(bookId, chapterNumber, sectionIndex);
 

@@ -1,9 +1,9 @@
+import { desc, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { books } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
-import { eq, desc } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,9 +28,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { ok: false, error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 }

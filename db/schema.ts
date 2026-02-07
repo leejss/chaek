@@ -32,9 +32,7 @@ export type ChapterStatus = (typeof chapterStatusEnum.enumValues)[number];
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   googleSub: text("google_sub").notNull().unique(),
 });
 
@@ -48,9 +46,7 @@ export const refreshTokens = pgTable(
     tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     replacedByTokenId: uuid("replaced_by_token_id"),
   }),
   (table) => [
@@ -62,9 +58,7 @@ export const refreshTokens = pgTable(
     index("user_id_idx").on(table.userId),
     uniqueIndex("refresh_tokens_token_hash_uq").on(table.tokenHash),
     index("refresh_tokens_expires_at_idx").on(table.expiresAt),
-    index("refresh_tokens_replaced_by_token_id_idx").on(
-      table.replacedByTokenId,
-    ),
+    index("refresh_tokens_replaced_by_token_id_idx").on(table.replacedByTokenId),
   ],
 );
 
@@ -79,9 +73,7 @@ export const books = pgTable(
     content: text("content").notNull().default(""),
     tableOfContents: text("table_of_contents").array(),
     sourceText: text("source_text"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()
@@ -105,9 +97,7 @@ export const publishedBooks = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     content: text("content").notNull().default(""),
-    publishedAt: timestamp("published_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex("published_books_book_id_uq").on(table.bookId),
@@ -128,9 +118,7 @@ export const bookGenerationStates = pgTable(
     generationSettings: jsonb("generation_settings"),
     bookPlan: jsonb("book_plan"),
     streamingStatus: jsonb("streaming_status"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()
@@ -154,19 +142,14 @@ export const chapters = pgTable(
     content: text("content").notNull().default(""),
     outline: jsonb("outline"),
     status: chapterStatusEnum("status").notNull().default("pending"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    uniqueIndex("chapters_book_id_chapter_number_uq").on(
-      table.bookId,
-      table.chapterNumber,
-    ),
+    uniqueIndex("chapters_book_id_chapter_number_uq").on(table.bookId, table.chapterNumber),
     index("chapters_book_id_idx").on(table.bookId),
     index("chapters_status_idx").on(table.status),
   ],
@@ -180,8 +163,7 @@ export const creditTransactionTypeEnum = pgEnum("credit_transaction_type", [
   "free_signup",
 ]);
 
-export type CreditTransactionType =
-  (typeof creditTransactionTypeEnum.enumValues)[number];
+export type CreditTransactionType = (typeof creditTransactionTypeEnum.enumValues)[number];
 
 export const creditBalances = pgTable("credit_balances", {
   userId: uuid("user_id")
@@ -211,17 +193,12 @@ export const creditTransactions = pgTable(
       onDelete: "set null",
     }),
     metadata: jsonb("metadata"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("credit_transactions_user_id_idx").on(table.userId),
     index("credit_transactions_type_idx").on(table.type),
     index("credit_transactions_created_at_idx").on(table.createdAt),
-    uniqueIndex("credit_transactions_purchase_order_uq").on(
-      table.type,
-      table.lemonSqueezyOrderId,
-    ),
+    uniqueIndex("credit_transactions_purchase_order_uq").on(table.type, table.lemonSqueezyOrderId),
   ],
 );

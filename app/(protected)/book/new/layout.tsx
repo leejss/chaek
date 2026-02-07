@@ -3,19 +3,13 @@
 import { Suspense } from "react";
 import StepNavigation from "./_components/StepNavigation";
 
-export default function NewBookLayout({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="max-w-4xl mx-auto bg-white flex flex-col">
-			<Suspense
-				fallback={<div className="px-6 py-5 border-b border-neutral-100" />}
-			>
-				<StepNavigation />
-			</Suspense>
-			{children}
-		</div>
-	);
+export default function NewBookLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-auto flex max-w-4xl flex-col bg-white">
+      <Suspense fallback={<div className="border-neutral-100 border-b px-6 py-5" />}>
+        <StepNavigation />
+      </Suspense>
+      {children}
+    </div>
+  );
 }

@@ -1,15 +1,13 @@
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookGenerationStates, books } from "@/db/schema";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import { refundUsageCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
-import { eq } from "drizzle-orm";
 
 export function normalizeToc(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter(
-    (t): t is string => typeof t === "string" && t.length > 0,
-  );
+  return value.filter((t): t is string => typeof t === "string" && t.length > 0);
 }
 
 export async function handleGenerationError(params: {
@@ -43,13 +41,9 @@ export async function handleGenerationError(params: {
   if (!createdNewBook) {
     const shouldMarkFailed = !httpError || httpError.status >= 500;
     if (shouldMarkFailed) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-      await db
-        .update(books)
-        .set({ updatedAt: new Date() })
-        .where(eq(books.id, bookId));
+      await db.update(books).set({ updatedAt: new Date() }).where(eq(books.id, bookId));
 
       await db
         .insert(bookGenerationStates)
@@ -71,8 +65,6 @@ export async function handleGenerationError(params: {
   }
 
   return {
-    message:
-      httpError?.publicMessage ??
-      (error instanceof Error ? error.message : "Unknown error"),
+    message: httpError?.publicMessage ?? (error instanceof Error ? error.message : "Unknown error"),
   };
 }

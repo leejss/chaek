@@ -1,15 +1,15 @@
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import type { Book } from "@/context/types/book";
 import { db } from "@/db";
 import { bookGenerationStates, books, publishedBooks } from "@/db/schema";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
-import { extractTOC } from "@/lib/serverMarkdown";
-import type { Book } from "@/context/types/book";
 import { serverEnv } from "@/lib/env";
 import { aggregateBookContent } from "@/lib/repositories/bookRepository";
-import BookView from "./_components/BookView";
+import { extractTOC } from "@/lib/serverMarkdown";
 import BookMarkdown from "./_components/BookMarkdown";
+import BookView from "./_components/BookView";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -57,9 +57,7 @@ export default async function BookDetailPage({ params }: PageProps) {
   // If status is not completed, we aggregate chapters from DB to show current progress.
   // For completed books, we can trust bookData.content as a cache.
   const content =
-    status !== "completed"
-      ? await aggregateBookContent(bookData.id)
-      : bookData.content;
+    status !== "completed" ? await aggregateBookContent(bookData.id) : bookData.content;
 
   const book: Book = {
     id: bookData.id,

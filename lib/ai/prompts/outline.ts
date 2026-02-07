@@ -1,10 +1,7 @@
-import {
-  ChapterOutlineSchema,
-  ChapterOutlineOutput,
-} from "@/lib/ai/schemas/outline";
-import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { OutlineInput } from "@/lib/ai/types/prompts";
-import { generateObject, LanguageModel, ModelMessage } from "@/lib/ai/core";
+import { generateObject, type LanguageModel, type ModelMessage } from "@/lib/ai/core";
+import { type ChapterOutlineOutput, ChapterOutlineSchema } from "@/lib/ai/schemas/outline";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import type { OutlineInput } from "@/lib/ai/types/prompts";
 
 const OUTLINE_ROLE = `
 <role>
@@ -31,9 +28,7 @@ function buildInstructions(language: string): string {
 }
 
 function buildPlanContext(plan: PlanOutput, chapterNumber: number): string {
-  const chapterPlan = plan.chapterGuidelines.find(
-    (g) => g.chapterIndex === chapterNumber - 1,
-  );
+  const chapterPlan = plan.chapterGuidelines.find((g) => g.chapterIndex === chapterNumber - 1);
 
   const guidelines = chapterPlan?.guidelines || "N/A";
   const fromPrevious = chapterPlan?.continuity.fromPrevious || "N/A";
@@ -60,9 +55,7 @@ function buildMessages(input: OutlineInput): ModelMessage[] {
     `<table_of_contents>\n${tocFormatted}\n</table_of_contents>`,
     `<source_text>\n${input.sourceText}\n</source_text>`,
     input.plan ? buildPlanContext(input.plan, input.chapterNumber) : "",
-    input.userPreference
-      ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
-      : "",
+    input.userPreference ? `<user_preferences>\n${input.userPreference}\n</user_preferences>` : "",
     `<task>\nCreate a detailed outline for CHAPTER ${input.chapterNumber}: ${input.chapterTitle}\n</task>`,
   ];
 

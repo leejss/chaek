@@ -1,5 +1,6 @@
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
+import { add, type Duration } from "date-fns";
+import { and, eq, isNull } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
 import { issueAccessJWT, verifyGoogleIdToken } from "@/lib/auth";
@@ -9,12 +10,10 @@ import {
   refreshAuthCookieOptions,
   refreshTokenConfig,
 } from "@/lib/authTokens";
-import { generateRandomToken, sha256Hex } from "@/utils";
-import { add, Duration } from "date-fns";
-import { NextResponse } from "next/server";
-import { serverEnv } from "@/lib/env";
-import { and, eq, isNull } from "drizzle-orm";
 import { grantFreeSignupCredits } from "@/lib/credits/operations";
+import { serverEnv } from "@/lib/env";
+import { HttpError, InvalidJsonError } from "@/lib/errors";
+import { generateRandomToken, readJson, sha256Hex } from "@/utils";
 
 export async function POST(req: Request) {
   try {
@@ -31,10 +30,7 @@ export async function POST(req: Request) {
     const ourJwtSecret = new TextEncoder().encode(serverEnv.OUR_JWT_SECRET);
 
     // Verify Google ID token
-    const { sub: googleSub, email } = await verifyGoogleIdToken(
-      idToken,
-      googleClientId,
-    );
+    const { sub: googleSub, email } = await verifyGoogleIdToken(idToken, googleClientId);
 
     const existingUser = await db
       .select()
@@ -77,12 +73,7 @@ export async function POST(req: Request) {
       await tx
         .update(refreshTokens)
         .set({ revokedAt: new Date() })
-        .where(
-          and(
-            eq(refreshTokens.userId, user.id),
-            isNull(refreshTokens.revokedAt),
-          ),
-        );
+        .where(and(eq(refreshTokens.userId, user.id), isNull(refreshTokens.revokedAt)));
 
       await tx.insert(refreshTokens).values({
         userId: user.id,
@@ -117,9 +108,6 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Internal server error", ok: false },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error", ok: false }, { status: 500 });
   }
 }

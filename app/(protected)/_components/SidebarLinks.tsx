@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@/utils";
 import { BookOpen, Home, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/utils";
 
 export const links = [
   { href: "/book", label: "Home", icon: Home },
@@ -21,22 +21,18 @@ export function SidebarLinks() {
         const Icon = link.icon;
         // Exact match for home, startsWith for others to handle sub-routes
         const isActive =
-          link.href === "/book"
-            ? pathname === "/book"
-            : pathname?.startsWith(link.href);
+          link.href === "/book" ? pathname === "/book" : pathname?.startsWith(link.href);
 
         return (
           <Link
             key={link.href}
             href={link.href}
             className={cn(
-              "flex items-center gap-4 px-4 py-3 text-xl rounded-full transition-colors",
-              isActive
-                ? "font-bold text-foreground"
-                : "text-foreground hover:bg-neutral-100",
+              "flex items-center gap-4 rounded-full px-4 py-3 text-xl transition-colors",
+              isActive ? "font-bold text-foreground" : "text-foreground hover:bg-neutral-100",
             )}
           >
-            <Icon className="w-7 h-7" strokeWidth={isActive ? 3 : 2} />
+            <Icon className="h-7 w-7" strokeWidth={isActive ? 3 : 2} />
             <span>{link.label}</span>
           </Link>
         );

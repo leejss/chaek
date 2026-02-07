@@ -1,12 +1,12 @@
 import { Receiver } from "@upstash/qstash";
-import { NextResponse, type NextRequest } from "next/server";
-import { generateBookJobSchema } from "@/lib/ai/jobs/types";
-import { handleGenerateBookJob } from "@/lib/ai/worker/generateBookWorker";
+import { eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { bookGenerationStates, books } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { refundUsageCredits } from "@/lib/credits/operations";
+import { generateBookJobSchema } from "@/lib/ai/jobs/types";
+import { handleGenerateBookJob } from "@/lib/ai/worker/generateBookWorker";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
+import { refundUsageCredits } from "@/lib/credits/operations";
 import { serverEnv } from "@/lib/env";
 
 const receiver = new Receiver({
@@ -21,10 +21,7 @@ export async function POST(req: NextRequest) {
   console.log("[queues/book-generation] received request:", body);
 
   if (!signature) {
-    return NextResponse.json(
-      { ok: false, error: "Missing signature" },
-      { status: 401 },
-    );
+    return NextResponse.json({ ok: false, error: "Missing signature" }, { status: 401 });
   }
 
   try {
@@ -35,28 +32,19 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[queues/book-generation] invalid signature:", error);
-    return NextResponse.json(
-      { ok: false, error: "Unauthorized" },
-      { status: 401 },
-    );
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   let payload: unknown;
   try {
     payload = JSON.parse(body);
   } catch {
-    return NextResponse.json(
-      { ok: false, error: "Invalid JSON" },
-      { status: 400 },
-    );
+    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
   const parsed = generateBookJobSchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json(
-      { ok: false, error: "Invalid payload" },
-      { status: 400 },
-    );
+    return NextResponse.json({ ok: false, error: "Invalid payload" }, { status: 400 });
   }
 
   const job = parsed.data;
@@ -115,9 +103,6 @@ export async function POST(req: NextRequest) {
         },
       });
 
-    return NextResponse.json(
-      { ok: false, error: "Worker error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: "Worker error" }, { status: 500 });
   }
 }

@@ -1,12 +1,9 @@
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { chapters } from "@/db/schema";
-import { and, eq, asc } from "drizzle-orm";
 import type { ChapterStatus } from "@/db/schema";
+import { chapters } from "@/db/schema";
 
-export async function findChaptersByBookIdAndStatus(
-  bookId: string,
-  status: ChapterStatus,
-) {
+export async function findChaptersByBookIdAndStatus(bookId: string, status: ChapterStatus) {
   return db
     .select({
       chapterNumber: chapters.chapterNumber,

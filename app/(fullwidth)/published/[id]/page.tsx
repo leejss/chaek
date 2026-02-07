@@ -1,11 +1,11 @@
+import { eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
+import type { Book } from "@/context/types/book";
 import { db } from "@/db";
 import { publishedBooks } from "@/db/schema";
 import { extractTOC } from "@/lib/serverMarkdown";
-import type { Book } from "@/context/types/book";
-import { eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
-import BookView from "../../book/[id]/_components/BookView";
 import BookMarkdown from "../../book/[id]/_components/BookMarkdown";
+import BookView from "../../book/[id]/_components/BookView";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -14,11 +14,7 @@ interface PageProps {
 export default async function PublishedDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const found = await db
-    .select()
-    .from(publishedBooks)
-    .where(eq(publishedBooks.id, id))
-    .limit(1);
+  const found = await db.select().from(publishedBooks).where(eq(publishedBooks.id, id)).limit(1);
 
   const published = found[0];
   if (!published) {

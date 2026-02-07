@@ -1,11 +1,8 @@
 "use client";
 
-import {
-  generationActions,
-  useGenerationStore,
-} from "@/context/generationContext";
-import { Check, Lock, Loader2, FileText } from "lucide-react";
+import { Check, FileText, Loader2, Lock } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { generationActions, useGenerationStore } from "@/context/generationContext";
 import { cn } from "@/utils";
 
 export interface ChapterTabsProps {
@@ -13,28 +10,20 @@ export interface ChapterTabsProps {
 }
 
 export default function ChapterTabs({ tableOfContents }: ChapterTabsProps) {
-  const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
-  );
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
   const chapters = useGenerationStore((state) => state.chapters);
-  const currentChapterIndex = useGenerationStore(
-    (state) => state.currentChapterIndex,
-  );
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to active tab
   useEffect(() => {
     if (scrollContainerRef.current) {
-      const activeTab = scrollContainerRef.current.children[
-        viewingChapterIndex
-      ] as HTMLElement;
+      const activeTab = scrollContainerRef.current.children[viewingChapterIndex] as HTMLElement;
       if (activeTab) {
         const container = scrollContainerRef.current;
         const scrollLeft =
-          activeTab.offsetLeft -
-          container.offsetWidth / 2 +
-          activeTab.offsetWidth / 2;
+          activeTab.offsetLeft - container.offsetWidth / 2 + activeTab.offsetWidth / 2;
         container.scrollTo({ left: scrollLeft, behavior: "smooth" });
       }
     }
@@ -46,7 +35,7 @@ export default function ChapterTabs({ tableOfContents }: ChapterTabsProps) {
     <div className="w-full bg-white">
       <div
         ref={scrollContainerRef}
-        className="flex overflow-x-auto no-scrollbar px-4 md:px-6 gap-2 py-4 snap-x items-center"
+        className="no-scrollbar flex snap-x items-center gap-2 overflow-x-auto px-4 py-4 md:px-6"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {tableOfContents.map((title, index) => {
@@ -66,14 +55,14 @@ export default function ChapterTabs({ tableOfContents }: ChapterTabsProps) {
               }}
               disabled={isLocked}
               className={cn(
-                "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors duration-200 snap-center shrink-0 border",
+                "relative flex shrink-0 snap-center items-center gap-2 whitespace-nowrap rounded-full border px-5 py-2.5 font-bold text-[15px] transition-colors duration-200",
                 isActive
-                  ? "bg-black border-black text-white"
+                  ? "border-black bg-black text-white"
                   : isLocked
-                  ? "bg-transparent border-transparent text-neutral-300 cursor-not-allowed"
-                  : isCurrent
-                  ? "bg-white border-black text-black hover:bg-neutral-50"
-                  : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-400 hover:text-neutral-900 hover:bg-neutral-50",
+                    ? "cursor-not-allowed border-transparent bg-transparent text-neutral-300"
+                    : isCurrent
+                      ? "border-black bg-white text-black hover:bg-neutral-50"
+                      : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-900",
               )}
             >
               <div className="flex items-center justify-center">
@@ -86,9 +75,7 @@ export default function ChapterTabs({ tableOfContents }: ChapterTabsProps) {
                 ) : isCurrent ? (
                   <Loader2
                     size={16}
-                    className={`animate-spin ${
-                      isActive ? "text-white" : "text-black"
-                    }`}
+                    className={`animate-spin ${isActive ? "text-white" : "text-black"}`}
                     strokeWidth={3}
                   />
                 ) : isActive ? (
@@ -98,7 +85,7 @@ export default function ChapterTabs({ tableOfContents }: ChapterTabsProps) {
                 )}
               </div>
 
-              <span className="truncate max-w-[180px]">
+              <span className="max-w-[180px] truncate">
                 <span>{index + 1}.</span>
                 {title}
               </span>

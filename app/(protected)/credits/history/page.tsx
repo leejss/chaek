@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransactions } from "@/lib/hooks/useTransactions";
 import Link from "next/link";
+import { useTransactions } from "@/lib/hooks/useTransactions";
 
 export interface Transaction {
   id: string;
@@ -31,8 +31,7 @@ const typeColors: Record<string, string> = {
 };
 
 export default function CreditsHistoryPage() {
-  const { transactions, isLoading, error, loadMore, hasMore } =
-    useTransactions();
+  const { transactions, isLoading, error, loadMore, hasMore } = useTransactions();
 
   if (isLoading && transactions.length === 0) {
     return (
@@ -45,9 +44,7 @@ export default function CreditsHistoryPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12">
-        <div className="rounded-lg bg-red-50 p-4 text-red-800">
-          {error.message}
-        </div>
+        <div className="rounded-lg bg-red-50 p-4 text-red-800">{error.message}</div>
       </div>
     );
   }
@@ -55,9 +52,7 @@ export default function CreditsHistoryPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Transaction History
-        </h1>
+        <h1 className="font-bold text-3xl text-gray-900">Transaction History</h1>
         <Link
           href="/credits"
           className="rounded bg-blue-600 px-4 py-2 text-foreground hover:bg-blue-700"
@@ -82,19 +77,19 @@ export default function CreditsHistoryPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
                     Balance After
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
                     Details
                   </th>
                 </tr>
@@ -102,43 +97,36 @@ export default function CreditsHistoryPage() {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {transactions.map((transaction) => (
                   <tr key={transaction.id}>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                    <td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
                       {new Date(transaction.createdAt).toLocaleString()}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm">
                       <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                        className={`inline-flex rounded-full px-2 py-1 font-semibold text-xs ${
                           typeColors[transaction.type]
                         }`}
                       >
                         {typeLabels[transaction.type]}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                      <span
-                        className={
-                          transaction.amount > 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }
-                      >
+                    <td className="whitespace-nowrap px-6 py-4 font-medium text-sm">
+                      <span className={transaction.amount > 0 ? "text-green-600" : "text-red-600"}>
                         {transaction.amount > 0 ? "+" : ""}
                         {transaction.amount}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                    <td className="whitespace-nowrap px-6 py-4 text-gray-900 text-sm">
                       {transaction.balanceAfter}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {transaction.metadata &&
-                        typeof transaction.metadata === "object" && (
-                          <div className="max-w-xs truncate">
-                            {"bookTitle" in transaction.metadata &&
-                              `Book: ${String(transaction.metadata.bookTitle)}`}
-                            {"reason" in transaction.metadata &&
-                              `${String(transaction.metadata.reason)}`}
-                          </div>
-                        )}
+                    <td className="px-6 py-4 text-gray-500 text-sm">
+                      {transaction.metadata && typeof transaction.metadata === "object" && (
+                        <div className="max-w-xs truncate">
+                          {"bookTitle" in transaction.metadata &&
+                            `Book: ${String(transaction.metadata.bookTitle)}`}
+                          {"reason" in transaction.metadata &&
+                            `${String(transaction.metadata.reason)}`}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

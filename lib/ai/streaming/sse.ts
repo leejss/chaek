@@ -1,8 +1,6 @@
-import { SSEEvent } from "@/lib/ai/types/streaming";
+import type { SSEEvent } from "@/lib/ai/types/streaming";
 
-export function createSSEResponse(
-  events: AsyncIterable<SSEEvent>,
-): Response {
+export function createSSEResponse(events: AsyncIterable<SSEEvent>): Response {
   const body = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();

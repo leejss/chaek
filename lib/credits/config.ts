@@ -41,9 +41,6 @@ export function formatPrice(priceInCents: number): string {
   return `$${(priceInCents / 100).toFixed(2)}`;
 }
 
-export function getPricePerCredit(
-  priceInCents: number,
-  credits: number,
-): string {
+export function getPricePerCredit(priceInCents: number, credits: number): string {
   return `$${(priceInCents / 100 / credits).toFixed(2)}`;
 }

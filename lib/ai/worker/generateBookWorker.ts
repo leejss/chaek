@@ -1,15 +1,15 @@
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import type { BookSettings } from "@/context/types/settings";
 import { db } from "@/db";
 import { bookGenerationStates, books, chapters } from "@/db/schema";
-import { GenerateBookJob } from "@/lib/ai/jobs/types";
-import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { BookSettings } from "@/context/types/settings";
-import { normalizeToc } from "@/lib/ai/utils";
-import { eq, and, inArray, asc, sql } from "drizzle-orm";
-import { enqueueGenerateBookJob } from "./bookGenerationQueue";
 import { getModel } from "@/lib/ai/core";
-import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
-import { generateOutline } from "@/lib/ai/prompts/outline";
+import type { GenerateBookJob } from "@/lib/ai/jobs/types";
 import { generateDraftText } from "@/lib/ai/prompts/draftText";
+import { generateOutline } from "@/lib/ai/prompts/outline";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import { normalizeToc } from "@/lib/ai/utils";
+import { enqueueGenerateBookJob } from "./bookGenerationQueue";
 
 function toSettings(job: GenerateBookJob): BookSettings {
   return {
@@ -173,12 +173,7 @@ async function generateChapter(job: GenerateBookJob) {
   const [chapterRow] = await db
     .select()
     .from(chapters)
-    .where(
-      and(
-        eq(chapters.bookId, job.bookId),
-        eq(chapters.chapterNumber, chapterNumber),
-      ),
-    )
+    .where(and(eq(chapters.bookId, job.bookId), eq(chapters.chapterNumber, chapterNumber)))
     .limit(1);
 
   if (!chapterRow) throw new Error("Chapter row not found");
@@ -219,11 +214,7 @@ async function generateChapter(job: GenerateBookJob) {
   let chapterContent = `## ${chapterTitle}\n\n`;
   const completedSummaries: Array<{ title: string; summary: string }> = [];
 
-  for (
-    let sectionIndex = 0;
-    sectionIndex < outline.sections.length;
-    sectionIndex++
-  ) {
+  for (let sectionIndex = 0; sectionIndex < outline.sections.length; sectionIndex++) {
     const section = outline.sections[sectionIndex];
     if (!section) {
       throw new Error("Invalid section");
@@ -243,7 +234,7 @@ async function generateChapter(job: GenerateBookJob) {
       languageModel,
     );
 
-    chapterContent += sectionText + "\n\n";
+    chapterContent += `${sectionText}\n\n`;
     completedSummaries.push({
       title: section.title,
       summary: section.summary,
@@ -258,12 +249,7 @@ async function generateChapter(job: GenerateBookJob) {
         status: "completed",
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(chapters.bookId, job.bookId),
-          eq(chapters.chapterNumber, chapterNumber),
-        ),
-      );
+      .where(and(eq(chapters.bookId, job.bookId), eq(chapters.chapterNumber, chapterNumber)));
 
     await tx
       .insert(bookGenerationStates)
@@ -284,10 +270,7 @@ async function generateChapter(job: GenerateBookJob) {
   await enqueueNextOrFinalize(job, toc.length);
 }
 
-async function enqueueNextOrFinalize(
-  job: GenerateBookJob,
-  totalChapters: number,
-) {
+async function enqueueNextOrFinalize(job: GenerateBookJob, totalChapters: number) {
   const nextChapter = (job.chapterNumber || 0) + 1;
 
   if (nextChapter <= totalChapters) {

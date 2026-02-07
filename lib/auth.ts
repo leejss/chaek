@@ -1,24 +1,18 @@
-import { cookies } from "next/headers";
-import { HttpError } from "@/lib/errors";
 import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
-import { accessTokenConfig } from "./authTokens";
+import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 import { serverEnv } from "@/lib/env";
-import { type NextRequest } from "next/server";
+import { HttpError } from "@/lib/errors";
+import { accessTokenConfig } from "./authTokens";
 
 export { accessTokenConfig, refreshTokenConfig } from "./authTokens";
 
 export const GOOGLE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs"),
 );
-export const GOOGLE_ISSUERS = [
-  "https://accounts.google.com",
-  "accounts.google.com",
-] as const;
+export const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"] as const;
 
-export async function verifyGoogleIdToken(
-  idToken: string,
-  googleClientId: string,
-) {
+export async function verifyGoogleIdToken(idToken: string, googleClientId: string) {
   try {
     const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
       audience: googleClientId,

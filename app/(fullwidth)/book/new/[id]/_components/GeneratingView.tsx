@@ -1,8 +1,8 @@
 "use client";
 
-import StatusOverviewGeneration from "@/app/(protected)/book/new/_components/StatusOverviewGeneration";
 import GenerationStep from "@/app/(protected)/book/new/_components/GenerationStep";
-import { BookGenerationSettings } from "@/lib/ai/schemas/settings";
+import StatusOverviewGeneration from "@/app/(protected)/book/new/_components/StatusOverviewGeneration";
+import type { BookGenerationSettings } from "@/lib/ai/schemas/settings";
 
 interface GeneratingViewProps {
   bookTitle: string;
@@ -24,7 +24,7 @@ export default function GeneratingView({
   error,
 }: GeneratingViewProps) {
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <GenerationStep
         tableOfContents={tableOfContents}
         bookTitle={bookTitle}
@@ -40,7 +40,7 @@ export default function GeneratingView({
         isGenerating={isGenerating}
       />
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 font-medium text-red-700">
           {error}
         </div>
       )}

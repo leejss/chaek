@@ -1,4 +1,5 @@
-import { HttpError } from "@/lib/errors";
+import { and, eq, isNull } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { refreshTokens } from "@/db/schema";
 import {
@@ -7,9 +8,8 @@ import {
   refreshAuthCookieOptions,
   refreshTokenConfig,
 } from "@/lib/authTokens";
+import { HttpError } from "@/lib/errors";
 import { sha256Hex } from "@/utils";
-import { and, eq, isNull } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,12 +20,7 @@ export async function POST(req: NextRequest) {
       await db
         .update(refreshTokens)
         .set({ revokedAt: new Date() })
-        .where(
-          and(
-            eq(refreshTokens.tokenHash, refreshTokenHash),
-            isNull(refreshTokens.revokedAt),
-          ),
-        );
+        .where(and(eq(refreshTokens.tokenHash, refreshTokenHash), isNull(refreshTokens.revokedAt)));
     }
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
@@ -44,10 +39,7 @@ export async function POST(req: NextRequest) {
     console.error("Logout error:", error);
 
     const status = error instanceof HttpError ? error.status : 500;
-    const message =
-      error instanceof HttpError
-        ? error.publicMessage
-        : "Internal server error";
+    const message = error instanceof HttpError ? error.publicMessage : "Internal server error";
 
     const res = NextResponse.json({ ok: false, error: message }, { status });
 

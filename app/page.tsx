@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { accessTokenConfig } from "@/lib/authTokens";
 
 export default async function Home() {

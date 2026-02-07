@@ -1,23 +1,20 @@
 "use server";
 
+import { and, eq } from "drizzle-orm";
+import type { ChapterOutline } from "@/context/types/book";
+import type { BookSettings } from "@/context/types/settings";
 import { db } from "@/db";
 import { bookGenerationStates, chapters } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { AIProvider, GeminiModel, ClaudeModel } from "@/lib/ai/config";
+import type { AIProvider, ClaudeModel, GeminiModel } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
-import { BookSettings } from "@/context/types/settings";
-import { PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
-import { ChapterOutline } from "@/context/types/book";
-import { ChapterOutlineSchema } from "@/lib/ai/schemas/outline";
-import { TocOutput, TocSchema } from "@/lib/ai/schemas/toc";
-import {
-  ChapterSummaryOutput,
-  ChapterSummarySchema,
-} from "@/lib/ai/schemas/summary";
-import { generateToc } from "@/lib/ai/prompts/toc";
-import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
 import { generateOutline } from "@/lib/ai/prompts/outline";
+import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
 import { generateSummary } from "@/lib/ai/prompts/summary";
+import { generateToc } from "@/lib/ai/prompts/toc";
+import { ChapterOutlineSchema } from "@/lib/ai/schemas/outline";
+import { type PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
+import { type ChapterSummaryOutput, ChapterSummarySchema } from "@/lib/ai/schemas/summary";
+import { type TocOutput, TocSchema } from "@/lib/ai/schemas/toc";
 
 export interface GenerateTocParams {
   sourceText: string;
@@ -28,17 +25,8 @@ export interface GenerateTocParams {
   model: GeminiModel | ClaudeModel;
 }
 
-export async function generateTocAction(
-  params: GenerateTocParams,
-): Promise<TocOutput> {
-  const {
-    sourceText,
-    language,
-    chapterCount,
-    userPreference,
-    provider,
-    model,
-  } = params;
+export async function generateTocAction(params: GenerateTocParams): Promise<TocOutput> {
+  const { sourceText, language, chapterCount, userPreference, provider, model } = params;
 
   const languageModel = getModel(provider, model);
   const minChapters = chapterCount === "Auto" ? 5 : chapterCount || 5;
@@ -61,18 +49,13 @@ export interface GeneratePlanParams {
   settings?: BookSettings;
 }
 
-export async function generatePlanAction(
-  params: GeneratePlanParams,
-): Promise<PlanOutput> {
+export async function generatePlanAction(params: GeneratePlanParams): Promise<PlanOutput> {
   const { sourceText, toc, provider, model, settings, bookId } = params;
 
   const languageModel = getModel(provider, model);
   const language = settings?.language || "Korean";
 
-  const planResult = await generatePlanPrompt(
-    { sourceText, toc, language },
-    languageModel,
-  );
+  const planResult = await generatePlanPrompt({ sourceText, toc, language }, languageModel);
 
   const parsedPlan = PlanSchema.parse(planResult);
 
@@ -108,16 +91,7 @@ export interface GenerateOutlineParams {
 export async function generateOutlineAction(
   params: GenerateOutlineParams,
 ): Promise<ChapterOutline> {
-  const {
-    bookId,
-    toc,
-    chapterNumber,
-    sourceText,
-    bookPlan,
-    provider,
-    model,
-    settings,
-  } = params;
+  const { bookId, toc, chapterNumber, sourceText, bookPlan, provider, model, settings } = params;
 
   const chapterTitle = toc[chapterNumber - 1];
   if (!chapterTitle) {
@@ -128,19 +102,12 @@ export async function generateOutlineAction(
     const existingChapter = await db
       .select()
       .from(chapters)
-      .where(
-        and(
-          eq(chapters.bookId, bookId),
-          eq(chapters.chapterNumber, chapterNumber),
-        ),
-      )
+      .where(and(eq(chapters.bookId, bookId), eq(chapters.chapterNumber, chapterNumber)))
       .limit(1);
 
     // 기존 챕터가 있으면 outline을 가져옴
     if (existingChapter[0]?.outline) {
-      return ChapterOutlineSchema.parse(
-        existingChapter[0].outline,
-      ) as ChapterOutline;
+      return ChapterOutlineSchema.parse(existingChapter[0].outline) as ChapterOutline;
     }
   }
 

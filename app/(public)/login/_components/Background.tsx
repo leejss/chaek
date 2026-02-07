@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  MotionValue,
-} from "motion/react";
+import { type MotionValue, motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { useEffect } from "react";
 
 function FloatingElement({
@@ -104,19 +98,17 @@ interface FloatingElementData {
   duration: number;
 }
 
-const ELEMENTS: FloatingElementData[] = Array.from({ length: 15 }).map(
-  (_, i) => ({
-    id: i,
-    initialXPercent: Math.random() * 100,
-    initialYPercent: Math.random() * 100,
-    size: 100 + Math.random() * 300,
-    delay: Math.random() * 5,
-    color: i % 2 === 0 ? "#60a5fa" : "#38bdf8",
-    driftX: Math.random() * 50 - 25,
-    driftY: Math.random() * 50 - 25,
-    duration: 10 + Math.random() * 10,
-  }),
-);
+const ELEMENTS: FloatingElementData[] = Array.from({ length: 15 }).map((_, i) => ({
+  id: i,
+  initialXPercent: Math.random() * 100,
+  initialYPercent: Math.random() * 100,
+  size: 100 + Math.random() * 300,
+  delay: Math.random() * 5,
+  color: i % 2 === 0 ? "#60a5fa" : "#38bdf8",
+  driftX: Math.random() * 50 - 25,
+  driftY: Math.random() * 50 - 25,
+  duration: 10 + Math.random() * 10,
+}));
 
 export function Background() {
   const mouseX = useMotionValue(0);
@@ -144,7 +136,7 @@ export function Background() {
 
   return (
     <motion.div
-      className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-white"
+      className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-white"
       style={{ x: moveX, y: moveY }}
     >
       {ELEMENTS.map((el) => (

@@ -1,23 +1,15 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useGenerationStore } from "@/context/generationContext";
 import MarkdownRenderer from "../../_components/MarkdownRenderer";
-import { Loader2 } from "lucide-react";
 
 export default function ChapterContentDisplay() {
-  const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
-  );
-  const currentChapterIndex = useGenerationStore(
-    (state) => state.currentChapterIndex,
-  );
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
   const chapters = useGenerationStore((state) => state.chapters);
-  const currentChapterContent = useGenerationStore(
-    (state) => state.currentChapterContent,
-  );
-  const awaitingChapterDecision = useGenerationStore(
-    (state) => state.awaitingChapterDecision,
-  );
+  const currentChapterContent = useGenerationStore((state) => state.currentChapterContent);
+  const awaitingChapterDecision = useGenerationStore((state) => state.awaitingChapterDecision);
 
   const isViewingCurrentGeneration =
     currentChapterIndex >= 0 && viewingChapterIndex === currentChapterIndex;
@@ -38,27 +30,23 @@ export default function ChapterContentDisplay() {
 
   if (!contentToDisplay && isViewingCurrentGeneration) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-neutral-400">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-black" />
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-neutral-400">
+        <Loader2 className="mb-4 h-8 w-8 animate-spin text-black" />
         <p>Initializing chapter generation...</p>
       </div>
     );
   }
 
-  if (
-    !contentToDisplay &&
-    !isViewingCurrentGeneration &&
-    viewingChapterIndex >= chapters.length
-  ) {
+  if (!contentToDisplay && !isViewingCurrentGeneration && viewingChapterIndex >= chapters.length) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-neutral-400">
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-neutral-400">
         <p>This chapter has not been generated yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-background min-h-[500px] px-4 md:px-8 py-8">
+    <div className="min-h-[500px] bg-background px-4 py-8 md:px-8">
       <MarkdownRenderer content={contentToDisplay} isStreaming={isStreaming} />
     </div>
   );

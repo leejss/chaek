@@ -19,7 +19,7 @@ export function useCreditBalance() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-    }
+    },
   );
 
   return {

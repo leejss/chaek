@@ -1,5 +1,5 @@
-import { DraftInput } from "@/lib/ai/types/prompts";
-import { streamText, LanguageModel, ModelMessage } from "@/lib/ai/core";
+import { type LanguageModel, type ModelMessage, streamText } from "@/lib/ai/core";
+import type { DraftInput } from "@/lib/ai/types/prompts";
 
 function buildMessages(input: DraftInput): ModelMessage[] {
   const currentSection = input.chapterOutline[input.sectionIndex];

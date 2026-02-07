@@ -1,28 +1,22 @@
 "use server";
 
-import { ChapterOutline } from "@/context/types/book";
+import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import type { ChapterOutline } from "@/context/types/book";
 import { db } from "@/db";
 import {
+  type BookStatus,
   bookGenerationStates,
   books,
-  BookStatus,
   chapters,
   publishedBooks,
 } from "@/db/schema";
 import { getUserId } from "@/lib/auth";
 import { ValidationError } from "@/lib/errors";
-import {
-  aggregateBookContent,
-  findBookByIdAndUserId,
-} from "@/lib/repositories/bookRepository";
-import { and, eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import {
-  BookGenerationSettings,
-  BookGenerationSettingsSchema,
-} from "../ai/schemas/settings";
+import { aggregateBookContent, findBookByIdAndUserId } from "@/lib/repositories/bookRepository";
 import { ChapterOutlineSchema } from "../ai/schemas/outline";
-import { z } from "zod";
+import { type BookGenerationSettings, BookGenerationSettingsSchema } from "../ai/schemas/settings";
 
 const CreateBookInputSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title is too long"),
@@ -54,9 +48,7 @@ export async function getBookWithValidation(bookId: string, userId: string) {
   }
 
   if (!data.book_generation_states) {
-    console.warn(
-      `Book generation state not found: ${bookId} for user ${userId}`,
-    );
+    console.warn(`Book generation state not found: ${bookId} for user ${userId}`);
     return null;
   }
 

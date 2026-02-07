@@ -1,12 +1,12 @@
-import { ChapterContent } from "@/context/types/generation";
-import type { PlanOutput } from "@/lib/ai/schemas/plan";
-import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
-import { serverEnv } from "@/lib/env";
-import { getBookWithValidation } from "@/lib/actions/book";
-import { findChaptersByBookIdAndStatus } from "@/lib/repositories/chapterRepository";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import type { ChapterContent } from "@/context/types/generation";
+import { getBookWithValidation } from "@/lib/actions/book";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
+import { serverEnv } from "@/lib/env";
+import { findChaptersByBookIdAndStatus } from "@/lib/repositories/chapterRepository";
 import GenerationView from "./_components/GenerationView";
 import BookGenerationLoading from "./loading";
 
@@ -44,10 +44,7 @@ async function BookGenerationContent({ params }: PageProps) {
     redirect(`/book/${bookId}`);
   }
 
-  const completedChapters = await findChaptersByBookIdAndStatus(
-    bookId,
-    "completed",
-  );
+  const completedChapters = await findChaptersByBookIdAndStatus(bookId, "completed");
 
   const initialChapters: ChapterContent[] = completedChapters.map((c) => ({
     chapterNumber: c.chapterNumber,

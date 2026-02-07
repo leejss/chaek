@@ -1,11 +1,11 @@
-import { streamBook } from "@/lib/ai/streaming/streamGenerator";
-import { StreamingConfig } from "@/lib/ai/types/streaming";
-import { authenticate } from "@/lib/auth";
-import { HttpError } from "@/lib/errors";
-import { readJson, normalizeToHttpError } from "@/utils";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { LanguageSchema } from "@/lib/ai/schemas/settings";
+import { streamBook } from "@/lib/ai/streaming/streamGenerator";
+import type { StreamingConfig } from "@/lib/ai/types/streaming";
+import { authenticate } from "@/lib/auth";
+import { HttpError } from "@/lib/errors";
+import { normalizeToHttpError, readJson } from "@/utils";
 
 const streamRequestSchema = z.object({
   title: z.string().min(1),
@@ -18,10 +18,7 @@ const streamRequestSchema = z.object({
   startFromChapter: z.number().int().min(1).optional(),
 });
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await authenticate(req);
 
@@ -53,10 +50,9 @@ export async function POST(
 
     const httpError = normalizeToHttpError(error);
     if (httpError) {
-      return new NextResponse(
-        JSON.stringify({ ok: false, error: httpError.publicMessage }),
-        { status: httpError.status },
-      );
+      return new NextResponse(JSON.stringify({ ok: false, error: httpError.publicMessage }), {
+        status: httpError.status,
+      });
     }
 
     return new NextResponse(

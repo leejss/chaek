@@ -52,7 +52,7 @@ export async function highlightCode(content: string, language: string) {
 export function extractTOC(markdown: string): TOCItem[] {
   const extracted: TOCItem[] = [];
   const regex = /^\s*(#{2,3})\s+(.+)$/gm;
-  let match;
+  let match: RegExpExecArray | null;
 
   while ((match = regex.exec(markdown)) !== null) {
     const levelMarks = match[1];

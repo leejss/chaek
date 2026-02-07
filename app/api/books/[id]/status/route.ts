@@ -1,16 +1,13 @@
+import { and, asc, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { bookGenerationStates, books, chapters } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
-import { and, asc, eq } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await authenticate(req);
 
@@ -44,9 +41,7 @@ export async function GET(
       ? book.tableOfContents.length
       : chapterRows.length;
 
-    const completedChapters = chapterRows.filter(
-      (c) => c.status === "completed",
-    ).length;
+    const completedChapters = chapterRows.filter((c) => c.status === "completed").length;
 
     return NextResponse.json({
       ok: true,
@@ -73,9 +68,6 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(
-      { ok: false, error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 }

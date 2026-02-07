@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 const serverSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   DATABASE_DIRECT_URL: z.string().min(1, "DATABASE_DIRECT_URL is required"),
   GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
@@ -11,17 +9,11 @@ const serverSchema = z.object({
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
   ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required"),
   QSTASH_TOKEN: z.string().min(1, "QSTASH_TOKEN is required"),
-  QSTASH_CURRENT_SIGNING_KEY: z
-    .string()
-    .min(1, "QSTASH_CURRENT_SIGNING_KEY is required"),
-  QSTASH_NEXT_SIGNING_KEY: z
-    .string()
-    .min(1, "QSTASH_NEXT_SIGNING_KEY is required"),
+  QSTASH_CURRENT_SIGNING_KEY: z.string().min(1, "QSTASH_CURRENT_SIGNING_KEY is required"),
+  QSTASH_NEXT_SIGNING_KEY: z.string().min(1, "QSTASH_NEXT_SIGNING_KEY is required"),
   QSTASH_BASE_URL: z.string().url("QSTASH_BASE_URL must be a valid URL"),
   LEMONSQUEEZY_API_KEY: z.string().min(1, "LEMONSQUEEZY_API_KEY is required"),
-  LEMONSQUEEZY_WEBHOOK_SECRET: z
-    .string()
-    .min(1, "LEMONSQUEEZY_WEBHOOK_SECRET is required"),
+  LEMONSQUEEZY_WEBHOOK_SECRET: z.string().min(1, "LEMONSQUEEZY_WEBHOOK_SECRET is required"),
   LEMONSQUEEZY_STORE_ID: z.string().min(1, "LEMONSQUEEZY_STORE_ID is required"),
 });
 
@@ -36,9 +28,7 @@ const isServer = () => typeof window === "undefined";
 
 const validateServerEnv = (): ServerEnv => {
   if (!isServer()) {
-    throw new Error(
-      "❌ [Runtime Error] 'serverEnv'는 서버 런타임에서만 접근 가능합니다.",
-    );
+    throw new Error("❌ [Runtime Error] 'serverEnv'는 서버 런타임에서만 접근 가능합니다.");
   }
 
   const fullSchema = serverSchema.extend(clientSchema.shape);

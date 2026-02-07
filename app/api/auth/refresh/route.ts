@@ -1,4 +1,6 @@
-import { HttpError } from "@/lib/errors";
+import { add, type Duration } from "date-fns";
+import { and, eq, gt, isNull } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { refreshTokens, users } from "@/db/schema";
 import { issueAccessJWT } from "@/lib/auth";
@@ -8,11 +10,9 @@ import {
   refreshAuthCookieOptions,
   refreshTokenConfig,
 } from "@/lib/authTokens";
-import { generateRandomToken, sha256Hex } from "@/utils";
-import { and, eq, gt, isNull } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
-import { add, Duration } from "date-fns";
 import { serverEnv } from "@/lib/env";
+import { HttpError } from "@/lib/errors";
+import { generateRandomToken, sha256Hex } from "@/utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,11 +39,7 @@ export async function POST(req: NextRequest) {
     if (!tokenRow) {
       throw new HttpError(401, "Invalid refresh token");
     }
-    const [userRow] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, tokenRow.userId))
-      .limit(1);
+    const [userRow] = await db.select().from(users).where(eq(users.id, tokenRow.userId)).limit(1);
 
     if (!userRow) {
       throw new HttpError(401, "User not found");
@@ -97,14 +93,8 @@ export async function POST(req: NextRequest) {
     console.error("Refresh auth error:", error);
     const res =
       error instanceof HttpError
-        ? NextResponse.json(
-            { ok: false, error: error.publicMessage },
-            { status: error.status },
-          )
-        : NextResponse.json(
-            { ok: false, error: "Internal server error" },
-            { status: 500 },
-          );
+        ? NextResponse.json({ ok: false, error: error.publicMessage }, { status: error.status })
+        : NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
 
     // 실패 시 쿠키 정리(선택이지만 UX/보안상 권장)
     // clearAuthCookies(res);

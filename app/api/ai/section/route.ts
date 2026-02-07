@@ -1,10 +1,9 @@
-import { Section } from "@/context/types/book";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getProviderByModel, isValidModel } from "@/lib/ai/config";
 import { getModel } from "@/lib/ai/core";
 import { streamDraft } from "@/lib/ai/prompts/draft";
-import { readJson, normalizeToHttpError, parseAndValidateBody } from "@/utils";
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { normalizeToHttpError, parseAndValidateBody, readJson } from "@/utils";
 
 const sectionSchema = z.object({
   title: z.string().min(1),

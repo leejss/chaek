@@ -1,34 +1,25 @@
 "use client";
 
-import {
-  useGenerationStore,
-  generationActions,
-} from "@/context/generationContext";
+import { Check, ChevronRight, FileText, Loader2, Lock } from "lucide-react";
+import { generationActions, useGenerationStore } from "@/context/generationContext";
 import { cn } from "@/utils";
-import { Check, FileText, Loader2, Lock, ChevronRight } from "lucide-react";
 
 interface GenerationSidebarProps {
   tableOfContents: string[];
 }
 
-export default function GenerationSidebar({
-  tableOfContents,
-}: GenerationSidebarProps) {
-  const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
-  );
-  const currentChapterIndex = useGenerationStore(
-    (state) => state.currentChapterIndex,
-  );
+export default function GenerationSidebar({ tableOfContents }: GenerationSidebarProps) {
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
   const chapters = useGenerationStore((state) => state.chapters);
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-neutral-200 w-80 shrink-0">
-      <div className="p-6 border-b border-neutral-100 bg-neutral-50/30">
-        <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">
+    <div className="flex h-full w-80 shrink-0 flex-col border-neutral-200 border-r bg-white">
+      <div className="border-neutral-100 border-b bg-neutral-50/30 p-6">
+        <h2 className="mb-1 font-bold text-neutral-500 text-xs uppercase tracking-widest">
           Contents
         </h2>
-        <p className="text-sm font-medium text-neutral-400">
+        <p className="font-medium text-neutral-400 text-sm">
           {chapters.length} / {tableOfContents.length} generated
         </p>
       </div>
@@ -45,22 +36,17 @@ export default function GenerationSidebar({
               disabled={isLocked}
               onClick={() => generationActions.setViewingChapterIndex(index)}
               className={cn(
-                "w-full flex items-center gap-3 px-5 py-3.5 text-left transition-all duration-200 group border-l-2",
-                isActive
-                  ? "bg-neutral-50 border-black"
-                  : "border-transparent hover:bg-neutral-50",
-                isLocked &&
-                  "cursor-not-allowed opacity-50 hover:bg-transparent",
+                "group flex w-full items-center gap-3 border-l-2 px-5 py-3.5 text-left transition-all duration-200",
+                isActive ? "border-black bg-neutral-50" : "border-transparent hover:bg-neutral-50",
+                isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent",
               )}
             >
-              <div className="flex items-center justify-center shrink-0">
+              <div className="flex shrink-0 items-center justify-center">
                 {isCompleted ? (
                   <div
                     className={cn(
-                      "w-5 h-5 rounded-full flex items-center justify-center transition-colors",
-                      isActive
-                        ? "bg-green-600 text-white"
-                        : "bg-green-100 text-green-700",
+                      "flex h-5 w-5 items-center justify-center rounded-full transition-colors",
+                      isActive ? "bg-green-600 text-white" : "bg-green-100 text-green-700",
                     )}
                   >
                     <Check size={12} strokeWidth={3} />
@@ -74,10 +60,10 @@ export default function GenerationSidebar({
                 )}
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <p
                   className={cn(
-                    "text-xs font-bold mb-0.5",
+                    "mb-0.5 font-bold text-xs",
                     isActive ? "text-neutral-900" : "text-neutral-500",
                   )}
                 >
@@ -85,7 +71,7 @@ export default function GenerationSidebar({
                 </p>
                 <p
                   className={cn(
-                    "text-sm font-medium truncate",
+                    "truncate font-medium text-sm",
                     isActive ? "text-black" : "text-neutral-600",
                     isCompleted && "text-neutral-900",
                   )}
@@ -94,9 +80,7 @@ export default function GenerationSidebar({
                 </p>
               </div>
 
-              {isActive && (
-                <ChevronRight size={16} className="text-neutral-400" />
-              )}
+              {isActive && <ChevronRight size={16} className="text-neutral-400" />}
             </button>
           );
         })}

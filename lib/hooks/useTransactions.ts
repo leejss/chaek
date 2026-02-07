@@ -25,24 +25,21 @@ async function fetcher<T>(url: string): Promise<T> {
   return res.json();
 }
 
-function getKey(
-  index: number,
-  previousData: TransactionsResponse | null,
-): string | null {
+function getKey(index: number, previousData: TransactionsResponse | null): string | null {
   if (index === 0) {
     return "/api/credits/transactions";
   }
-  if (previousData && previousData.nextCursor) {
+  if (previousData?.nextCursor) {
     return `/api/credits/transactions?cursor=${previousData.nextCursor}`;
   }
   return null;
 }
 
 export function useTransactions() {
-  const { data, error, isLoading, size, setSize } = useSWRInfinite<
-    TransactionsResponse,
-    Error
-  >(getKey, fetcher);
+  const { data, error, isLoading, size, setSize } = useSWRInfinite<TransactionsResponse, Error>(
+    getKey,
+    fetcher,
+  );
 
   const transactions = data?.flatMap((page) => page.transactions) ?? [];
   const hasMore = !!data?.[data.length - 1]?.nextCursor;

@@ -41,30 +41,15 @@ export const useTocGenerationStore = create(
         },
 
         failTocGeneration: (message: string) => {
-          set(
-            { tocGeneration: { status: "error", message } },
-            false,
-            "book/tocGeneration/fail",
-          );
+          set({ tocGeneration: { status: "error", message } }, false, "book/tocGeneration/fail");
         },
 
         clearTocGenerationError: () => {
-          set(
-            { tocGeneration: { status: "idle" } },
-            false,
-            "book/tocGeneration/clearError",
-          );
+          set({ tocGeneration: { status: "idle" } }, false, "book/tocGeneration/clearError");
         },
 
-        update: <K extends UpdatableBookFields>(
-          key: K,
-          value: BookState[K],
-        ) => {
-          set(
-            { [key]: value } as Partial<BookState>,
-            false,
-            `book/update/${key}`,
-          );
+        update: <K extends UpdatableBookFields>(key: K, value: BookState[K]) => {
+          set({ [key]: value } as Partial<BookState>, false, `book/update/${key}`);
         },
 
         setTocResult: (title: string, chapters: string[]) => {
@@ -99,10 +84,7 @@ export const useTocGenerationStore = create(
         completeStep: (step: TocGenerationStep) => {
           set(
             {
-              completedSteps: new Set<TocGenerationStep>([
-                ...get().completedSteps,
-                step,
-              ]),
+              completedSteps: new Set<TocGenerationStep>([...get().completedSteps, step]),
             },
             false,
             "book/completeStep",
@@ -116,15 +98,10 @@ export const useTocGenerationStore = create(
 );
 
 export const updateTocStore = useTocGenerationStore.getState().actions.update;
-export const setTocResult =
-  useTocGenerationStore.getState().actions.setTocResult;
-export const canAccessStep =
-  useTocGenerationStore.getState().actions.canAccessStep;
-export const completeStep =
-  useTocGenerationStore.getState().actions.completeStep;
-export const startTocGeneration =
-  useTocGenerationStore.getState().actions.startTocGeneration;
-export const failTocGeneration =
-  useTocGenerationStore.getState().actions.failTocGeneration;
+export const setTocResult = useTocGenerationStore.getState().actions.setTocResult;
+export const canAccessStep = useTocGenerationStore.getState().actions.canAccessStep;
+export const completeStep = useTocGenerationStore.getState().actions.completeStep;
+export const startTocGeneration = useTocGenerationStore.getState().actions.startTocGeneration;
+export const failTocGeneration = useTocGenerationStore.getState().actions.failTocGeneration;
 export const clearTocGenerationError =
   useTocGenerationStore.getState().actions.clearTocGenerationError;

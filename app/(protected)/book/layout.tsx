@@ -4,10 +4,6 @@ export const metadata: Metadata = {
   description: "AI-assisted book creation studio",
 };
 
-export default function BookLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function BookLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

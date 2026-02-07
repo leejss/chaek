@@ -1,6 +1,6 @@
-import { AIProvider } from "@/lib/ai/config";
-import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { Section } from "@/lib/ai/schemas/outline";
+import type { AIProvider } from "@/lib/ai/config";
+import type { Section } from "@/lib/ai/schemas/outline";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
 
 export interface GenerationSettings {
   provider: AIProvider;

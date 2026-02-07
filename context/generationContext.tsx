@@ -1,10 +1,10 @@
 "use client";
 
-import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { ChapterContent, GenerationProgress } from "@/context/types/generation";
-import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createStore } from "zustand/vanilla";
+import type { ChapterContent, GenerationProgress } from "@/context/types/generation";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
 
 export interface GenerationState {
   generationProgress: GenerationProgress;
@@ -22,10 +22,7 @@ export type GenerationStoreState = GenerationState & {
     init: (bookPlan?: PlanOutput, chapters?: ChapterContent[]) => void;
     updateProgress: (progress: Partial<GenerationProgress>) => void;
     startGeneration: (totalChapters: number) => void;
-    syncProgress: (
-      chapters: ChapterContent[],
-      currentChapterIndex: number,
-    ) => void;
+    syncProgress: (chapters: ChapterContent[], currentChapterIndex: number) => void;
     fail: (error: string) => void;
     complete: () => void;
     finishChapter: (title: string, content: string) => void;
@@ -106,10 +103,7 @@ const createGenerationStore = (init?: GenerationInit) => {
           );
         },
 
-        syncProgress: (
-          chapters: ChapterContent[],
-          currentChapterIndex: number,
-        ) => {
+        syncProgress: (chapters: ChapterContent[], currentChapterIndex: number) => {
           set(
             {
               chapters,
@@ -143,11 +137,7 @@ const createGenerationStore = (init?: GenerationInit) => {
         },
 
         complete: () => {
-          set(
-            { generationProgress: { phase: "completed" } },
-            false,
-            "generation/complete",
-          );
+          set({ generationProgress: { phase: "completed" } }, false, "generation/complete");
         },
 
         finishChapter: (title: string, content: string) => {
@@ -204,20 +194,12 @@ const createGenerationStore = (init?: GenerationInit) => {
         confirmChapter: () => {
           return new Promise<void>((resolve) => {
             chapterConfirmResolver = resolve;
-            set(
-              { awaitingChapterDecision: false },
-              false,
-              "generation/confirmChapter",
-            );
+            set({ awaitingChapterDecision: false }, false, "generation/confirmChapter");
           });
         },
 
         setViewingChapterIndex: (index: number) => {
-          set(
-            { viewingChapterIndex: index },
-            false,
-            "generation/setViewingChapterIndex",
-          );
+          set({ viewingChapterIndex: index }, false, "generation/setViewingChapterIndex");
         },
 
         reset: () => {
@@ -251,8 +233,6 @@ const createGenerationStore = (init?: GenerationInit) => {
 export const generationStore = createGenerationStore();
 export const generationActions = generationStore.getState().actions;
 
-export function useGenerationStore<T>(
-  selector: (state: GenerationStoreState) => T,
-): T {
+export function useGenerationStore<T>(selector: (state: GenerationStoreState) => T): T {
   return useStore(generationStore, selector);
 }

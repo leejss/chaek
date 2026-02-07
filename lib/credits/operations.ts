@@ -1,15 +1,10 @@
-import { db } from "@/db";
-import {
-  bookGenerationStates,
-  books,
-  creditBalances,
-  creditTransactions,
-} from "@/db/schema";
-import { HttpError } from "@/lib/errors";
 import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { bookGenerationStates, books, creditBalances, creditTransactions } from "@/db/schema";
+import type { AIProvider } from "@/lib/ai/config";
+import { HttpError } from "@/lib/errors";
+import type { Language } from "../ai/schemas/settings";
 import { FREE_SIGNUP_CREDITS } from "./config";
-import { AIProvider } from "@/lib/ai/config";
-import { Language } from "../ai/schemas/settings";
 
 function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -77,9 +72,7 @@ export async function addCredits(params: AddCreditsParams): Promise<void> {
       const current = currentBalance[0] || { balance: 0, freeCredits: 0 };
       const newBalance = current.balance + amount;
       const newFreeCredits =
-        type === "free_signup"
-          ? current.freeCredits + amount
-          : current.freeCredits;
+        type === "free_signup" ? current.freeCredits + amount : current.freeCredits;
 
       if (currentBalance.length === 0) {
         await tx.insert(creditBalances).values({
@@ -123,9 +116,7 @@ export interface DeductCreditsParams {
   metadata?: Record<string, unknown>;
 }
 
-export async function deductCredits(
-  params: DeductCreditsParams,
-): Promise<void> {
+export async function deductCredits(params: DeductCreditsParams): Promise<void> {
   const { userId, amount, bookId, metadata } = params;
 
   await db.transaction(async (tx) => {
@@ -168,9 +159,7 @@ export interface RefundCreditsParams {
   metadata?: Record<string, unknown>;
 }
 
-export async function refundCredits(
-  params: RefundCreditsParams,
-): Promise<void> {
+export async function refundCredits(params: RefundCreditsParams): Promise<void> {
   const { userId, amount, lemonSqueezyOrderId, metadata } = params;
 
   try {
@@ -241,9 +230,7 @@ export interface RefundUsageCreditsParams {
   metadata?: Record<string, unknown>;
 }
 
-export async function refundUsageCredits(
-  params: RefundUsageCreditsParams,
-): Promise<void> {
+export async function refundUsageCredits(params: RefundUsageCreditsParams): Promise<void> {
   const { userId, amount, bookId, metadata } = params;
 
   await db.transaction(async (tx) => {
@@ -251,10 +238,7 @@ export async function refundUsageCredits(
       .select({ id: creditTransactions.id })
       .from(creditTransactions)
       .where(
-        and(
-          eq(creditTransactions.type, "usage_refund"),
-          eq(creditTransactions.bookId, bookId),
-        ),
+        and(eq(creditTransactions.type, "usage_refund"), eq(creditTransactions.bookId, bookId)),
       )
       .limit(1);
 

@@ -1,6 +1,6 @@
-import { TocSchema, TocOutput } from "@/lib/ai/schemas/toc";
-import { TocInput } from "@/lib/ai/types/prompts";
-import { generateObject, LanguageModel, ModelMessage } from "@/lib/ai/core";
+import { generateObject, type LanguageModel, type ModelMessage } from "@/lib/ai/core";
+import { type TocOutput, TocSchema } from "@/lib/ai/schemas/toc";
+import type { TocInput } from "@/lib/ai/types/prompts";
 
 const TOC_ROLE = `
 <role>
@@ -39,9 +39,7 @@ function buildInstructions(input: TocInput): string {
 function buildMessages(input: TocInput): ModelMessage[] {
   const userParts = [
     `<source_text>\n${input.sourceText}\n</source_text>`,
-    input.userPreference
-      ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
-      : "",
+    input.userPreference ? `<user_preferences>\n${input.userPreference}\n</user_preferences>` : "",
   ];
 
   return [
@@ -56,10 +54,7 @@ function buildMessages(input: TocInput): ModelMessage[] {
   ];
 }
 
-export async function generateToc(
-  input: TocInput,
-  model: LanguageModel,
-): Promise<TocOutput> {
+export async function generateToc(input: TocInput, model: LanguageModel): Promise<TocOutput> {
   return generateObject({
     model,
     messages: buildMessages(input),

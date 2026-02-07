@@ -1,7 +1,7 @@
 "use client";
 
-import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 import Link from "next/link";
+import { useCreditBalance } from "@/lib/hooks/useCreditBalance";
 
 export default function CreditsSuccessPage() {
   const { balance, isLoading } = useCreditBalance();
@@ -23,20 +23,14 @@ export default function CreditsSuccessPage() {
               <path d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            Payment Successful!
-          </h1>
-          <p className="text-gray-600">
-            Your credits have been added to your account
-          </p>
+          <h1 className="mb-2 font-bold text-3xl text-gray-900">Payment Successful!</h1>
+          <p className="text-gray-600">Your credits have been added to your account</p>
         </div>
 
         {!isLoading && balance !== null && (
           <div className="mb-6 rounded-lg bg-blue-50 p-4 text-center">
-            <div className="text-sm text-gray-600">Current Balance</div>
-            <div className="text-3xl font-bold text-blue-600">
-              {balance} credits
-            </div>
+            <div className="text-gray-600 text-sm">Current Balance</div>
+            <div className="font-bold text-3xl text-blue-600">{balance} credits</div>
           </div>
         )}
 

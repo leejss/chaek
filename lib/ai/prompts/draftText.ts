@@ -1,7 +1,7 @@
-import { PlanOutput } from "@/lib/ai/schemas/plan";
-import { Section } from "@/lib/ai/schemas/outline";
-import { DraftInput } from "@/lib/ai/types/prompts";
-import { generateText, LanguageModel, ModelMessage } from "@/lib/ai/core";
+import { generateText, type LanguageModel, type ModelMessage } from "@/lib/ai/core";
+import type { Section } from "@/lib/ai/schemas/outline";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
+import type { DraftInput } from "@/lib/ai/types/prompts";
 
 const CHAPTER_ROLE = `
 <role>
@@ -41,9 +41,7 @@ Target Audience: ${plan.targetAudience}
 }
 
 function buildChapterOutline(outline: Section[]): string {
-  const formatted = outline
-    .map((s, i) => `${i + 1}. ${s.title}: ${s.summary}`)
-    .join("\n");
+  const formatted = outline.map((s, i) => `${i + 1}. ${s.title}: ${s.summary}`).join("\n");
   return `<chapter_outline>\n${formatted}\n</chapter_outline>`;
 }
 
@@ -64,9 +62,7 @@ function buildMessages(input: DraftInput): ModelMessage[] {
     `<chapter_context>\nChapter ${input.chapterNumber}: ${input.chapterTitle}\n</chapter_context>`,
     buildChapterOutline(input.chapterOutline),
     buildPreviousSections(input.previousSections),
-    input.userPreference
-      ? `<user_preferences>\n${input.userPreference}\n</user_preferences>`
-      : "",
+    input.userPreference ? `<user_preferences>\n${input.userPreference}\n</user_preferences>` : "",
     `<task>\nWrite the content for section "${currentSection.title}":\n${currentSection.summary}\n</task>`,
   ];
 
@@ -82,10 +78,7 @@ function buildMessages(input: DraftInput): ModelMessage[] {
   ];
 }
 
-export async function generateDraftText(
-  input: DraftInput,
-  model: LanguageModel,
-): Promise<string> {
+export async function generateDraftText(input: DraftInput, model: LanguageModel): Promise<string> {
   return generateText({
     model,
     messages: buildMessages(input),

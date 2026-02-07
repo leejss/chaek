@@ -1,6 +1,6 @@
-import { PlanSchema, PlanOutput } from "@/lib/ai/schemas/plan";
-import { PlanInput } from "@/lib/ai/types/prompts";
-import { generateObject, LanguageModel, ModelMessage } from "@/lib/ai/core";
+import { generateObject, type LanguageModel, type ModelMessage } from "@/lib/ai/core";
+import { type PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
+import type { PlanInput } from "@/lib/ai/types/prompts";
 
 const PLAN_ROLE = `
 <role>
@@ -45,10 +45,7 @@ function buildMessages(input: PlanInput): ModelMessage[] {
   ];
 }
 
-export async function generatePlan(
-  input: PlanInput,
-  model: LanguageModel,
-): Promise<PlanOutput> {
+export async function generatePlan(input: PlanInput, model: LanguageModel): Promise<PlanOutput> {
   return generateObject({
     model,
     messages: buildMessages(input),

@@ -1,6 +1,6 @@
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookGenerationStates, books, chapters } from "@/db/schema";
-import { and, eq, asc } from "drizzle-orm";
 
 export async function aggregateBookContent(bookId: string) {
   const result = await db

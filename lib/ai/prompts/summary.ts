@@ -1,9 +1,6 @@
-import {
-  ChapterSummarySchema,
-  ChapterSummaryOutput,
-} from "@/lib/ai/schemas/summary";
-import { SummaryInput } from "@/lib/ai/types/prompts";
-import { generateObject, LanguageModel, ModelMessage } from "@/lib/ai/core";
+import { generateObject, type LanguageModel, type ModelMessage } from "@/lib/ai/core";
+import { type ChapterSummaryOutput, ChapterSummarySchema } from "@/lib/ai/schemas/summary";
+import type { SummaryInput } from "@/lib/ai/types/prompts";
 
 const SUMMARY_ROLE = `
 <role>

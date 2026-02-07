@@ -1,10 +1,9 @@
-import { GenerateBookJob } from "@/lib/ai/jobs/types";
-import { serverEnv } from "@/lib/env";
 import { Client } from "@upstash/qstash";
+import type { GenerateBookJob } from "@/lib/ai/jobs/types";
+import { serverEnv } from "@/lib/env";
 
 const client = new Client({ token: serverEnv.QSTASH_TOKEN });
-const sanitizeDeduplicationPart = (value: string) =>
-  value.replace(/[^a-zA-Z0-9._-]/g, "-");
+const sanitizeDeduplicationPart = (value: string) => value.replace(/[^a-zA-Z0-9._-]/g, "-");
 export async function enqueueGenerateBookJob(job: GenerateBookJob) {
   const baseUrl = serverEnv.QSTASH_BASE_URL.replace(/\/$/, "");
   const url = `${baseUrl}/api/queues/book-generation`;

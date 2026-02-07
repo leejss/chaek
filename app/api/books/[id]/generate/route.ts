@@ -1,19 +1,15 @@
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/db";
 import { bookGenerationStates, books, creditTransactions } from "@/db/schema";
-import { authenticate } from "@/lib/auth";
-import { enqueueGenerateBookJob } from "@/lib/ai/worker/bookGenerationQueue";
-import { HttpError } from "@/lib/errors";
-import { readJson, normalizeToHttpError } from "@/utils";
-import { and, eq } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
-import { BOOK_CREATION_COST } from "@/lib/credits/config";
-import {
-  deductCredits,
-  getUserBalance,
-  refundUsageCredits,
-} from "@/lib/credits/operations";
 import { LanguageSchema } from "@/lib/ai/schemas/settings";
+import { enqueueGenerateBookJob } from "@/lib/ai/worker/bookGenerationQueue";
+import { authenticate } from "@/lib/auth";
+import { BOOK_CREATION_COST } from "@/lib/credits/config";
+import { deductCredits, getUserBalance, refundUsageCredits } from "@/lib/credits/operations";
+import { HttpError } from "@/lib/errors";
+import { normalizeToHttpError, readJson } from "@/utils";
 
 const requestSchema = z.object({
   title: z.string().min(1),
@@ -25,10 +21,7 @@ const requestSchema = z.object({
   userPreference: z.string().default(""),
 });
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await authenticate(req);
     const { id: bookId } = await params;
@@ -87,10 +80,7 @@ export async function POST(
 
       const status = existingState?.status ?? "waiting";
       if (status === "completed") {
-        return NextResponse.json(
-          { ok: false, error: "Book already completed" },
-          { status: 409 },
-        );
+        return NextResponse.json({ ok: false, error: "Book already completed" }, { status: 409 });
       }
 
       if (status === "generating") {
@@ -126,21 +116,14 @@ export async function POST(
     const existingUsage = await db
       .select({ id: creditTransactions.id })
       .from(creditTransactions)
-      .where(
-        and(
-          eq(creditTransactions.type, "usage"),
-          eq(creditTransactions.bookId, bookId),
-        ),
-      )
+      .where(and(eq(creditTransactions.type, "usage"), eq(creditTransactions.bookId, bookId)))
       .limit(1);
 
     if (existingUsage.length === 0) {
       const balance = await getUserBalance(userId);
       if (balance.balance < BOOK_CREATION_COST) {
         if (createdNewBook) {
-          await db
-            .delete(books)
-            .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+          await db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId)));
         }
         throw new HttpError(402, "Insufficient credits");
       }
@@ -179,10 +162,7 @@ export async function POST(
             },
           });
         } catch (refundError) {
-          console.error(
-            "[books/[id]/generate] refund usage credits error:",
-            refundError,
-          );
+          console.error("[books/[id]/generate] refund usage credits error:", refundError);
 
           await db
             .insert(bookGenerationStates)
@@ -206,9 +186,7 @@ export async function POST(
       }
 
       if (createdNewBook) {
-        await db
-          .delete(books)
-          .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+        await db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId)));
       } else {
         await db
           .insert(bookGenerationStates)
@@ -248,9 +226,6 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(
-      { ok: false, error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 }

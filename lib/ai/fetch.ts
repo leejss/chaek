@@ -1,8 +1,8 @@
-import { Section } from "@/context/types/book";
-import { BookSettings } from "@/context/types/settings";
-import { PlanOutput } from "@/lib/ai/schemas/plan";
+import type { Section } from "@/context/types/book";
+import type { BookSettings } from "@/context/types/settings";
+import type { PlanOutput } from "@/lib/ai/schemas/plan";
 import { authFetch } from "@/lib/api";
-import { AIProvider, GeminiModel, ClaudeModel } from "./config";
+import type { AIProvider, ClaudeModel, GeminiModel } from "./config";
 
 export async function* fetchStreamSection(params: {
   chapterNumber: number;

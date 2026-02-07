@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createCheckout } from "@/lib/credits/lemonsqueezy";
-import { getCreditPackage } from "@/lib/credits/config";
-import { authenticate } from "@/lib/auth";
-import { HttpError, InvalidJsonError } from "@/lib/errors";
-import { readJson } from "@/utils";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { authenticate } from "@/lib/auth";
+import { getCreditPackage } from "@/lib/credits/config";
+import { createCheckout } from "@/lib/credits/lemonsqueezy";
+import { HttpError, InvalidJsonError } from "@/lib/errors";
+import { readJson } from "@/utils";
 
 const CheckoutSchema = z.object({
   packageId: z.string(),
@@ -30,10 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!pkg.variantId) {
-      throw new HttpError(
-        500,
-        "Lemon Squeezy variant ID not configured for this package",
-      );
+      throw new HttpError(500, "Lemon Squeezy variant ID not configured for this package");
     }
 
     const user = await db
@@ -73,8 +70,8 @@ export async function POST(req: NextRequest) {
       error instanceof InvalidJsonError
         ? new HttpError(400, "Invalid JSON")
         : error instanceof HttpError
-        ? error
-        : null;
+          ? error
+          : null;
 
     if (httpError) {
       return NextResponse.json(
@@ -83,9 +80,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Internal server error", ok: false },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error", ok: false }, { status: 500 });
   }
 }

@@ -32,7 +32,9 @@ export async function authFetch(url: string, options?: RequestInit) {
   try {
     await refreshAccessToken();
 
-    subscribers.forEach((cb) => cb());
+    subscribers.forEach((cb) => {
+      cb();
+    });
     subscribers = [];
 
     return fetch(url, options);

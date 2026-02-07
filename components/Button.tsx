@@ -1,7 +1,7 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import React from "react";
+import type React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost";
@@ -22,14 +22,11 @@ const Button: React.FC<ButtonProps> = ({
     "inline-flex items-center justify-center px-5 py-2.5 text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
-    primary:
-      "bg-black text-white hover:bg-neutral-800 focus:ring-neutral-500 rounded-full",
-    secondary:
-      "bg-neutral-100 text-black hover:bg-neutral-200 focus:ring-neutral-400 rounded-full",
+    primary: "bg-black text-white hover:bg-neutral-800 focus:ring-neutral-500 rounded-full",
+    secondary: "bg-neutral-100 text-black hover:bg-neutral-200 focus:ring-neutral-400 rounded-full",
     outline:
       "border border-neutral-200 text-black hover:bg-neutral-50 focus:ring-neutral-400 bg-white rounded-full",
-    ghost:
-      "text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-full",
+    ghost: "text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-full",
   };
 
   const Component = asChild ? Slot : "button";
@@ -43,7 +40,7 @@ const Button: React.FC<ButtonProps> = ({
     >
       {isLoading ? (
         <span className="flex items-center gap-2">
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
             <circle
               className="opacity-25"
               cx="12"

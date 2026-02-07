@@ -1,11 +1,11 @@
 "use server";
 
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookGenerationStates, books, creditTransactions } from "@/db/schema";
 import { getUserId } from "@/lib/auth";
-import { deductCredits, getUserBalance } from "@/lib/credits/operations";
-import { and, eq } from "drizzle-orm";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
+import { deductCredits, getUserBalance } from "@/lib/credits/operations";
 
 export async function deductCreditsAction(bookId: string) {
   const userId = await getUserId();
@@ -35,12 +35,7 @@ export async function deductCreditsAction(bookId: string) {
   const existingUsage = await db
     .select({ id: creditTransactions.id })
     .from(creditTransactions)
-    .where(
-      and(
-        eq(creditTransactions.type, "usage"),
-        eq(creditTransactions.bookId, bookId),
-      ),
-    )
+    .where(and(eq(creditTransactions.type, "usage"), eq(creditTransactions.bookId, bookId)))
     .limit(1);
 
   if (existingUsage.length > 0) {

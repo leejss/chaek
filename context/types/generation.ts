@@ -1,4 +1,4 @@
-import { ChapterOutline } from "./book";
+import type { ChapterOutline } from "./book";
 
 export type GenerationPhase =
   | "idle"

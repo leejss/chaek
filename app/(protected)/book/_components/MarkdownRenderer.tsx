@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { createHighlighter, type Highlighter } from "shiki";
 
@@ -79,12 +80,12 @@ const ShikiCodeBlock: React.FC<{
         )}</code></pre>`;
 
   return (
-    <div className="relative my-6 group">
-      <div className="absolute right-3 top-3 text-xs text-neutral-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+    <div className="group relative my-6">
+      <div className="absolute top-3 right-3 font-mono text-neutral-400 text-xs uppercase opacity-0 transition-opacity group-hover:opacity-100">
         {language}
       </div>
       <div
-        className="rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden text-sm"
+        className="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 text-sm"
         dangerouslySetInnerHTML={{
           __html: htmlToRender,
         }}
@@ -103,22 +104,18 @@ function escapeHtml(unsafe: string) {
     .replace(/'/g, "&#039;");
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
-  content,
-  isStreaming,
-}) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, isStreaming }) => {
   return (
     <div className="prose prose-lg prose-neutral max-w-none font-sans text-black">
       <ReactMarkdown
         components={{
           h1: ({ children, ...props }) => {
-            const text =
-              typeof children === "string" ? children : String(children);
+            const text = typeof children === "string" ? children : String(children);
             return (
               <h1
                 id={`heading-${text}`}
                 data-heading-text={text}
-                className="text-4xl font-extrabold mt-8 mb-6 text-black border-b border-neutral-200 pb-4 scroll-mt-24 tracking-tight"
+                className="mt-8 mb-6 scroll-mt-24 border-neutral-200 border-b pb-4 font-extrabold text-4xl text-black tracking-tight"
                 {...props}
               >
                 {children}
@@ -126,13 +123,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             );
           },
           h2: ({ children, ...props }) => {
-            const text =
-              typeof children === "string" ? children : String(children);
+            const text = typeof children === "string" ? children : String(children);
             return (
               <h2
                 id={`heading-${text}`}
                 data-heading-text={text}
-                className="text-2xl font-bold mt-8 mb-4 text-black scroll-mt-24 tracking-tight"
+                className="mt-8 mb-4 scroll-mt-24 font-bold text-2xl text-black tracking-tight"
                 {...props}
               >
                 {children}
@@ -140,13 +136,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             );
           },
           h3: ({ children, ...props }) => {
-            const text =
-              typeof children === "string" ? children : String(children);
+            const text = typeof children === "string" ? children : String(children);
             return (
               <h3
                 id={`heading-${text}`}
                 data-heading-text={text}
-                className="text-xl font-bold mt-6 mb-3 text-black scroll-mt-24"
+                className="mt-6 mb-3 scroll-mt-24 font-bold text-black text-xl"
                 {...props}
               >
                 {children}
@@ -154,32 +149,24 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             );
           },
           h4: ({ ...props }) => (
-            <h4 className="text-lg font-bold mt-6 mb-2 text-black" {...props} />
+            <h4 className="mt-6 mb-2 font-bold text-black text-lg" {...props} />
           ),
           h5: ({ ...props }) => (
             <h5
-              className="text-base font-bold mt-4 mb-2 text-neutral-600 uppercase tracking-wide"
+              className="mt-4 mb-2 font-bold text-base text-neutral-600 uppercase tracking-wide"
               {...props}
             />
           ),
-          p: ({ ...props }) => (
-            <p className="leading-loose mb-4 text-lg text-black" {...props} />
-          ),
+          p: ({ ...props }) => <p className="mb-4 text-black text-lg leading-loose" {...props} />,
           ul: ({ ...props }) => (
-            <ul
-              className="list-disc pl-6 mb-4 space-y-2 text-black"
-              {...props}
-            />
+            <ul className="mb-4 list-disc space-y-2 pl-6 text-black" {...props} />
           ),
           ol: ({ ...props }) => (
-            <ol
-              className="list-decimal pl-6 mb-4 space-y-2 text-black"
-              {...props}
-            />
+            <ol className="mb-4 list-decimal space-y-2 pl-6 text-black" {...props} />
           ),
           blockquote: ({ ...props }) => (
             <blockquote
-              className="border-l-4 border-black pl-4 italic text-neutral-600 my-6"
+              className="my-6 border-black border-l-4 pl-4 text-neutral-600 italic"
               {...props}
             />
           ),
@@ -190,7 +177,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             if (!match && !content.includes("\n")) {
               return (
                 <code
-                  className="px-1.5 py-0.5 rounded bg-neutral-100 text-black font-mono text-[0.9em] border border-neutral-200"
+                  className="rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-mono text-[0.9em] text-black"
                   {...props}
                 >
                   {children}

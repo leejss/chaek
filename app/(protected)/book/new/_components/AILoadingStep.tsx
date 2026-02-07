@@ -7,24 +7,16 @@ interface AILoadingStepProps {
   description: string;
 }
 
-export default function AILoadingStep({
-  title,
-  description,
-}: AILoadingStepProps) {
+export default function AILoadingStep({ title, description }: AILoadingStepProps) {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-center space-y-8">
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="space-y-8 text-center">
         <div className="inline-flex items-center justify-center">
-          <Loader2
-            className="size-10 animate-spin text-black"
-            strokeWidth={1.5}
-          />
+          <Loader2 className="size-10 animate-spin text-black" strokeWidth={1.5} />
         </div>
         <div className="space-y-3">
-          <h3 className="text-3xl font-extrabold text-black ">{title}</h3>
-          <p className="text-neutral-500 font-bold text-xs max-w-sm mx-auto">
-            {description}
-          </p>
+          <h3 className="font-extrabold text-3xl text-black">{title}</h3>
+          <p className="mx-auto max-w-sm font-bold text-neutral-500 text-xs">{description}</p>
         </div>
       </div>
     </div>

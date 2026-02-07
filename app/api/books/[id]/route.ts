@@ -1,14 +1,11 @@
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { books } from "@/db/schema";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
-import { eq, and } from "drizzle-orm";
-import { NextResponse, type NextRequest } from "next/server";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await authenticate(req);
 
@@ -28,8 +25,7 @@ export async function GET(
   } catch (error) {
     console.error("[books/[id]/get] error:", error);
 
-    const httpError =
-      error instanceof HttpError ? error : null;
+    const httpError = error instanceof HttpError ? error : null;
 
     if (httpError) {
       return NextResponse.json(
@@ -38,9 +34,6 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(
-      { ok: false, error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 }

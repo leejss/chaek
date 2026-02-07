@@ -1,12 +1,9 @@
 "use client";
 
+import { Check, ChevronDown, Edit2, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
-import {
-  AI_CONFIG,
-  getProviderByModel,
-  type GeminiModel,
-  type ClaudeModel,
-} from "@/lib/ai/config";
+import Button from "@/components/Button";
+import { updateSettingsStore, useSettingsStore } from "@/context/settingsStore";
 import {
   failTocGeneration,
   setTocResult,
@@ -14,19 +11,9 @@ import {
   updateTocStore,
   useTocGenerationStore,
 } from "@/context/tocStore";
-import { updateSettingsStore, useSettingsStore } from "@/context/settingsStore";
-import { createBookAction } from "@/lib/actions/book";
 import { generateTocAction } from "@/lib/actions/ai";
-import {
-  FileText,
-  RefreshCw,
-  ChevronDown,
-  Edit2,
-  Check,
-  Plus,
-  Trash2,
-} from "lucide-react";
-import Button from "@/components/Button";
+import { createBookAction } from "@/lib/actions/book";
+import { AI_CONFIG, type ClaudeModel, type GeminiModel, getProviderByModel } from "@/lib/ai/config";
 
 /**
  * Pure functions for TOC manipulation (FP Domain Logic)
@@ -44,11 +31,11 @@ const TOC = {
  * Sub-components for declarative rendering
  */
 const TOCHeader = () => (
-  <div className="text-center space-y-4">
-    <h1 className="text-4xl font-extrabold text-black">Review Structure</h1>
-    <p className="text-neutral-500 font-medium max-w-md mx-auto">
-      Review and refine the book structure. You can edit chapter titles or
-      regenerate the entire outline.
+  <div className="space-y-4 text-center">
+    <h1 className="font-extrabold text-4xl text-black">Review Structure</h1>
+    <p className="mx-auto max-w-md font-medium text-neutral-500">
+      Review and refine the book structure. You can edit chapter titles or regenerate the entire
+      outline.
     </p>
   </div>
 );
@@ -67,18 +54,10 @@ const TOCActions = ({
   <div className="flex items-center gap-2">
     {isEditing ? (
       <>
-        <Button
-          variant="ghost"
-          onClick={onCancel}
-          className="h-8 px-4 text-xs font-bold"
-        >
+        <Button variant="ghost" onClick={onCancel} className="h-8 px-4 font-bold text-xs">
           CANCEL
         </Button>
-        <Button
-          variant="primary"
-          onClick={onSave}
-          className="h-8 px-4 text-xs gap-2 font-bold"
-        >
+        <Button variant="primary" onClick={onSave} className="h-8 gap-2 px-4 font-bold text-xs">
           <Check size={14} strokeWidth={3} />
           SAVE CHANGES
         </Button>
@@ -87,7 +66,7 @@ const TOCActions = ({
       <Button
         variant="outline"
         onClick={onEditStart}
-        className="h-8 px-4 text-sm gap-2 font-bold bg-white border-neutral-300 text-black hover:bg-neutral-50 rounded-full"
+        className="h-8 gap-2 rounded-full border-neutral-300 bg-white px-4 font-bold text-black text-sm hover:bg-neutral-50"
       >
         <Edit2 size={12} strokeWidth={3} />
         Edit Outline
@@ -107,20 +86,18 @@ const ChapterInput = ({
   onChange: (val: string) => void;
   onRemove: () => void;
 }) => (
-  <div className="flex items-center gap-4 group">
-    <span className="font-bold w-6 text-neutral-400">
-      {String(index + 1).padStart(2, "0")}
-    </span>
+  <div className="group flex items-center gap-4">
+    <span className="w-6 font-bold text-neutral-400">{String(index + 1).padStart(2, "0")}</span>
     <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={`CHAPTER ${index + 1} TITLE...`}
-      className="flex-1 text-lg font-medium text-black bg-transparent border-b border-neutral-200 focus:outline-none focus:border-black py-2 transition-colors placeholder:text-neutral-300"
+      className="flex-1 border-neutral-200 border-b bg-transparent py-2 font-medium text-black text-lg transition-colors placeholder:text-neutral-300 focus:border-black focus:outline-none"
     />
     <button
       onClick={onRemove}
-      className="p-2 text-neutral-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+      className="p-2 text-neutral-400 opacity-0 transition-colors hover:text-red-600 group-hover:opacity-100"
       title="Remove chapter"
     >
       <Trash2 size={16} strokeWidth={2.5} />
@@ -129,13 +106,11 @@ const ChapterInput = ({
 );
 
 const ChapterDisplay = ({ index, title }: { index: number; title: string }) => (
-  <div className="flex items-baseline gap-5 group">
-    <span className="font-mono font-bold text-neutral-400 text-sm">
+  <div className="group flex items-baseline gap-5">
+    <span className="font-bold font-mono text-neutral-400 text-sm">
       {String(index + 1).padStart(2, "0")}
     </span>
-    <span className="text-lg font-bold text-black leading-relaxed">
-      {title}
-    </span>
+    <span className="font-bold text-black text-lg leading-relaxed">{title}</span>
   </div>
 );
 
@@ -146,15 +121,13 @@ const ModelSelector = ({
   model: GeminiModel | ClaudeModel;
   onModelChange: (modelId: GeminiModel | ClaudeModel) => void;
 }) => (
-  <div className="space-y-2 text-center md:text-left w-full md:w-auto">
-    <h3 className="text-sm font-bold text-black">Intelligence Engine</h3>
+  <div className="w-full space-y-2 text-center md:w-auto md:text-left">
+    <h3 className="font-bold text-black text-sm">Intelligence Engine</h3>
     <div className="relative inline-block w-full md:w-auto">
       <select
-        className="appearance-none bg-transparent py-2 pl-0 pr-8 text-base font-bold text-black focus:outline-none cursor-pointer hover:text-neutral-600 transition-colors w-full md:w-auto border-b border-neutral-200 focus:border-black"
+        className="w-full cursor-pointer appearance-none border-neutral-200 border-b bg-transparent py-2 pr-8 pl-0 font-bold text-base text-black transition-colors hover:text-neutral-600 focus:border-black focus:outline-none md:w-auto"
         value={model}
-        onChange={(e) =>
-          onModelChange(e.target.value as GeminiModel | ClaudeModel)
-        }
+        onChange={(e) => onModelChange(e.target.value as GeminiModel | ClaudeModel)}
       >
         {AI_CONFIG.map((provider) => (
           <optgroup key={provider.id} label={provider.name}>
@@ -166,7 +139,7 @@ const ModelSelector = ({
           </optgroup>
         ))}
       </select>
-      <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-black">
+      <div className="pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 text-black">
         <ChevronDown size={16} strokeWidth={3} />
       </div>
     </div>
@@ -186,25 +159,21 @@ const ActionButtons = ({
   onStartWriting: () => void;
   hasChapters: boolean;
 }) => (
-  <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+  <div className="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
     <Button
       variant="outline"
       onClick={onRegenerate}
       disabled={isRegenerating}
-      className="w-full sm:w-auto gap-2 px-6 h-12 bg-white border-2 border-neutral-200 text-black hover:border-black hover:bg-white rounded-full font-bold"
+      className="h-12 w-full gap-2 rounded-full border-2 border-neutral-200 bg-white px-6 font-bold text-black hover:border-black hover:bg-white sm:w-auto"
     >
-      <RefreshCw
-        size={14}
-        strokeWidth={3}
-        className={isRegenerating ? "animate-spin" : ""}
-      />
+      <RefreshCw size={14} strokeWidth={3} className={isRegenerating ? "animate-spin" : ""} />
       Regenerate
     </Button>
     <Button
       variant="primary"
       onClick={onStartWriting}
       disabled={isRegenerating || isSaving || !hasChapters}
-      className="w-full sm:w-auto gap-2 px-8 h-12 rounded-full font-bold shadow-none"
+      className="h-12 w-full gap-2 rounded-full px-8 font-bold shadow-none sm:w-auto"
     >
       <FileText size={14} strokeWidth={3} />
       {isSaving ? "Saving" : "Start"}
@@ -213,8 +182,7 @@ const ActionButtons = ({
 );
 
 export default function TOCReviewStep() {
-  const { tableOfContents, bookTitle, sourceText, tocGeneration } =
-    useTocGenerationStore();
+  const { tableOfContents, bookTitle, sourceText, tocGeneration } = useTocGenerationStore();
   const tocProvider = useSettingsStore((state) => state.tocProvider);
   const tocModel = useSettingsStore((state) => state.tocModel);
   const contentProvider = useSettingsStore((state) => state.contentProvider);
@@ -228,8 +196,7 @@ export default function TOCReviewStep() {
   const [isSaving, setIsSaving] = useState(false);
 
   const isRegenerating =
-    tocGeneration.status === "loading" &&
-    tocGeneration.variant === "regenerate";
+    tocGeneration.status === "loading" && tocGeneration.variant === "regenerate";
 
   const handleEditStart = () => {
     setTempTitle(bookTitle);
@@ -305,13 +272,13 @@ export default function TOCReviewStep() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 text-black">
+    <div className="mx-auto max-w-3xl px-4 py-12 text-black">
       <div className="space-y-10">
         <TOCHeader />
 
         {/* Main Content Card */}
-        <div className="bg-white border-2 border-neutral-200 rounded-xl overflow-hidden">
-          <div className="p-6 border-b-2 border-neutral-200 flex items-center justify-between bg-white">
+        <div className="overflow-hidden rounded-xl border-2 border-neutral-200 bg-white">
+          <div className="flex items-center justify-between border-neutral-200 border-b-2 bg-white p-6">
             <h2 className="font-bold text-black">Chapters Outline</h2>
             <TOCActions
               isEditing={isEditing}
@@ -324,8 +291,8 @@ export default function TOCReviewStep() {
           <div className="p-8 md:p-10">
             {isEditing ? (
               <div className="space-y-8">
-                <div className="pb-6 border-b border-neutral-200">
-                  <label className="block text-xs font-bold uppercase tracking-widest text-black mb-3">
+                <div className="border-neutral-200 border-b pb-6">
+                  <label className="mb-3 block font-bold text-black text-xs uppercase tracking-widest">
                     Book Title
                   </label>
                   <input
@@ -333,7 +300,7 @@ export default function TOCReviewStep() {
                     value={tempTitle}
                     onChange={(e) => setTempTitle(e.target.value)}
                     placeholder="ENTER BOOK TITLE..."
-                    className="w-full text-2xl font-bold text-black bg-transparent border-b-2 border-neutral-200 focus:outline-none focus:border-black py-2 transition-colors placeholder:text-neutral-300"
+                    className="w-full border-neutral-200 border-b-2 bg-transparent py-2 font-bold text-2xl text-black transition-colors placeholder:text-neutral-300 focus:border-black focus:outline-none"
                   />
                 </div>
                 <div className="space-y-4">
@@ -348,7 +315,7 @@ export default function TOCReviewStep() {
                   ))}
                   <button
                     onClick={addChapter}
-                    className="w-full py-4 mt-6 border-2 border-dashed border-neutral-200 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-black hover:border-black transition-all font-bold text-xs uppercase tracking-widest"
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-neutral-200 border-dashed py-4 font-bold text-neutral-500 text-xs uppercase tracking-widest transition-all hover:border-black hover:text-black"
                   >
                     <Plus size={16} strokeWidth={3} />
                     Add Chapter
@@ -357,8 +324,8 @@ export default function TOCReviewStep() {
               </div>
             ) : (
               <div className="space-y-8">
-                <div className="pb-6 border-b border-neutral-200 text-center">
-                  <h2 className="text-3xl font-extrabold text-black tracking-tight">
+                <div className="border-neutral-200 border-b pb-6 text-center">
+                  <h2 className="font-extrabold text-3xl text-black tracking-tight">
                     {bookTitle || "Untitled Book"}
                   </h2>
                 </div>
@@ -369,7 +336,7 @@ export default function TOCReviewStep() {
                     ))}
                   </div>
                 ) : (
-                  <div className="py-16 text-center text-neutral-400 font-medium italic">
+                  <div className="py-16 text-center font-medium text-neutral-400 italic">
                     No chapters generated yet.
                   </div>
                 )}
@@ -380,12 +347,9 @@ export default function TOCReviewStep() {
 
         {/* Bottom Actions Section */}
         {!isEditing && (
-          <div className="pt-6 space-y-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 bg-white border-2 border-neutral-200 rounded-xl">
-              <ModelSelector
-                model={contentModel}
-                onModelChange={handleModelChange}
-              />
+          <div className="space-y-8 pt-6">
+            <div className="flex flex-col items-center justify-between gap-8 rounded-xl border-2 border-neutral-200 bg-white p-8 md:flex-row">
+              <ModelSelector model={contentModel} onModelChange={handleModelChange} />
             </div>
             <ActionButtons
               isRegenerating={isRegenerating}
@@ -394,9 +358,9 @@ export default function TOCReviewStep() {
               onStartWriting={handleStartWriting}
               hasChapters={tableOfContents.length > 0}
             />
-            <p className="text-[11px] font-bold text-neutral-400 text-center uppercase tracking-wide">
-              Click <span className="text-black">Start Writing</span> to begin
-              generating the full content for each chapter.
+            <p className="text-center font-bold text-[11px] text-neutral-400 uppercase tracking-wide">
+              Click <span className="text-black">Start Writing</span> to begin generating the full
+              content for each chapter.
             </p>
           </div>
         )}

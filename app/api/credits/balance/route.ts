@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserBalance } from "@/lib/credits/operations";
+import { type NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/auth";
+import { getUserBalance } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
 
 export async function GET(req: NextRequest) {
@@ -26,9 +26,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Internal server error", ok: false },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error", ok: false }, { status: 500 });
   }
 }

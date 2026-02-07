@@ -1,5 +1,5 @@
-import { AIProvider } from "@/lib/ai/config";
-import { Language } from "../schemas/settings";
+import type { AIProvider } from "@/lib/ai/config";
+import type { Language } from "../schemas/settings";
 
 export type StreamingConfig = {
   bookId: string;

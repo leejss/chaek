@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import crypto from "node:crypto";
+import { type NextRequest, NextResponse } from "next/server";
 import { addCredits, refundCredits } from "@/lib/credits/operations";
 import { serverEnv } from "@/lib/env";
 
@@ -27,10 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing signature" }, { status: 400 });
     }
 
-    const hmac = crypto.createHmac(
-      "sha256",
-      serverEnv.LEMONSQUEEZY_WEBHOOK_SECRET,
-    );
+    const hmac = crypto.createHmac("sha256", serverEnv.LEMONSQUEEZY_WEBHOOK_SECRET);
     const digest = hmac.update(rawBody).digest("hex");
 
     if (digest !== signature) {
@@ -66,10 +63,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Webhook error:", error);
-    return NextResponse.json(
-      { error: "Webhook handler failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }
 
@@ -151,7 +145,5 @@ async function handleOrderRefunded(event: unknown) {
     },
   });
 
-  console.log(
-    `Credits refunded for user ${userId}: ${creditAmount}`,
-  );
+  console.log(`Credits refunded for user ${userId}: ${creditAmount}`);
 }

@@ -1,15 +1,12 @@
 "use client";
 
-import Button from "@/components/Button";
-import {
-  generationActions,
-  useGenerationStore,
-} from "@/context/generationContext";
 import { Check } from "lucide-react";
+import Button from "@/components/Button";
+import { generationActions, useGenerationStore } from "@/context/generationContext";
+import type { BookGenerationSettings } from "@/lib/ai/schemas/settings";
 import ChapterContentDisplay from "./ChapterContentDisplay";
 import ChapterTabs from "./ChapterTabs";
 import GenerationSidebar from "./GenerationSidebar";
-import { BookGenerationSettings } from "@/lib/ai/schemas/settings";
 
 export interface GenerationStepProps {
   tableOfContents: string[];
@@ -18,22 +15,11 @@ export interface GenerationStepProps {
   generationSettings?: BookGenerationSettings;
 }
 
-export default function GenerationStep({
-  tableOfContents,
-  bookTitle,
-}: GenerationStepProps) {
-  const generationProgress = useGenerationStore(
-    (state) => state.generationProgress,
-  );
-  const viewingChapterIndex = useGenerationStore(
-    (state) => state.viewingChapterIndex,
-  );
-  const currentChapterIndex = useGenerationStore(
-    (state) => state.currentChapterIndex,
-  );
-  const awaitingChapterDecision = useGenerationStore(
-    (state) => state.awaitingChapterDecision,
-  );
+export default function GenerationStep({ tableOfContents, bookTitle }: GenerationStepProps) {
+  const generationProgress = useGenerationStore((state) => state.generationProgress);
+  const viewingChapterIndex = useGenerationStore((state) => state.viewingChapterIndex);
+  const currentChapterIndex = useGenerationStore((state) => state.currentChapterIndex);
+  const awaitingChapterDecision = useGenerationStore((state) => state.awaitingChapterDecision);
   const { confirmChapter } = generationActions;
   const { currentSection, currentOutline } = generationProgress;
 
@@ -46,56 +32,52 @@ export default function GenerationStep({
       : undefined;
 
   return (
-    <div className="flex flex-col md:flex-row h-full overflow-hidden bg-neutral-50">
+    <div className="flex h-full flex-col overflow-hidden bg-neutral-50 md:flex-row">
       {/* Mobile Nav - Visible only on mobile */}
-      <div className="md:hidden sticky top-0 z-30 bg-white border-b border-neutral-200 flex-none">
+      <div className="sticky top-0 z-30 flex-none border-neutral-200 border-b bg-white md:hidden">
         <ChapterTabs tableOfContents={tableOfContents} />
       </div>
 
       {/* Desktop Sidebar - Hidden on mobile */}
-      <aside className="hidden md:flex h-full flex-none">
+      <aside className="hidden h-full flex-none md:flex">
         <GenerationSidebar tableOfContents={tableOfContents} />
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto scroll-smooth">
-        <div className="max-w-3xl mx-auto py-8 md:py-12 px-4 min-h-screen">
+      <main className="h-full flex-1 overflow-y-auto scroll-smooth">
+        <div className="mx-auto min-h-screen max-w-3xl px-4 py-8 md:py-12">
           <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-neutral-900 mb-2">
+            <h1 className="mb-2 font-bold font-serif text-2xl text-neutral-900 md:text-3xl">
               {bookTitle}
             </h1>
-            <p className="text-neutral-500 font-medium text-sm uppercase tracking-wider">
+            <p className="font-medium text-neutral-500 text-sm uppercase tracking-wider">
               Chapter {viewingChapterIndex + 1}
             </p>
           </div>
           {/* Header Section (Status) */}
           <div className="mb-8 space-y-6">
             {isViewingCurrentChapter && currentChapterIndex >= 0 && (
-              <div className="bg-white p-6 border border-neutral-200 rounded-xl shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="inline-flex items-center gap-2 text-sm font-bold px-3 py-1 bg-black text-white rounded-full">
+              <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-black px-3 py-1 font-bold text-sm text-white">
                     <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neutral-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white"></span>
                     </span>
                     WRITING
                   </span>
                 </div>
 
                 {currentSectionTitle && (
-                  <div className="mb-4 p-4 bg-neutral-50 rounded-lg border border-neutral-100">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-1">
-                      Current Section
-                    </h3>
-                    <p className="text-neutral-600 font-medium">
-                      {currentSectionTitle}
-                    </p>
+                  <div className="mb-4 rounded-lg border border-neutral-100 bg-neutral-50 p-4">
+                    <h3 className="mb-1 font-bold text-neutral-900 text-sm">Current Section</h3>
+                    <p className="font-medium text-neutral-600">{currentSectionTitle}</p>
                   </div>
                 )}
 
                 {awaitingChapterDecision && (
                   <div className="mt-6 flex flex-col gap-3">
-                    <div className="p-4 bg-green-50 text-green-800 rounded-lg flex items-center gap-3 border border-green-100">
+                    <div className="flex items-center gap-3 rounded-lg border border-green-100 bg-green-50 p-4 text-green-800">
                       <Check size={20} />
                       <span className="font-bold">Chapter Completed</span>
                     </div>
@@ -113,7 +95,7 @@ export default function GenerationStep({
               </div>
             )}
           </div>
-          <div className="bg-white shadow-sm border border-neutral-100 min-h-[500px] rounded-xl overflow-hidden">
+          <div className="min-h-[500px] overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-sm">
             <ChapterContentDisplay />
           </div>
           <div className="h-20" /> {/* Bottom spacer */}

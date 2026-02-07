@@ -1,16 +1,16 @@
-import { getAIProvider, getClaudeModel, getGeminiModel } from "@/lib/ai/config";
-import type { AIProvider } from "@/lib/ai/config";
-import { serverEnv } from "@/lib/env";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   generateText as aiGenerateText,
   streamText as aiStreamText,
+  type LanguageModel,
+  type ModelMessage,
   Output,
-  LanguageModel,
-  ModelMessage,
 } from "ai";
-import { z } from "zod";
+import type { z } from "zod";
+import type { AIProvider } from "@/lib/ai/config";
+import { getAIProvider, getClaudeModel, getGeminiModel } from "@/lib/ai/config";
+import { serverEnv } from "@/lib/env";
 
 let _google: ReturnType<typeof createGoogleGenerativeAI> | null = null;
 let _anthropic: ReturnType<typeof createAnthropic> | null = null;
@@ -70,10 +70,7 @@ export async function generateText(params: {
   return result.text;
 }
 
-export function streamText(params: {
-  model: LanguageModel;
-  messages: ModelMessage[];
-}) {
+export function streamText(params: { model: LanguageModel; messages: ModelMessage[] }) {
   return aiStreamText({
     model: params.model,
     messages: params.messages,
