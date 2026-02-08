@@ -30,6 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const status = state?.status ?? "waiting";
     const error = state?.error ?? null;
     const currentChapterIndex = state?.currentChapterIndex ?? null;
+    const currentSectionIndex = state?.currentSectionIndex ?? null;
+    const generationVersion = state?.generationVersion ?? 1;
 
     const chapterRows = await db
       .select()
@@ -48,13 +50,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       status,
       error,
       currentChapterIndex,
+      currentSectionIndex,
+      generationVersion,
       totalChapters,
       completedChapters,
       chapters: chapterRows.map((c) => ({
         chapterNumber: c.chapterNumber,
         title: c.title,
         status: c.status,
-        content: c.status === "completed" ? c.content : undefined,
+        content: c.status === "completed" ? c.content?.substring(0, 200) : undefined,
       })),
     });
   } catch (error) {

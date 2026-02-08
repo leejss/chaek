@@ -16,6 +16,8 @@ export const bookStatusEnum = pgEnum("book_status", [
   "generating",
   "completed",
   "failed",
+  "cancel_requested",
+  "cancelled",
 ]);
 
 export type BookStatus = (typeof bookStatusEnum.enumValues)[number];
@@ -114,10 +116,16 @@ export const bookGenerationStates = pgTable(
       .references(() => books.id, { onDelete: "cascade" }),
     status: bookStatusEnum("status").notNull().default("waiting"),
     currentChapterIndex: integer("current_chapter_index"),
+    currentSectionIndex: integer("current_section_index"),
+    generationVersion: integer("generation_version").notNull().default(1),
+    attemptCount: integer("attempt_count").notNull().default(0),
     error: text("error"),
     generationSettings: jsonb("generation_settings"),
     bookPlan: jsonb("book_plan"),
     streamingStatus: jsonb("streaming_status"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -126,6 +134,7 @@ export const bookGenerationStates = pgTable(
   },
   (table) => [
     index("book_generation_states_status_idx").on(table.status),
+    index("book_generation_states_generation_version_idx").on(table.generationVersion),
     index("book_generation_states_updated_at_idx").on(table.updatedAt),
   ],
 );
