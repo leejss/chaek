@@ -8,10 +8,10 @@ const serverSchema = z.object({
   OUR_JWT_SECRET: z.string().min(1, "OUR_JWT_SECRET is required"),
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
   ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required"),
-  QSTASH_TOKEN: z.string().min(1, "QSTASH_TOKEN is required"),
-  QSTASH_CURRENT_SIGNING_KEY: z.string().min(1, "QSTASH_CURRENT_SIGNING_KEY is required"),
-  QSTASH_NEXT_SIGNING_KEY: z.string().min(1, "QSTASH_NEXT_SIGNING_KEY is required"),
-  QSTASH_BASE_URL: z.string().url("QSTASH_BASE_URL must be a valid URL"),
+  AWS_REGION: z.string().min(1, "AWS_REGION is required"),
+  AWS_SQS_BOOK_GENERATION_QUEUE_URL: z
+    .string()
+    .url("AWS_SQS_BOOK_GENERATION_QUEUE_URL must be a valid URL"),
   LEMONSQUEEZY_API_KEY: z.string().min(1, "LEMONSQUEEZY_API_KEY is required"),
   LEMONSQUEEZY_WEBHOOK_SECRET: z.string().min(1, "LEMONSQUEEZY_WEBHOOK_SECRET is required"),
   LEMONSQUEEZY_STORE_ID: z.string().min(1, "LEMONSQUEEZY_STORE_ID is required"),

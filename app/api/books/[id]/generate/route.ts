@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { bookGenerationStates, books, creditTransactions } from "@/db/schema";
 import { bookGenerationJobSchema } from "@/lib/ai/jobs/bookGeneration";
-import { enqueueBookGenerationJob } from "@/lib/ai/qstash";
 import { BookGenerationSettingsSchema } from "@/lib/ai/schemas/settings";
+import { enqueueBookGenerationJob } from "@/lib/ai/sqs";
 import { authenticate } from "@/lib/auth";
 import { BOOK_CREATION_COST } from "@/lib/credits/config";
 import { deductCredits, getUserBalance, refundUsageCredits } from "@/lib/credits/operations";
@@ -73,7 +73,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         amount: BOOK_CREATION_COST,
         bookId,
         metadata: {
-          reason: "qstash_book_generation",
+          reason: "sqs_book_generation",
         },
       });
       didDeductCredits = true;

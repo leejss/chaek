@@ -8,9 +8,9 @@ import { streamDraft } from "@/lib/ai/prompts/draft";
 import { streamDraftDev } from "@/lib/ai/prompts/draftDev";
 import { generateOutline } from "@/lib/ai/prompts/outline";
 import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
-import { enqueueBookGenerationJob } from "@/lib/ai/qstash";
 import { type PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
 import { BookGenerationSettingsSchema } from "@/lib/ai/schemas/settings";
+import { enqueueBookGenerationJob } from "@/lib/ai/sqs";
 
 function getNextChapterNumber(total: number, completedNumbers: Set<number>) {
   for (let index = 1; index <= total; index++) {
