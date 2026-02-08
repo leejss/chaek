@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import type { ChapterContent } from "@/context/types/generation";
 import { getBookWithValidation } from "@/lib/actions/book";
-import type { PlanOutput } from "@/lib/ai/schemas/plan";
 import { accessTokenConfig, verifyAccessJWT } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { findChaptersByBookIdAndStatus } from "@/lib/repositories/chapterRepository";
@@ -53,12 +52,7 @@ async function BookGenerationContent({ params }: PageProps) {
     isComplete: true,
   }));
 
-  let initialContent = bookData.content || "";
-  if (!initialContent && initialChapters.length > 0) {
-    initialContent = initialChapters.map((c) => c.content).join("\n\n");
-  }
-
-  const { title, id, status, tableOfContents, sourceText, bookPlan } = bookData;
+  const { title, id, status, tableOfContents } = bookData;
 
   return (
     <div className="h-[calc(100vh-4rem)]">
@@ -67,10 +61,7 @@ async function BookGenerationContent({ params }: PageProps) {
         bookTitle={title}
         bookStatus={status}
         tableOfContents={tableOfContents ?? []}
-        sourceText={sourceText || ""}
         chapters={initialChapters}
-        generationSettings={bookData.generationSettings}
-        bookPlan={(bookPlan as PlanOutput | null) || undefined}
       />
     </div>
   );
