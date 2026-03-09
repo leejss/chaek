@@ -12,9 +12,9 @@ import { bookNewStepPath, ROUTES } from "@/lib/routes";
 import { cn } from "@/utils";
 
 const STEPS_CONFIG: { id: TocGenerationStep; label: string }[] = [
-  { id: "settings", label: "Settings" },
-  { id: "source_input", label: "Source" },
-  { id: "toc_review", label: "Review" },
+  { id: "settings", label: "설정" },
+  { id: "source_input", label: "아이디어 입력" },
+  { id: "toc_review", label: "리뷰" },
 ];
 
 export default function StepNavigation() {
@@ -23,7 +23,9 @@ export default function StepNavigation() {
   const draftId = searchParams.get("draftId") || undefined;
   const currentStep = searchParams.get("step") || "settings";
 
-  const tocGenerationStatus = useBookCreationStore((s) => s.tocGeneration.status);
+  const tocGenerationStatus = useBookCreationStore(
+    (s) => s.tocGeneration.status,
+  );
   const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
 
   const handleBack = () => {
@@ -64,7 +66,7 @@ export default function StepNavigation() {
             strokeWidth={3}
             className="mr-1 transition-transform group-hover:-translate-x-0.5"
           />
-          {currentStep === "settings" ? "Back" : "Previous"}
+          뒤로가기
         </button>
 
         <div className="flex items-center gap-4">

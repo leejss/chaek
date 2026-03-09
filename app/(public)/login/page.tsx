@@ -46,7 +46,9 @@ function LoginContent() {
 
             const next = searchParams.get("next");
             const safeNext =
-              next?.startsWith("/") && !next.startsWith("//") && !next.includes("://")
+              next?.startsWith("/") &&
+              !next.startsWith("//") &&
+              !next.includes("://")
                 ? next
                 : null;
 
@@ -75,10 +77,10 @@ function LoginContent() {
   }, [searchParams]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-paper p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-md rounded-xl p-4">
         <div className="flex flex-col gap-3 text-center">
-          <h1 className="font-black text-4xl text-foreground tracking-tight">chaek</h1>
+          <h1 className="font-black text-4xl text-foreground ">책</h1>
         </div>
 
         <div className="mt-8 flex flex-col items-center gap-4">
@@ -88,7 +90,6 @@ function LoginContent() {
               loading ? "pointer-events-none opacity-60" : ""
             }`}
           />
-          {loading && <p className="text-center text-neutral-500 text-xs">Authenticating...</p>}
         </div>
       </div>
     </div>
@@ -99,7 +100,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-paper">Loading...</div>
+        <div className="flex min-h-screen items-center justify-center bg-paper">
+          잠시만 기다려주세요...
+        </div>
       }
     >
       <LoginContent />

@@ -26,37 +26,35 @@ export default function SettingsStep() {
   return (
     <div className="mx-auto space-y-10">
       <div className="mb-12 text-center">
-        <h2 className="mb-4 font-extrabold text-4xl text-black tracking-tight">Settings</h2>
-        <p className="font-medium text-neutral-500">
-          Configure your book preferences before we begin.
-        </p>
+        <h2 className="mb-4 font-extrabold text-4xl text-black tracking-tight">설정</h2>
+        <p className="font-medium text-neutral-500">책 생성에 사용할 기본 설정을 선택하세요.</p>
       </div>
       <div className="space-y-10 rounded-md border border-neutral-200 bg-white p-6">
         <div className="space-y-8">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-3">
-              <label className="block font-bold text-black">Language</label>
+              <label className="block font-bold text-black">언어</label>
               <select
                 value={language}
                 onChange={(e) => setBookField("language", e.target.value as Language)}
                 className="mt-1 block w-full rounded-lg border border-neutral-200 bg-white p-2 font-medium text-black focus:border-black focus:ring-black sm:text-sm"
               >
-                <option value="Korean">Korean (한국어)</option>
-                <option value="English">English</option>
+                <option value="Korean">한국어</option>
+                <option value="English">영어</option>
               </select>
               <p className="font-medium text-neutral-500 text-xs">
-                The language used for generating content.
+                책 생성에 사용할 언어를 선택하세요.
               </p>
             </div>
 
             <div className="space-y-3">
-              <label className="block font-bold text-black">Chapter Count</label>
+              <label className="block font-bold text-black">챕터 수</label>
               <select
                 value={chapterCount === "Auto" ? "Auto" : String(chapterCount)}
                 onChange={handleChapterCountChange}
                 className="mt-1 block w-full rounded-lg border border-neutral-200 bg-white p-2 font-medium text-black focus:border-black focus:ring-black sm:text-sm"
               >
-                <option value="Auto">Auto</option>
+                <option value="Auto">자동</option>
                 {Array.from({ length: 8 }, (_, i) => i + 3).map((n) => (
                   <option key={n} value={String(n)}>
                     {n}
@@ -64,22 +62,22 @@ export default function SettingsStep() {
                 ))}
               </select>
               <p className="font-medium text-neutral-500 text-xs">
-                Number of chapters (3–10) or Auto.
+                챕터 수를 선택하세요. 자동으로 선택하면 AI가 책의 길이에 맞게 챕터 수를 결정합니다.
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <label className="block font-bold text-black">Custom Instructions</label>
+            <label className="block font-bold text-black">지침</label>
             <textarea
               value={userPreference}
               onChange={(e) => setBookField("userPreference", e.target.value)}
               rows={4}
               className="mt-1 block w-full resize-none rounded-md border border-neutral-200 bg-white p-4 font-medium text-black shadow-none placeholder:text-neutral-400 focus:border-black focus:ring-black sm:text-sm"
-              placeholder="E.g., Maintain a humorous tone, use simple analogies, focus on technical depth..."
+              placeholder="예시: 책의 톤은 친절하고 대화체로 해주세요."
             />
             <p className="font-medium text-neutral-500 text-xs">
-              These instructions will be appended to the AI prompt for every generation.
+              이 지침은 AI 프롬프트에 추가되어 책 생성에 반영됩니다.
             </p>
           </div>
         </div>
@@ -89,7 +87,7 @@ export default function SettingsStep() {
           onClick={handleContinue}
           className="h-14 w-full rounded-full px-12 font-bold text-lg md:w-auto"
         >
-          Next
+          다음
         </Button>
       </div>
     </div>

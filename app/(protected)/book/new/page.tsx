@@ -90,8 +90,8 @@ function CreateBookContent() {
     return (
       <div className="flex-1 overflow-y-auto bg-white">
         <AILoadingStep
-          title="Generating Book Structure"
-          description="Analyzing your content and creating a table of contents..."
+          title="책 구조 생성 중"
+          description="콘텐츠를 분석해 목차를 만들고 있습니다..."
         />
       </div>
     );
