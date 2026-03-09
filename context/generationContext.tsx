@@ -83,7 +83,7 @@ const createGenerationStore = () => {
             {
               error: null,
               generationProgress: {
-                phase: "deducting_credits",
+                phase: "planning",
                 currentChapter: 1,
                 totalChapters,
                 currentSection: 0,

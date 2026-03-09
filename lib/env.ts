@@ -12,9 +12,6 @@ const serverSchema = z.object({
   AWS_SQS_BOOK_GENERATION_QUEUE_URL: z
     .string()
     .url("AWS_SQS_BOOK_GENERATION_QUEUE_URL must be a valid URL"),
-  LEMONSQUEEZY_API_KEY: z.string().min(1, "LEMONSQUEEZY_API_KEY is required"),
-  LEMONSQUEEZY_WEBHOOK_SECRET: z.string().min(1, "LEMONSQUEEZY_WEBHOOK_SECRET is required"),
-  LEMONSQUEEZY_STORE_ID: z.string().min(1, "LEMONSQUEEZY_STORE_ID is required"),
 });
 
 const clientSchema = z.object({

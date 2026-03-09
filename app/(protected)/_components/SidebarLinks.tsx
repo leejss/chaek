@@ -9,7 +9,6 @@ export const links = [
   { href: "/book", label: "Home", icon: Home },
   { href: "/book/new", label: "Create", icon: PlusCircle },
   { href: "/published", label: "Published", icon: BookOpen },
-  // { href: "/credits", label: "Credits", icon: CreditCard },
 ];
 
 export function SidebarLinks() {

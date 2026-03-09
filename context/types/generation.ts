@@ -2,7 +2,6 @@ import type { ChapterOutline } from "./book";
 
 export type GenerationPhase =
   | "idle"
-  | "deducting_credits"
   | "planning"
   | "outlining"
   | "generating_sections"

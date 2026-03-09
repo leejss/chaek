@@ -1,27 +1,21 @@
 import { and, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { bookGenerationStates, books, creditTransactions } from "@/db/schema";
+import { bookGenerationStates, books } from "@/db/schema";
 import { bookGenerationJobSchema } from "@/lib/ai/jobs/bookGeneration";
 import { BookGenerationSettingsSchema } from "@/lib/ai/schemas/settings";
 import { enqueueBookGenerationJob } from "@/lib/ai/sqs";
 import { authenticate } from "@/lib/auth";
-import { BOOK_CREATION_COST } from "@/lib/credits/config";
-import { deductCredits, getUserBalance, refundUsageCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
 import { normalizeToHttpError } from "@/utils";
 
 export const runtime = "nodejs";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  let userId = "";
-  let bookId = "";
-  let didDeductCredits = false;
-
   try {
     const auth = await authenticate(_req);
-    userId = auth.userId;
-    bookId = (await params).id;
+    const userId = auth.userId;
+    const bookId = (await params).id;
 
     const found = await db
       .select({ book: books, state: bookGenerationStates })
@@ -54,29 +48,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const parsedSettings = BookGenerationSettingsSchema.safeParse(state.generationSettings);
     if (!parsedSettings.success) {
       throw new HttpError(500, "Invalid generation settings");
-    }
-
-    const existingUsage = await db
-      .select({ id: creditTransactions.id })
-      .from(creditTransactions)
-      .where(and(eq(creditTransactions.type, "usage"), eq(creditTransactions.bookId, bookId)))
-      .limit(1);
-
-    if (existingUsage.length === 0) {
-      const balance = await getUserBalance(userId);
-      if (balance.balance < BOOK_CREATION_COST) {
-        throw new HttpError(402, "Insufficient credits");
-      }
-
-      await deductCredits({
-        userId,
-        amount: BOOK_CREATION_COST,
-        bookId,
-        metadata: {
-          reason: "sqs_book_generation",
-        },
-      });
-      didDeductCredits = true;
     }
 
     const [updatedState] = await db
@@ -120,21 +91,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       { status: 202 },
     );
   } catch (error) {
-    if (didDeductCredits) {
-      try {
-        await refundUsageCredits({
-          userId,
-          amount: BOOK_CREATION_COST,
-          bookId,
-          metadata: {
-            reason: "enqueue_failed",
-          },
-        });
-      } catch (refundError) {
-        console.error("[books/[id]/generate] refund failed:", refundError);
-      }
-    }
-
     console.error("[books/[id]/generate] error:", error);
     const httpError = normalizeToHttpError(error);
     if (httpError) {

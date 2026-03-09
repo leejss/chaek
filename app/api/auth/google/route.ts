@@ -10,7 +10,6 @@ import {
   refreshAuthCookieOptions,
   refreshTokenConfig,
 } from "@/lib/authTokens";
-import { grantFreeSignupCredits } from "@/lib/credits/operations";
 import { serverEnv } from "@/lib/env";
 import { HttpError, InvalidJsonError } from "@/lib/errors";
 import { generateRandomToken, readJson, sha256Hex } from "@/utils";
@@ -32,14 +31,6 @@ export async function POST(req: Request) {
     // Verify Google ID token
     const { sub: googleSub, email } = await verifyGoogleIdToken(idToken, googleClientId);
 
-    const existingUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.googleSub, googleSub))
-      .limit(1);
-
-    const isNewUser = existingUser.length === 0;
-
     // 이미 같은 googleSub을 가진 사용자가 있으면 email을 업데이트한다.
     const [user] = await db
       .insert(users)
@@ -52,10 +43,6 @@ export async function POST(req: Request) {
 
     if (!user) {
       throw new Error("Failed to upsert user");
-    }
-
-    if (isNewUser) {
-      await grantFreeSignupCredits(user.id);
     }
 
     const jwt = await issueAccessJWT({

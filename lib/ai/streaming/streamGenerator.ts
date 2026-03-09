@@ -11,8 +11,6 @@ import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
 import type { PlanOutput } from "@/lib/ai/schemas/plan";
 import type { SSEEvent, StreamingConfig } from "@/lib/ai/types/streaming";
 import { handleGenerationError, normalizeToc } from "@/lib/ai/utils";
-import { BOOK_CREATION_COST } from "@/lib/credits/config";
-import { initializeBookAndDeductCredits } from "@/lib/credits/operations";
 import { HttpError } from "@/lib/errors";
 import { createSSEResponse } from "./sse";
 
@@ -92,13 +90,111 @@ async function updateStreamingStatus(bookId: string, chapterNumber: number, sect
     });
 }
 
+async function initializeBookGeneration(
+  config: StreamingConfig,
+  toc: string[],
+  startChapter: number,
+) {
+  const { userId, bookId, title, sourceText, provider, model, language, userPreference } = config;
+
+  return db.transaction(async (tx) => {
+    const existingBook = await tx
+      .select({ book: books, state: bookGenerationStates })
+      .from(books)
+      .leftJoin(bookGenerationStates, eq(bookGenerationStates.bookId, books.id))
+      .where(eq(books.id, bookId))
+      .limit(1);
+
+    const existingBookRow = existingBook[0]?.book;
+    const existingState = existingBook[0]?.state;
+    if (existingState?.status === "completed") {
+      throw new HttpError(409, "Book already completed");
+    }
+
+    const initialStreamingStatus = {
+      lastStreamedChapter: startChapter - 1,
+      lastStreamedSection: null,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    if (!existingBookRow) {
+      await tx.insert(books).values({
+        id: bookId,
+        userId,
+        title,
+        content: "",
+        tableOfContents: toc,
+        sourceText,
+        updatedAt: new Date(),
+      });
+
+      await tx.insert(bookGenerationStates).values({
+        bookId,
+        status: "generating",
+        generationSettings: {
+          provider,
+          model,
+          language,
+          chapterCount: "Auto",
+          userPreference,
+        },
+        streamingStatus: initialStreamingStatus,
+        updatedAt: new Date(),
+      });
+
+      return { isNewBook: true };
+    }
+
+    await tx
+      .update(books)
+      .set({
+        title,
+        tableOfContents: toc,
+        sourceText,
+        updatedAt: new Date(),
+      })
+      .where(eq(books.id, bookId));
+
+    await tx
+      .insert(bookGenerationStates)
+      .values({
+        bookId,
+        status: "generating",
+        generationSettings: {
+          provider,
+          model,
+          language,
+          chapterCount: "Auto",
+          userPreference,
+        },
+        streamingStatus: initialStreamingStatus,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [bookGenerationStates.bookId],
+        set: {
+          status: "generating",
+          generationSettings: {
+            provider,
+            model,
+            language,
+            chapterCount: "Auto",
+            userPreference,
+          },
+          streamingStatus: initialStreamingStatus,
+          updatedAt: new Date(),
+        },
+      });
+
+    return { isNewBook: false };
+  });
+}
+
 export async function streamBook(config: StreamingConfig): Promise<Response> {
   const {
     bookId,
-    userId,
     sourceText,
     tableOfContents,
-    title,
     provider,
     model,
     language,
@@ -110,7 +206,6 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
   const startChapter = Math.max(1, startFromChapter);
 
   let createdNewBook = false;
-  let didDeductCredits = false;
   let bookPlan: PlanOutput | null = null;
 
   try {
@@ -118,25 +213,9 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
       throw new Error("Missing sourceText or tableOfContents");
     }
 
-    const { isNewBook } = await initializeBookAndDeductCredits({
-      userId,
-      bookId,
-      title,
-      tableOfContents: toc,
-      sourceText,
-      cost: BOOK_CREATION_COST,
-      startChapter,
-      generationSettings: {
-        provider,
-        model,
-        language,
-        chapterCount: "Auto",
-        userPreference,
-      },
-    });
+    const { isNewBook } = await initializeBookGeneration(config, toc, startChapter);
 
     createdNewBook = isNewBook;
-    didDeductCredits = true;
 
     const events = (async function* (): AsyncGenerator<SSEEvent, void, unknown> {
       try {
@@ -238,9 +317,7 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
       } catch (error) {
         const { message } = await handleGenerationError({
           error,
-          didDeductCredits,
           createdNewBook,
-          userId,
           bookId,
         });
         yield { type: "error", data: { message } };
@@ -251,9 +328,7 @@ export async function streamBook(config: StreamingConfig): Promise<Response> {
   } catch (error) {
     const { message } = await handleGenerationError({
       error,
-      didDeductCredits,
       createdNewBook,
-      userId,
       bookId,
     });
 
@@ -303,7 +378,6 @@ async function* streamChapter(
   };
 
   let chapterContent = `## ${chapterTitle}\n\n`;
-  const sectionContents: string[] = [];
 
   for (let sectionIndex = 0; sectionIndex < outlineResult.sections.length; sectionIndex++) {
     const section = outlineResult.sections[sectionIndex];
@@ -346,7 +420,6 @@ async function* streamChapter(
       };
     }
 
-    sectionContents.push(sectionText);
     chapterContent += `${sectionText}\n\n`;
 
     await updateStreamingStatus(bookId, chapterNumber, sectionIndex);
