@@ -1,4 +1,4 @@
-import { type LanguageModel, type ModelMessage, streamText } from "@/lib/ai/core";
+import { generateText, type LanguageModel, type ModelMessage } from "@/lib/ai/core";
 import type { DraftInput } from "@/lib/ai/types/prompts";
 
 function buildMessages(input: DraftInput): ModelMessage[] {
@@ -23,8 +23,11 @@ Please write a simple draft in ${input.language}.
   ];
 }
 
-export function streamDraftDev(input: DraftInput, model: LanguageModel) {
-  return streamText({
+export async function generateDraftTextDev(
+  input: DraftInput,
+  model: LanguageModel,
+): Promise<string> {
+  return generateText({
     model,
     messages: buildMessages(input),
   });
