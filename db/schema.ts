@@ -122,7 +122,6 @@ export const bookGenerationStates = pgTable(
     error: text("error"),
     generationSettings: jsonb("generation_settings"),
     bookPlan: jsonb("book_plan"),
-    streamingStatus: jsonb("streaming_status"),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),

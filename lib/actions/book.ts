@@ -69,7 +69,6 @@ export async function getBookWithValidation(bookId: string, userId: string) {
     error: state?.error ?? null,
     generationSettings: parsed.data,
     bookPlan: state?.bookPlan ?? null,
-    streamingStatus: state?.streamingStatus ?? null,
   };
 }
 
