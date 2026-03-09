@@ -1,8 +1,7 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import type { Sql } from "postgres";
-import postgres from "postgres";
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres, { type Sql } from 'postgres';
 
-import { serverEnv } from "@/lib/env";
+import { databaseEnv } from '@/lib/env';
 
 const globalForDb = globalThis as unknown as {
   client: Sql | undefined;
@@ -10,11 +9,11 @@ const globalForDb = globalThis as unknown as {
 
 const client =
   globalForDb.client ??
-  postgres(serverEnv.DATABASE_URL, {
+  postgres(databaseEnv.DATABASE_URL, {
     max: 1,
-    idle_timeout: 10,
+    idle_timeout: 10
   });
 
-if (serverEnv.NODE_ENV !== "production") globalForDb.client = client;
+if (databaseEnv.NODE_ENV !== 'production') globalForDb.client = client;
 
 export const db = drizzle(client);

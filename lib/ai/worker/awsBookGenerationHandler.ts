@@ -1,43 +1,37 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "@/db";
-import { bookGenerationStates } from "@/db/schema";
-import { bookGenerationJobSchema } from "@/lib/ai/jobs/bookGeneration";
-import { runBookGenerationJob } from "@/lib/ai/worker/bookGenerationWorker";
+import type { SQSBatchResponse, SQSEvent } from 'aws-lambda';
+import { and, eq } from 'drizzle-orm';
+import { db } from '@/db';
+import { bookGenerationStates } from '@/db/schema';
+import { bookGenerationJobSchema } from '@/lib/ai/jobs/bookGeneration';
+import { runBookGenerationJob } from '@/lib/ai/worker/bookGenerationWorker';
 
-interface SQSEventRecord {
-  messageId: string;
-  body: string;
+function collectBatchFailures(event: SQSEvent, startIndex: number) {
+  return event.Records.slice(startIndex).map((record) => ({
+    itemIdentifier: record.messageId
+  }));
 }
 
-interface SQSEventLike {
-  Records: SQSEventRecord[];
-}
+export async function handleBookGenerationSQSEvent(
+  event: SQSEvent
+): Promise<SQSBatchResponse> {
+  const batchItemFailures: SQSBatchResponse['batchItemFailures'] = [];
 
-interface BatchItemFailure {
-  itemIdentifier: string;
-}
-
-interface SQSBatchResponse {
-  batchItemFailures: BatchItemFailure[];
-}
-
-export async function handleBookGenerationSQSEvent(event: SQSEventLike): Promise<SQSBatchResponse> {
-  const batchItemFailures: BatchItemFailure[] = [];
-
-  for (const record of event.Records) {
+  for (const [index, record] of event.Records.entries()) {
     let payload: unknown;
 
     try {
       payload = JSON.parse(record.body);
     } catch {
-      console.error("[awsBookGenerationHandler] invalid JSON message:", record.messageId);
-      continue;
+      console.error('[awsBookGenerationHandler] invalid JSON message:', record.messageId);
+      batchItemFailures.push(...collectBatchFailures(event, index));
+      break;
     }
 
     const parsed = bookGenerationJobSchema.safeParse(payload);
     if (!parsed.success) {
-      console.error("[awsBookGenerationHandler] invalid job payload:", record.messageId);
-      continue;
+      console.error('[awsBookGenerationHandler] invalid job payload:', record.messageId);
+      batchItemFailures.push(...collectBatchFailures(event, index));
+      break;
     }
 
     const job = parsed.data;
@@ -45,23 +39,24 @@ export async function handleBookGenerationSQSEvent(event: SQSEventLike): Promise
     try {
       await runBookGenerationJob(job);
     } catch (error) {
-      console.error("[awsBookGenerationHandler] worker error:", error);
+      console.error('[awsBookGenerationHandler] worker error:', error);
 
       await db
         .update(bookGenerationStates)
         .set({
-          status: "failed",
-          error: error instanceof Error ? error.message : "Worker error",
-          updatedAt: new Date(),
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Worker error',
+          updatedAt: new Date()
         })
         .where(
           and(
             eq(bookGenerationStates.bookId, job.bookId),
-            eq(bookGenerationStates.generationVersion, job.generationVersion),
-          ),
+            eq(bookGenerationStates.generationVersion, job.generationVersion)
+          )
         );
 
-      batchItemFailures.push({ itemIdentifier: record.messageId });
+      batchItemFailures.push(...collectBatchFailures(event, index));
+      break;
     }
   }
 
