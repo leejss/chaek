@@ -33,18 +33,18 @@ const clientSchema = z.object({
 });
 
 const appServerSchema = runtimeSchema
-  .merge(databaseSchema)
-  .merge(authSchema)
-  .merge(aiSchema)
-  .merge(awsQueueSchema)
-  .merge(clientSchema);
+  .extend(databaseSchema.shape)
+  .extend(authSchema.shape)
+  .extend(aiSchema.shape)
+  .extend(awsQueueSchema.shape)
+  .extend(clientSchema.shape);
 
 const workerServerSchema = runtimeSchema
-  .merge(databaseSchema)
-  .merge(aiSchema)
-  .merge(awsQueueSchema);
+  .extend(databaseSchema.shape)
+  .extend(aiSchema.shape)
+  .extend(awsQueueSchema.shape);
 
-const databaseEnvSchema = runtimeSchema.merge(databaseSchema);
+const databaseEnvSchema = runtimeSchema.extend(databaseSchema.shape);
 const aiEnvSchema = aiSchema;
 const awsQueueEnvSchema = awsQueueSchema;
 
@@ -57,6 +57,67 @@ type ClientEnv = z.infer<typeof clientSchema>;
 
 const isServer = () => typeof window === 'undefined';
 
+function summarizeEnvIssues(error: z.ZodError) {
+  const missing = new Set<string>();
+  const invalid: string[] = [];
+  const other: string[] = [];
+
+  for (const issue of error.issues) {
+    const path = issue.path.join('.') || '(root)';
+    const message = issue.message;
+
+    if (issue.code === 'invalid_type') {
+      missing.add(path);
+      continue;
+    }
+
+    if (message.toLowerCase().includes('required')) {
+      missing.add(path);
+      continue;
+    }
+
+    if (path === '(root)') {
+      other.push(message);
+      continue;
+    }
+
+    invalid.push(`${path}: ${message}`);
+  }
+
+  return {
+    missing: [...missing].sort(),
+    invalid,
+    other
+  };
+}
+
+function logEnvValidationError(label: string, error: z.ZodError) {
+  const summary = summarizeEnvIssues(error);
+  const parts: string[] = [];
+
+  if (summary.missing.length > 0) {
+    parts.push(`missing=${summary.missing.join(', ')}`);
+  }
+
+  if (summary.invalid.length > 0) {
+    parts.push(`invalid=${summary.invalid.join(' | ')}`);
+  }
+
+  if (summary.other.length > 0) {
+    parts.push(`other=${summary.other.join(' | ')}`);
+  }
+
+  console.error(`❌ Invalid ${label} environment variables`);
+
+  if (parts.length > 0) {
+    console.error(`❌ Details: ${parts.join(' ; ')}`);
+  }
+
+  console.error(
+    JSON.stringify(error.format(), null, 2)
+  );
+}
+
 function parseServerEnv<T>(schema: z.ZodType<T>, label: string): T {
   if (!isServer()) {
     throw new Error("❌ [Runtime Error] 'serverEnv'는 서버 런타임에서만 접근 가능합니다.");
@@ -65,10 +126,7 @@ function parseServerEnv<T>(schema: z.ZodType<T>, label: string): T {
   const parsed = schema.safeParse(process.env);
 
   if (!parsed.success) {
-    console.error(
-      `❌ Invalid ${label} environment variables:`,
-      JSON.stringify(parsed.error.format(), null, 2)
-    );
+    logEnvValidationError(label, parsed.error);
     throw new Error(`Invalid ${label} environment variables`);
   }
 
@@ -81,10 +139,7 @@ function validateClientEnv(): ClientEnv {
   });
 
   if (!parsed.success) {
-    console.error(
-      '❌ Invalid client environment variables:',
-      JSON.stringify(parsed.error.format(), null, 2)
-    );
+    logEnvValidationError('client', parsed.error);
     throw new Error('Invalid client environment variables');
   }
 
