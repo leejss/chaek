@@ -39,12 +39,19 @@ interface StatusResponse {
 }
 
 function statusLabel(status: StatusResponse["status"]) {
-  if (status === "generating") return "Generating in Background";
-  if (status === "waiting") return "Queued";
-  if (status === "completed") return "Completed";
-  if (status === "failed") return "Failed";
-  if (status === "cancel_requested") return "Cancel Requested";
-  return "Cancelled";
+  if (status === "generating") return "백그라운드에서 생성 중";
+  if (status === "waiting") return "대기 중";
+  if (status === "completed") return "완료됨";
+  if (status === "failed") return "실패";
+  if (status === "cancel_requested") return "취소 요청됨";
+  return "취소됨";
+}
+
+function chapterStatusLabel(status: StatusChapter["status"]) {
+  if (status === "completed") return "완료";
+  if (status === "generating") return "생성 중";
+  if (status === "failed") return "실패";
+  return "대기";
 }
 
 export default function GenerationView({
@@ -106,12 +113,16 @@ export default function GenerationView({
       const response = await authFetch(`/api/books/${bookId}/generate`, { method: "POST" });
       const data = (await response.json()) as { ok: boolean; error?: string };
       if (!response.ok || !data.ok) {
-        throw new Error(data.error || "Failed to queue generation");
+        throw new Error(data.error || "생성 작업을 대기열에 추가하지 못했습니다");
       }
       setStatus("waiting");
       await refreshStatus();
     } catch (startError) {
-      setError(startError instanceof Error ? startError.message : "Failed to queue generation");
+      setError(
+        startError instanceof Error
+          ? startError.message
+          : "생성 작업을 대기열에 추가하지 못했습니다",
+      );
     } finally {
       setIsStarting(false);
     }
@@ -134,18 +145,18 @@ export default function GenerationView({
       <div className="space-y-3 text-center">
         <h1 className="font-bold text-4xl text-black">{bookTitle}</h1>
         <p className="font-medium text-neutral-500">
-          {statusLabel(status)} · {completedChapters}/{tableOfContents.length} chapters
+          {statusLabel(status)} · {completedChapters}/{tableOfContents.length}개 챕터
         </p>
         {status === "generating" && (
           <p className="font-medium text-neutral-500 text-sm">
-            Current: Chapter {currentChapterIndex ?? "-"} / Section {currentSectionIndex ?? "-"}
+            현재 진행: 챕터 {currentChapterIndex ?? "-"} / 섹션 {currentSectionIndex ?? "-"}
           </p>
         )}
       </div>
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bold text-black">Background Generation Status</h2>
+          <h2 className="font-bold text-black">백그라운드 생성 상태</h2>
           <span
             className={cn("rounded-full px-3 py-1 font-bold text-xs", {
               "bg-amber-100 text-amber-700": status === "generating" || status === "waiting",
@@ -160,7 +171,7 @@ export default function GenerationView({
 
         {(status === "failed" || error) && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 font-medium text-red-700 text-sm">
-            {error || "Generation failed"}
+            {error || "생성에 실패했습니다"}
           </div>
         )}
 
@@ -170,7 +181,7 @@ export default function GenerationView({
             disabled={isStarting || status === "generating" || status === "waiting"}
             className="h-12 rounded-full px-6 font-bold"
           >
-            {isStarting ? "Queueing..." : status === "failed" ? "Retry" : "Start / Resume"}
+            {isStarting ? "대기열에 추가하는 중..." : status === "failed" ? "다시 시도" : "시작 / 이어쓰기"}
           </Button>
           <Button
             variant="outline"
@@ -178,17 +189,17 @@ export default function GenerationView({
             className="h-12 rounded-full px-5 font-bold"
           >
             <RefreshCw size={14} className="mr-2" />
-            Refresh
+            새로고침
           </Button>
         </div>
 
         <p className="font-medium text-neutral-500 text-sm">
-          Generation now runs in the background. Closing this tab does not stop the worker.
+          이제 생성은 백그라운드에서 진행됩니다. 이 탭을 닫아도 작업은 중단되지 않습니다.
         </p>
       </div>
 
       <div className="space-y-3 rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="font-bold text-black">Chapters</h2>
+        <h2 className="font-bold text-black">챕터</h2>
         {tableOfContents.map((title, index) => {
           const chapterNumber = index + 1;
           const chapter = chapterMap.get(chapterNumber);
@@ -208,7 +219,7 @@ export default function GenerationView({
                 <p className="font-bold text-black">
                   {chapterNumber}. {title}
                 </p>
-                <span className="font-semibold text-xs uppercase">{chapterStatus}</span>
+                <span className="font-semibold text-xs">{chapterStatusLabel(chapterStatus)}</span>
               </div>
               {chapter?.content && (
                 <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-neutral-700 text-sm">

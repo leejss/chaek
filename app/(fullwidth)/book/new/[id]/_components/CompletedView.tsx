@@ -14,10 +14,10 @@ export default function CompletedView({ bookTitle, bookId }: CompletedViewProps)
       <div className="fade-in zoom-in-95 w-full max-w-2xl animate-in text-center duration-500">
         <div className="mb-12">
           <h2 className="mb-6 font-bold font-serif text-4xl text-neutral-900 leading-tight md:text-5xl">
-            {bookTitle || "Untitled Book"}
+            {bookTitle || "제목 없는 책"}
           </h2>
           <p className="text-lg text-neutral-500">
-            Your book has been successfully written and is ready for review.
+            책 작성이 완료되었습니다. 이제 내용을 검토할 수 있습니다.
           </p>
         </div>
 
@@ -29,7 +29,7 @@ export default function CompletedView({ bookTitle, bookId }: CompletedViewProps)
             size={20}
             className="text-neutral-300 transition-colors group-hover:text-white"
           />
-          <span>Start Reading</span>
+          <span>읽기 시작</span>
           <ArrowRight
             size={20}
             strokeWidth={2.5}

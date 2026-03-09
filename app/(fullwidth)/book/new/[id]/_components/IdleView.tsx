@@ -37,7 +37,7 @@ export default function IdleView({
 
       <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6">
         <h3 className="mb-4 text-center font-bold text-lg text-neutral-800 md:text-2xl">
-          Table of Contents
+          목차
         </h3>
         <div className="space-y-2">
           {tableOfContents.map((chapter, idx) => {
@@ -82,12 +82,12 @@ export default function IdleView({
           )}
         >
           {isDeductingCredits
-            ? "Processing..."
+            ? "처리 중..."
             : isProcessing
-              ? "Processing..."
+              ? "처리 중..."
               : isResumable
-                ? "Resume Writing"
-                : "Start Writing"}
+                ? "이어서 작성하기"
+                : "작성 시작하기"}
         </Button>
       </div>
 
