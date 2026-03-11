@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 interface CompletedViewProps {
@@ -10,30 +10,21 @@ interface CompletedViewProps {
 
 export default function CompletedView({ bookTitle, bookId }: CompletedViewProps) {
   return (
-    <div className="flex h-full flex-col items-center justify-center bg-neutral-50/50 p-8">
-      <div className="fade-in zoom-in-95 w-full max-w-2xl animate-in text-center duration-500">
-        <div className="mb-12">
-          <h2 className="mb-6 font-bold font-serif text-4xl text-neutral-900 leading-tight md:text-5xl">
-            {bookTitle || "제목 없는 책"}
-          </h2>
-          <p className="text-lg text-neutral-500">
-            책 작성이 완료되었습니다. 이제 내용을 검토할 수 있습니다.
-          </p>
-        </div>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-20 text-center">
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+        <h2 className="mb-4 font-serif text-3xl font-medium tracking-tight text-neutral-900 md:text-4xl">
+          {bookTitle || "제목 없는 책"}
+        </h2>
+        <p className="mb-10 text-neutral-500">책 작성이 완료되었습니다.</p>
 
         <Link
           href={`/book/${bookId}`}
-          className="group inline-flex h-16 items-center justify-center gap-3 rounded-full bg-black px-10 font-bold text-lg text-white shadow-lg transition-all hover:scale-105 hover:bg-neutral-800 hover:shadow-xl"
+          className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
         >
-          <BookOpen
-            size={20}
-            className="text-neutral-300 transition-colors group-hover:text-white"
-          />
           <span>읽기 시작</span>
           <ArrowRight
-            size={20}
-            strokeWidth={2.5}
-            className="-ml-5 opacity-0 transition-all duration-300 group-hover:ml-0 group-hover:opacity-100"
+            size={16}
+            className="transition-transform duration-300 group-hover:translate-x-1"
           />
         </Link>
       </div>

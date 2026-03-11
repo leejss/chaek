@@ -23,9 +23,7 @@ export default function StepNavigation() {
   const draftId = searchParams.get("draftId") || undefined;
   const currentStep = searchParams.get("step") || "settings";
 
-  const tocGenerationStatus = useBookCreationStore(
-    (s) => s.tocGeneration.status,
-  );
+  const tocGenerationStatus = useBookCreationStore((s) => s.tocGeneration.status);
   const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
 
   const handleBack = () => {
@@ -54,22 +52,22 @@ export default function StepNavigation() {
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-white py-2">
+    <div className="sticky top-0 z-10 py-2">
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={handleBack}
-          className="group -ml-2 flex items-center rounded-lg px-2 py-1.5 font-bold text-neutral-500 text-sm transition-colors hover:bg-neutral-50 hover:text-black"
+          className="group -ml-2 flex items-center px-2 py-1.5 font-medium text-neutral-500 text-sm transition-colors hover:text-neutral-900"
         >
           <ChevronLeft
             size={18}
-            strokeWidth={3}
+            strokeWidth={2.5}
             className="mr-1 transition-transform group-hover:-translate-x-0.5"
           />
           뒤로가기
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           {STEPS_CONFIG.map((step) => {
             const isCompleted = isStepCompleted(step.id, tableOfContents);
             const isCurrent = currentStep === step.id;
@@ -81,12 +79,11 @@ export default function StepNavigation() {
                   type="button"
                   onClick={() => handleStepClick(step.id)}
                   disabled={!isClickable}
-                  className={cn("group rounded-lg px-4 py-1 font-semibold", {
-                    "border-black bg-black text-white shadow-sm": isCurrent,
-                    "border-black bg-white text-black hover:bg-neutral-50 hover:shadow-sm":
+                  className={cn("text-sm transition-colors", {
+                    "font-medium text-neutral-900": isCurrent,
+                    "font-normal text-neutral-400 hover:text-neutral-900":
                       isCompleted && !isCurrent,
-                    "cursor-not-allowed border-neutral-200 bg-white text-neutral-400":
-                      !isCurrent && !isCompleted,
+                    "cursor-not-allowed font-normal text-neutral-300": !isCurrent && !isCompleted,
                   })}
                 >
                   {step.label}

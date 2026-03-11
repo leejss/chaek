@@ -22,7 +22,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h1
           id={`heading-${text}`}
           data-heading-text={text}
-          className="mt-8 mb-6 scroll-mt-24 break-words font-black text-3xl text-black uppercase tracking-tighter md:mt-16 md:mb-12 md:text-6xl"
+          className="mt-16 mb-8 scroll-mt-24 break-words text-3xl font-bold tracking-tight text-neutral-900 md:mt-20 md:mb-10 md:text-5xl"
           {...props}
         >
           {children}
@@ -35,7 +35,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h2
           id={`heading-${text}`}
           data-heading-text={text}
-          className="mt-8 mb-4 scroll-mt-24 break-words font-bold text-2xl text-black tracking-tight md:mt-12 md:mb-8 md:text-4xl"
+          className="mt-12 mb-6 scroll-mt-24 break-words text-2xl font-semibold tracking-tight text-neutral-900 md:mt-16 md:mb-8 md:text-3xl"
           {...props}
         >
           {children}
@@ -48,7 +48,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
         <h3
           id={`heading-${text}`}
           data-heading-text={text}
-          className="mt-6 mb-4 scroll-mt-24 break-words font-bold text-black text-xl tracking-tight md:mt-10 md:mb-6 md:text-2xl"
+          className="mt-8 mb-4 scroll-mt-24 break-words text-xl font-medium tracking-tight text-neutral-900 md:mt-10 md:mb-6 md:text-2xl"
           {...props}
         >
           {children}
@@ -57,37 +57,37 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
     },
     h4: ({ ...props }: MarkdownProps) => (
       <h4
-        className="mt-6 mb-3 break-words font-bold text-black text-lg tracking-tight md:mt-8 md:mb-4 md:text-xl"
+        className="mt-6 mb-3 break-words text-lg font-medium text-neutral-800 md:mt-8 md:mb-4 md:text-xl"
         {...props}
       />
     ),
     h5: ({ ...props }: MarkdownProps) => (
       <h5
-        className="mt-4 mb-2 break-words font-bold text-base text-neutral-500 uppercase tracking-widest md:mt-6 md:mb-3 md:text-lg"
+        className="mt-4 mb-2 break-words text-base font-medium text-neutral-600 md:mt-6 md:mb-3 md:text-lg"
         {...props}
       />
     ),
     p: ({ ...props }: MarkdownProps) => (
       <p
-        className="mb-6 break-words text-base text-neutral-900 leading-relaxed md:text-lg"
+        className="mb-6 break-words text-base leading-relaxed text-neutral-700 md:text-lg md:leading-loose"
         {...props}
       />
     ),
     ul: ({ ...props }: MarkdownProps) => (
       <ul
-        className="mb-6 list-disc space-y-2 pl-6 text-base text-neutral-900 marker:text-black md:text-lg"
+        className="mb-6 list-disc space-y-2 pl-6 text-base text-neutral-700 md:text-lg"
         {...props}
       />
     ),
     ol: ({ ...props }: MarkdownProps) => (
       <ol
-        className="mb-6 list-decimal space-y-2 pl-6 font-bold text-base text-neutral-900 marker:text-black md:text-lg"
+        className="mb-6 list-decimal space-y-2 pl-6 text-base text-neutral-700 md:text-lg"
         {...props}
       />
     ),
     blockquote: ({ ...props }: MarkdownProps) => (
       <blockquote
-        className="my-8 break-words border-black border-l-4 pl-6 font-serif text-lg text-neutral-800 italic md:text-xl"
+        className="my-8 break-words border-l-2 border-neutral-200 pl-6 text-lg italic text-neutral-500 md:text-xl"
         {...props}
       />
     ),
@@ -98,7 +98,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
       if (!match && !codeContent.includes("\n")) {
         return (
           <code
-            className="break-all rounded bg-neutral-100 px-1.5 py-0.5 font-medium font-mono text-[0.8em] text-black md:text-[0.9em]"
+            className="break-all rounded-md bg-neutral-100/80 px-1.5 py-0.5 font-mono text-[0.8em] text-neutral-800 md:text-[0.9em]"
             {...props}
           >
             {children}
@@ -109,11 +109,11 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
       const html = await highlightCode(codeContent, match?.[1] || "text");
 
       return (
-        <div className="group relative my-6">
-          <div className="absolute top-3 right-3 font-mono text-stone-400 text-xs uppercase opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="group relative my-8">
+          <div className="absolute top-3 right-3 font-mono text-neutral-400 text-xs opacity-0 transition-opacity group-hover:opacity-100">
             {match?.[1]}
           </div>
-          <div className="overflow-x-auto rounded-lg border border-stone-200 bg-stone-50 text-xs md:text-sm">
+          <div className="overflow-x-auto rounded-xl border border-neutral-100 bg-neutral-50/50 text-xs md:text-sm">
             {parse(html)}
           </div>
         </div>
@@ -123,7 +123,7 @@ export default function BookMarkdown({ content }: BookMarkdownProps) {
   } as unknown as Components;
 
   return (
-    <div className="prose prose-stone prose-base md:prose-lg max-w-none break-words prose-headings:font-medium prose-headings:font-serif prose-p:text-stone-700 prose-p:leading-relaxed">
+    <div className="prose prose-neutral prose-base md:prose-lg max-w-none break-words">
       <ReactMarkdown components={components}>{content}</ReactMarkdown>
     </div>
   );

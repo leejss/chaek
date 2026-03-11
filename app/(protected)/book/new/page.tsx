@@ -88,20 +88,24 @@ function CreateBookContent() {
 
   if (isInitialTocGeneration) {
     return (
-      <div className="flex-1 overflow-y-auto bg-white">
-        <AILoadingStep
-          title="책 구조 생성 중"
-          description="콘텐츠를 분석해 목차를 만들고 있습니다..."
-        />
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+          <AILoadingStep
+            title="책 구조 생성 중"
+            description="콘텐츠를 분석해 목차를 만들고 있습니다..."
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white">
-      {currentStep === "settings" && <SettingsStep />}
-      {currentStep === "source_input" && <SourceInputStep />}
-      {currentStep === "toc_review" && <TOCReviewStep />}
+    <div className="flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+        {currentStep === "settings" && <SettingsStep />}
+        {currentStep === "source_input" && <SourceInputStep />}
+        {currentStep === "toc_review" && <TOCReviewStep />}
+      </div>
     </div>
   );
 }

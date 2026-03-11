@@ -14,7 +14,6 @@ import BookView from "./_components/BookView";
 interface PageProps {
   params: Promise<{ id: string }>;
 }
-
 export default async function BookDetailPage({ params }: PageProps) {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(accessTokenConfig.name)?.value;

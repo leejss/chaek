@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Circle, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import { authFetch } from "@/lib/api";
@@ -39,7 +39,7 @@ interface StatusResponse {
 }
 
 function statusLabel(status: StatusResponse["status"]) {
-  if (status === "generating") return "백그라운드에서 생성 중";
+  if (status === "generating") return "작성 중";
   if (status === "waiting") return "대기 중";
   if (status === "completed") return "완료됨";
   if (status === "failed") return "실패";
@@ -47,11 +47,17 @@ function statusLabel(status: StatusResponse["status"]) {
   return "취소됨";
 }
 
-function chapterStatusLabel(status: StatusChapter["status"]) {
-  if (status === "completed") return "완료";
-  if (status === "generating") return "생성 중";
-  if (status === "failed") return "실패";
-  return "대기";
+function StatusIcon({ status }: { status: StatusChapter["status"] }) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 className="text-neutral-900" size={20} strokeWidth={1.5} />;
+    case "generating":
+      return <Loader2 className="animate-spin text-neutral-400" size={20} strokeWidth={1.5} />;
+    case "failed":
+      return <AlertCircle className="text-red-500" size={20} strokeWidth={1.5} />;
+    default:
+      return <Circle className="text-neutral-200" size={20} strokeWidth={1.5} />;
+  }
 }
 
 export default function GenerationView({
@@ -110,7 +116,9 @@ export default function GenerationView({
     setIsStarting(true);
     setError(null);
     try {
-      const response = await authFetch(`/api/books/${bookId}/generate`, { method: "POST" });
+      const response = await authFetch(`/api/books/${bookId}/generate`, {
+        method: "POST",
+      });
       const data = (await response.json()) as { ok: boolean; error?: string };
       if (!response.ok || !data.ok) {
         throw new Error(data.error || "생성 작업을 대기열에 추가하지 못했습니다");
@@ -140,66 +148,62 @@ export default function GenerationView({
     return <CompletedView bookTitle={bookTitle} bookId={bookId} />;
   }
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-6 p-8">
-      <div className="space-y-3 text-center">
-        <h1 className="font-bold text-4xl text-black">{bookTitle}</h1>
-        <p className="font-medium text-neutral-500">
-          {statusLabel(status)} · {completedChapters}/{tableOfContents.length}개 챕터
-        </p>
-        {status === "generating" && (
-          <p className="font-medium text-neutral-500 text-sm">
-            현재 진행: 챕터 {currentChapterIndex ?? "-"} / 섹션 {currentSectionIndex ?? "-"}
-          </p>
-        )}
-      </div>
+  const isWorking = status === "generating" || status === "waiting";
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bold text-black">백그라운드 생성 상태</h2>
-          <span
-            className={cn("rounded-full px-3 py-1 font-bold text-xs", {
-              "bg-amber-100 text-amber-700": status === "generating" || status === "waiting",
-              "bg-red-100 text-red-700": status === "failed",
-              "bg-neutral-200 text-neutral-700":
-                status === "cancelled" || status === "cancel_requested",
-            })}
-          >
-            {statusLabel(status)}
-          </span>
+  return (
+    <div className="mx-auto max-w-3xl px-6 py-16 md:py-24">
+      <header className="mb-20 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-4">
+          <h1 className="font-serif text-4xl font-medium tracking-tight text-neutral-900 md:text-5xl">
+            {bookTitle}
+          </h1>
+          <div className="flex flex-wrap items-center gap-2.5 text-sm text-neutral-500">
+            {isWorking && <Loader2 className="animate-spin text-neutral-400" size={14} />}
+            <span className={cn("font-medium", status === "failed" ? "text-red-500" : "")}>
+              {statusLabel(status)}
+            </span>
+            <span className="text-neutral-300">/</span>
+            <span>
+              {completedChapters} / {tableOfContents.length} 챕터 완료
+            </span>
+            {status === "generating" && currentChapterIndex && (
+              <>
+                <span className="text-neutral-300">/</span>
+                <span>
+                  챕터 {currentChapterIndex} 작성 중
+                  {currentSectionIndex ? ` (섹션 ${currentSectionIndex})` : ""}
+                </span>
+              </>
+            )}
+          </div>
+          {(status === "failed" || error) && (
+            <p className="mt-2 text-sm text-red-500">
+              {error || "생성에 실패했습니다. 다시 시도해주세요."}
+            </p>
+          )}
         </div>
 
-        {(status === "failed" || error) && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 font-medium text-red-700 text-sm">
-            {error || "생성에 실패했습니다"}
-          </div>
-        )}
-
-        <div className="mb-4 flex gap-3">
+        <div className="flex items-center gap-2">
           <Button
             onClick={handleStart}
-            disabled={isStarting || status === "generating" || status === "waiting"}
-            className="h-12 rounded-full px-6 font-bold"
+            disabled={isStarting || isWorking}
+            className="h-10 rounded-full px-5 text-sm font-medium"
           >
-            {isStarting ? "대기열에 추가하는 중..." : status === "failed" ? "다시 시도" : "시작 / 이어쓰기"}
+            {isStarting ? "준비 중..." : status === "failed" ? "다시 시도" : isWorking ? "작성 중" : "작성 시작"}
           </Button>
-          <Button
-            variant="outline"
+          <button
+            type="button"
             onClick={() => void refreshStatus()}
-            className="h-12 rounded-full px-5 font-bold"
+            title="새로고침"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
           >
-            <RefreshCw size={14} className="mr-2" />
-            새로고침
-          </Button>
+            <RefreshCw size={16} strokeWidth={2} />
+            <span className="sr-only">새로고침</span>
+          </button>
         </div>
+      </header>
 
-        <p className="font-medium text-neutral-500 text-sm">
-          이제 생성은 백그라운드에서 진행됩니다. 이 탭을 닫아도 작업은 중단되지 않습니다.
-        </p>
-      </div>
-
-      <div className="space-y-3 rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="font-bold text-black">챕터</h2>
+      <div className="space-y-12">
         {tableOfContents.map((title, index) => {
           const chapterNumber = index + 1;
           const chapter = chapterMap.get(chapterNumber);
@@ -208,24 +212,29 @@ export default function GenerationView({
           return (
             <div
               key={`${chapterNumber}-${title}`}
-              className={cn("rounded-lg border p-3", {
-                "border-green-200 bg-green-50": chapterStatus === "completed",
-                "border-amber-200 bg-amber-50": chapterStatus === "generating",
-                "border-red-200 bg-red-50": chapterStatus === "failed",
-                "border-neutral-200 bg-neutral-50": chapterStatus === "pending",
-              })}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-bold text-black">
-                  {chapterNumber}. {title}
-                </p>
-                <span className="font-semibold text-xs">{chapterStatusLabel(chapterStatus)}</span>
-              </div>
-              {chapter?.content && (
-                <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-neutral-700 text-sm">
-                  {chapter.content}
-                </p>
+              className={cn(
+                "group flex gap-5 transition-opacity duration-300",
+                chapterStatus === "pending" && "opacity-40",
               )}
+            >
+              <div className="mt-1.5 shrink-0">
+                <StatusIcon status={chapterStatus} />
+              </div>
+              <div className="space-y-2.5">
+                <h3
+                  className={cn(
+                    "text-lg font-medium tracking-tight",
+                    chapterStatus === "completed" ? "text-neutral-900" : "text-neutral-700",
+                  )}
+                >
+                  {chapterNumber}. {title}
+                </h3>
+                {chapter?.content && (
+                  <p className="line-clamp-3 text-[15px] leading-relaxed text-neutral-500">
+                    {chapter.content}
+                  </p>
+                )}
+              </div>
             </div>
           );
         })}

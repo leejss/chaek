@@ -8,6 +8,7 @@ import { setBookField, useBookCreationStore } from "@/context/bookCreationStore"
 import { createBookAction } from "@/lib/actions/book";
 import { clearBookCreationDraft } from "@/lib/bookCreationDraft";
 import { useTocGeneration } from "@/lib/hooks/useTocGeneration";
+import { cn } from "@/utils";
 
 /**
  * Pure functions for TOC manipulation (FP Domain Logic)
@@ -106,71 +107,60 @@ export default function TOCReviewStep() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl py-12 text-black">
-      <div className="space-y-10">
-        <div className="space-y-4 text-center">
-          <h1 className="font-extrabold text-4xl text-black">구성 검토</h1>
-          <p className="mx-auto max-w-md font-medium text-neutral-500">
-            책 구성을 검토하고 다듬어 보세요. 챕터 제목을 수정하거나
-            전체 목차를 다시 생성할 수 있습니다.
-          </p>
+    <div className="space-y-12">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-medium tracking-tight text-foreground">구성 검토</h1>
+        <p className="text-sm text-neutral-500">
+          책 구성을 검토하고 다듬어 보세요. 챕터 제목을 수정하거나 전체 목차를 다시 생성할 수
+          있습니다.
+        </p>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-medium text-foreground">챕터 개요</h2>
+          <div className="flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <Button variant="ghost" onClick={handleCancel} className="h-8 px-3 text-xs">
+                  취소
+                </Button>
+                <Button variant="primary" onClick={handleSave} className="h-8 px-3 text-xs gap-1.5">
+                  <Check size={14} />
+                  저장
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={handleEditStart}
+                className="h-8 px-3 text-xs gap-1.5"
+              >
+                <Edit2 size={12} />
+                편집
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Main Content Card */}
-        <div className="overflow-hidden rounded-xl border-2 border-neutral-200 bg-white">
-          <div className="flex items-center justify-between border-neutral-200 border-b-2 bg-white p-6">
-            <h2 className="font-bold text-black">챕터 개요</h2>
-            <div className="flex items-center gap-2">
-              {isEditing ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={handleCancel}
-                    className="h-8 px-4 font-bold text-xs"
-                  >
-                    취소
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleSave}
-                    className="h-8 gap-2 px-4 font-bold text-xs"
-                  >
-                    <Check size={14} strokeWidth={3} />
-                    변경 사항 저장
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={handleEditStart}
-                  className="h-8 gap-2 rounded-full border-neutral-300 bg-white px-4 font-bold text-black text-sm hover:bg-neutral-50"
-                >
-                  <Edit2 size={12} strokeWidth={3} />
-                  목차 편집
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="p-8 md:p-10">
+        <div className="rounded-md border border-neutral-200 bg-white">
+          <div className="p-6 md:p-8">
             {isEditing ? (
               <div className="space-y-8">
-                <div className="border-neutral-200 border-b pb-6">
-                  <label className="mb-3 block font-bold text-black text-xs uppercase tracking-widest">
-                    책 제목
-                  </label>
+                <div className="border-b border-neutral-100 pb-6">
+                  <label className="mb-2 block text-xs font-medium text-neutral-500">책 제목</label>
                   <input
                     type="text"
                     value={tempTitle}
                     onChange={(e) => setTempTitle(e.target.value)}
                     placeholder="책 제목을 입력해 주세요..."
-                    className="w-full border-neutral-200 border-b-2 bg-transparent py-2 font-bold text-2xl text-black transition-colors placeholder:text-neutral-300 focus:border-black focus:outline-none"
+                    className="w-full bg-transparent py-1 text-xl font-medium text-foreground placeholder:text-neutral-300 focus:outline-none"
                   />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {tempTOC.map((chapter, idx) => (
-                    <div key={idx} className="group flex items-center gap-4">
-                      <span className="w-6 font-bold text-neutral-400">
+                    <div key={idx} className="group flex items-center gap-3">
+                      <span className="w-6 text-sm text-neutral-400">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
                       <input
@@ -178,50 +168,48 @@ export default function TOCReviewStep() {
                         value={chapter}
                         onChange={(e) => updateChapter(idx, e.target.value)}
                         placeholder={`${idx + 1}장 제목을 입력해 주세요...`}
-                        className="flex-1 border-neutral-200 border-b bg-transparent py-2 font-medium text-black text-lg transition-colors placeholder:text-neutral-300 focus:border-black focus:outline-none"
+                        className="flex-1 bg-transparent py-1.5 text-base text-foreground placeholder:text-neutral-300 focus:outline-none focus:border-b focus:border-neutral-300 transition-colors"
                       />
                       <button
                         type="button"
                         onClick={() => removeChapter(idx)}
-                        className="p-2 text-neutral-400 opacity-0 transition-colors hover:text-red-600 group-hover:opacity-100"
+                        className="p-1.5 text-neutral-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
                         title="챕터 삭제"
                       >
-                        <Trash2 size={16} strokeWidth={2.5} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   ))}
                   <button
                     type="button"
                     onClick={addChapter}
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-neutral-200 border-dashed py-4 font-bold text-neutral-500 text-xs uppercase tracking-widest transition-all hover:border-black hover:text-black"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-neutral-200 py-3 text-sm text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-foreground"
                   >
-                    <Plus size={16} strokeWidth={3} />
+                    <Plus size={14} />
                     챕터 추가
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-8">
-                <div className="border-neutral-200 border-b pb-6 text-center">
-                  <h2 className="font-extrabold text-3xl text-black tracking-tight">
+                <div className="border-b border-neutral-100 pb-6">
+                  <h2 className="text-xl font-medium text-foreground">
                     {bookTitle || "제목 없는 책"}
                   </h2>
                 </div>
                 {tableOfContents?.length > 0 ? (
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     {tableOfContents.map((chapter, idx) => (
-                      <div key={idx} className="group flex items-baseline gap-5">
-                        <span className="font-bold font-mono text-neutral-400 text-sm">
+                      <div key={idx} className="flex gap-4">
+                        <span className="font-mono text-sm text-neutral-400 pt-0.5">
                           {String(idx + 1).padStart(2, "0")}
                         </span>
-                        <span className="font-bold text-black text-lg leading-relaxed">
-                          {chapter}
-                        </span>
+                        <span className="text-base text-foreground leading-relaxed">{chapter}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-16 text-center font-medium text-neutral-400 italic">
+                  <div className="py-12 text-center text-sm text-neutral-400">
                     아직 생성된 챕터가 없습니다.
                   </div>
                 )}
@@ -230,42 +218,37 @@ export default function TOCReviewStep() {
           </div>
         </div>
 
-        {/* Bottom Actions Section */}
         {!isEditing && (
-          <div className="space-y-8">
+          <div className="space-y-6 pt-4 border-t border-neutral-100">
             {saveError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">
+              <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-600">
                 {saveError}
               </div>
             )}
-            <div className="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
-              <Button
-                variant="outline"
-                onClick={handleRegenerate}
-                disabled={isRegenerating}
-                className="h-12 w-full gap-2 rounded-full border-2 border-neutral-200 bg-white px-6 font-bold text-black hover:border-black hover:bg-white sm:w-auto"
-              >
-                <RefreshCw
-                  size={14}
-                  strokeWidth={3}
-                  className={isRegenerating ? "animate-spin" : ""}
-                />
-                다시 생성
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleStartWriting}
-                disabled={isRegenerating || isSaving || tableOfContents.length === 0}
-                className="h-12 w-full gap-2 rounded-full px-8 font-bold shadow-none sm:w-auto"
-              >
-                <FileText size={14} strokeWidth={3} />
-                {isSaving ? "저장 중" : "시작"}
-              </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-neutral-500">
+                시작을 누르면 각 챕터의 전체 본문 생성을 시작합니다.
+              </p>
+              <div className="flex w-full sm:w-auto items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleRegenerate}
+                  disabled={isRegenerating}
+                  className="w-full sm:w-auto px-6"
+                >
+                  <RefreshCw size={14} className={cn("mr-2", isRegenerating && "animate-spin")} />
+                  다시 생성
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleStartWriting}
+                  disabled={isRegenerating || isSaving || tableOfContents.length === 0}
+                  className="w-full sm:w-auto px-8"
+                >
+                  {isSaving ? "저장 중..." : "시작"}
+                </Button>
+              </div>
             </div>
-            <p className="text-center font-bold text-[11px] text-neutral-400 tracking-wide">
-              <span className="text-black">시작</span>을 누르면 각 챕터의 전체
-              본문 생성을 시작합니다.
-            </p>
           </div>
         )}
       </div>

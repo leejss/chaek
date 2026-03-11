@@ -19,14 +19,13 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center px-5 py-2.5 text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-md";
 
   const variants = {
-    primary: "bg-black text-white hover:bg-neutral-800 focus:ring-neutral-500 rounded-full",
-    secondary: "bg-neutral-100 text-black hover:bg-neutral-200 focus:ring-neutral-400 rounded-full",
-    outline:
-      "border border-neutral-200 text-black hover:bg-neutral-50 focus:ring-neutral-400 bg-white rounded-full",
-    ghost: "text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-full",
+    primary: "bg-neutral-900 text-white hover:bg-neutral-800",
+    secondary: "bg-neutral-100 text-neutral-900 hover:bg-neutral-200",
+    outline: "border border-neutral-200 bg-transparent text-neutral-900 hover:bg-neutral-50",
+    ghost: "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50",
   };
 
   const Component = asChild ? Slot : "button";
@@ -56,7 +55,7 @@ const Button: React.FC<ButtonProps> = ({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          Processing...
+          {children}
         </span>
       ) : (
         children
