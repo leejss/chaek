@@ -24,40 +24,41 @@ export default function SourceInputStep() {
   };
 
   return (
-    <div >
-      <div className="mb-4">
-        <h2 className="text-2xl font-medium tracking-tight text-foreground">아이디어</h2>
-        <p className="text-sm text-neutral-500">
-          아래에 책 아이디어를 넣어 주세요. AI가 이를 바탕으로 일관된 책 구조를 정리해 드립니다.
+    <div className="space-y-20">
+      <div className="space-y-4">
+        <h2 className="text-4xl font-semibold tracking-tight text-neutral-900 md:text-5xl">아이디어 입력</h2>
+        <p className="text-neutral-500">
+          책으로 만들고 싶은 생각이나 원문 텍스트를 자유롭게 붙여 넣어 주세요.
         </p>
       </div>
 
-      <div className="relative">
+      <div className="relative pt-4">
         <textarea
-          className="h-96 w-full resize-none rounded-md border border-neutral-200 bg-white p-6 text-base text-foreground leading-relaxed placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none focus:ring-0"
-          placeholder="여기에 원문 텍스트를 붙여 넣어 주세요..."
+          className="h-96 w-full resize-none border-0 border-b border-neutral-200 bg-transparent py-4 text-xl text-neutral-900 leading-relaxed placeholder:text-neutral-300 focus:border-neutral-900 focus:outline-none focus:ring-0"
+          placeholder="여기에 텍스트를 입력해 주세요..."
           value={sourceText || ""}
           onChange={(e) => setBookField("sourceText", e.target.value)}
         />
-        <div className="absolute right-4 bottom-4 rounded text-xs font-medium text-neutral-400 bg-white px-2 py-1">
+        <div className="absolute right-0 bottom-4 text-xs font-semibold tracking-wide text-neutral-300 pointer-events-none bg-white py-1">
           {sourceText?.length || 0}자
         </div>
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div className="text-sm font-medium text-red-500">
           {error}
         </div>
       )}
 
-      <div className="flex justify-end pt-4 border-t border-neutral-100">
+      <div className="flex justify-end pt-12">
         <Button
+          variant="ghost" 
           onClick={handleGenerateTOC}
           disabled={!sourceText?.trim() || isLoading}
           isLoading={isLoading}
-          className="w-full md:w-auto px-8"
+          className="px-0 py-2 h-auto text-sm tracking-wide font-medium hover:bg-transparent hover:text-neutral-500"
         >
-          목차 생성
+          {isLoading ? "목차 생성 중..." : "목차 생성하기 ->"}
         </Button>
       </div>
     </div>

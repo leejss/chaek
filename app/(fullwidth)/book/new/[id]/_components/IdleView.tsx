@@ -30,38 +30,56 @@ export default function IdleView({
   onStart,
 }: IdleViewProps) {
   return (
-    <div className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-4 text-center font-bold text-4xl text-black md:mb-6 md:text-5xl">
-        {bookTitle}
-      </h1>
+    <div className="mx-auto max-w-3xl px-8 py-20 md:py-32 bg-white">
+      <div className="mb-24 md:mb-32">
+        <h1 className="mb-8 text-4xl font-semibold tracking-tight text-neutral-900 md:text-5xl md:leading-tight">
+          {bookTitle}
+        </h1>
+        <div className="mt-12 md:mt-16">
+          <Button
+            variant="ghost"
+            onClick={onStart}
+            disabled={isProcessing}
+            className="h-10 px-0 text-sm tracking-wide hover:bg-transparent hover:text-neutral-900 text-neutral-500 transition-colors"
+          >
+            {isDeductingCredits
+              ? "처리 중..."
+              : isProcessing
+                ? "작성 중..."
+                : isResumable
+                  ? "작성 이어서 하기 ->"
+                  : "작성 시작하기 ->"}
+          </Button>
+          {error && (
+            <p className="mt-4 text-sm font-medium text-red-500">
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
 
-      <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-center font-bold text-lg text-neutral-800 md:text-2xl">
-          목차
+      <div>
+        <h3 className="mb-10 text-xs font-semibold tracking-wide text-neutral-400">
+          목차 정보
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-6">
           {tableOfContents.map((chapter, idx) => {
             const isFinished = chapters.some((c) => c.chapterNumber === idx + 1);
             return (
               <div
                 key={idx}
                 className={cn(
-                  "flex items-baseline gap-4 rounded-lg p-3 text-base transition-colors",
-                  isFinished ? "bg-green-50" : "",
+                  "flex items-start gap-6 text-base transition-opacity duration-300",
+                  !isFinished && "opacity-60",
                 )}
               >
-                <span
-                  className={cn(
-                    "w-8 text-right font-bold text-base md:text-lg",
-                    isFinished ? "text-green-600" : "text-neutral-800",
-                  )}
-                >
-                  {isFinished ? "✓" : `${String(idx + 1).padStart(2, "0")}.`}
+                <span className="w-6 shrink-0 text-left font-medium text-neutral-400">
+                  {String(idx + 1).padStart(2, "0")}
                 </span>
                 <span
                   className={cn(
-                    "font-bold text-lg md:text-xl",
-                    isFinished ? "text-green-800" : "text-black",
+                    "font-medium leading-relaxed",
+                    isFinished ? "text-neutral-900" : "text-neutral-600",
                   )}
                 >
                   {chapter}
@@ -71,31 +89,6 @@ export default function IdleView({
           })}
         </div>
       </div>
-
-      <div className="mt-8">
-        <Button
-          onClick={onStart}
-          disabled={isProcessing}
-          className={cn(
-            "h-16 w-full rounded-full font-bold text-xl md:text-2xl",
-            isResumable && "bg-black text-white hover:bg-neutral-800",
-          )}
-        >
-          {isDeductingCredits
-            ? "처리 중..."
-            : isProcessing
-              ? "처리 중..."
-              : isResumable
-                ? "이어서 작성하기"
-                : "작성 시작하기"}
-        </Button>
-      </div>
-
-      {error && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-center font-bold text-red-700">
-          {error}
-        </div>
-      )}
     </div>
   );
 }

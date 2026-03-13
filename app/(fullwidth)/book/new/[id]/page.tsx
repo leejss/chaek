@@ -52,7 +52,7 @@ async function BookGenerationContent({ params }: PageProps) {
     isComplete: true,
   }));
 
-  const { title, id, status, tableOfContents } = bookData;
+  const { title, id, status, generationVersion, tableOfContents } = bookData;
 
   return (
     <div className="min-h-full w-full">
@@ -60,6 +60,7 @@ async function BookGenerationContent({ params }: PageProps) {
         bookId={id}
         bookTitle={title}
         bookStatus={status}
+        initialGenerationVersion={generationVersion}
         tableOfContents={tableOfContents ?? []}
         chapters={initialChapters}
       />

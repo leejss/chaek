@@ -12,9 +12,9 @@ import { bookNewStepPath, ROUTES } from "@/lib/routes";
 import { cn } from "@/utils";
 
 const STEPS_CONFIG: { id: TocGenerationStep; label: string }[] = [
-  { id: "settings", label: "설정" },
-  { id: "source_input", label: "아이디어 입력" },
-  { id: "toc_review", label: "리뷰" },
+  { id: "settings", label: "01. 설정" },
+  { id: "source_input", label: "02. 아이디어" },
+  { id: "toc_review", label: "03. 검토" },
 ];
 
 export default function StepNavigation() {
@@ -52,46 +52,44 @@ export default function StepNavigation() {
   };
 
   return (
-    <div className="sticky top-0 z-10 py-2">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="group -ml-2 flex items-center px-2 py-1.5 font-medium text-neutral-500 text-sm transition-colors hover:text-neutral-900"
-        >
-          <ChevronLeft
-            size={18}
-            strokeWidth={2.5}
-            className="mr-1 transition-transform group-hover:-translate-x-0.5"
-          />
-          뒤로가기
-        </button>
+    <div className="flex items-center justify-between pb-8">
+      <button
+        type="button"
+        onClick={handleBack}
+        className="group flex items-center font-medium text-neutral-400 text-xs tracking-wide transition-colors hover:text-neutral-900"
+      >
+        <ChevronLeft
+          size={14}
+          strokeWidth={2}
+          className="mr-1 transition-transform group-hover:-translate-x-0.5"
+        />
+        뒤로가기
+      </button>
 
-        <div className="flex items-center gap-6">
-          {STEPS_CONFIG.map((step) => {
-            const isCompleted = isStepCompleted(step.id, tableOfContents);
-            const isCurrent = currentStep === step.id;
-            const isClickable = canAccessStep(step.id, tableOfContents);
+      <div className="flex items-center gap-6">
+        {STEPS_CONFIG.map((step) => {
+          const isCompleted = isStepCompleted(step.id, tableOfContents);
+          const isCurrent = currentStep === step.id;
+          const isClickable = canAccessStep(step.id, tableOfContents);
 
-            return (
-              <div key={step.id} className="flex items-center">
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(step.id)}
-                  disabled={!isClickable}
-                  className={cn("text-sm transition-colors", {
-                    "font-medium text-neutral-900": isCurrent,
-                    "font-normal text-neutral-400 hover:text-neutral-900":
-                      isCompleted && !isCurrent,
-                    "cursor-not-allowed font-normal text-neutral-300": !isCurrent && !isCompleted,
-                  })}
-                >
-                  {step.label}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+          return (
+            <div key={step.id} className="flex items-center">
+              <button
+                type="button"
+                onClick={() => handleStepClick(step.id)}
+                disabled={!isClickable}
+                className={cn("text-xs tracking-wide transition-colors", {
+                  "font-semibold text-neutral-900": isCurrent,
+                  "font-medium text-neutral-400 hover:text-neutral-900":
+                    isCompleted && !isCurrent,
+                  "cursor-not-allowed font-medium text-neutral-200": !isCurrent && !isCompleted,
+                })}
+              >
+                {step.label}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Edit2, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Edit2, FileText, Plus, RefreshCw, Trash2, ArrowRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/Button";
@@ -107,147 +107,141 @@ export default function TOCReviewStep() {
   };
 
   return (
-    <div className="space-y-12">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-medium tracking-tight text-foreground">구성 검토</h1>
-        <p className="text-sm text-neutral-500">
-          책 구성을 검토하고 다듬어 보세요. 챕터 제목을 수정하거나 전체 목차를 다시 생성할 수
-          있습니다.
+    <div className="space-y-32">
+      <div className="space-y-4">
+        <h2 className="text-4xl font-semibold tracking-tight text-neutral-900 md:text-5xl">구성 검토</h2>
+        <p className="text-neutral-500">
+          생성된 책의 구조를 검토합니다. 제목과 목차를 편집하거나 처음부터 다시 생성할 수 있습니다.
         </p>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-foreground">챕터 개요</h2>
-          <div className="flex items-center gap-2">
+      <div className="space-y-16">
+        <div className="flex items-end justify-between border-b border-neutral-100 pb-4">
+          <h2 className="text-xs font-semibold tracking-wide text-neutral-400">목차 개요</h2>
+          <div className="flex items-center gap-4">
             {isEditing ? (
               <>
-                <Button variant="ghost" onClick={handleCancel} className="h-8 px-3 text-xs">
+                <button type="button" onClick={handleCancel} className="text-xs tracking-wide text-neutral-400 hover:text-neutral-900 font-semibold transition-colors">
                   취소
-                </Button>
-                <Button variant="primary" onClick={handleSave} className="h-8 px-3 text-xs gap-1.5">
-                  <Check size={14} />
+                </button>
+                <button type="button" onClick={handleSave} className="text-xs tracking-wide text-neutral-900 hover:text-neutral-600 font-semibold transition-colors flex items-center gap-1">
                   저장
-                </Button>
+                </button>
               </>
             ) : (
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 onClick={handleEditStart}
-                className="h-8 px-3 text-xs gap-1.5"
+                className="text-xs tracking-wide text-neutral-400 hover:text-neutral-900 font-semibold transition-colors flex items-center gap-1"
               >
-                <Edit2 size={12} />
-                편집
-              </Button>
+                편집하기
+              </button>
             )}
           </div>
         </div>
 
-        <div className="rounded-md border border-neutral-200 bg-white">
-          <div className="p-6 md:p-8">
-            {isEditing ? (
-              <div className="space-y-8">
-                <div className="border-b border-neutral-100 pb-6">
-                  <label className="mb-2 block text-xs font-medium text-neutral-500">책 제목</label>
-                  <input
-                    type="text"
-                    value={tempTitle}
-                    onChange={(e) => setTempTitle(e.target.value)}
-                    placeholder="책 제목을 입력해 주세요..."
-                    className="w-full bg-transparent py-1 text-xl font-medium text-foreground placeholder:text-neutral-300 focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-3">
-                  {tempTOC.map((chapter, idx) => (
-                    <div key={idx} className="group flex items-center gap-3">
-                      <span className="w-6 text-sm text-neutral-400">
+        <div className="bg-white">
+          {isEditing ? (
+            <div className="space-y-16">
+              <div className="space-y-4">
+                <label className="block text-xs font-semibold tracking-wide text-neutral-400">책 제목</label>
+                <input
+                  type="text"
+                  value={tempTitle}
+                  onChange={(e) => setTempTitle(e.target.value)}
+                  placeholder="제목을 입력해 주세요..."
+                  className="w-full bg-transparent py-2 border-0 border-b border-neutral-200 text-3xl font-semibold tracking-tight text-neutral-900 placeholder:text-neutral-300 focus:outline-none focus:border-neutral-900 focus:ring-0"
+                />
+              </div>
+              <div className="space-y-6">
+                {tempTOC.map((chapter, idx) => (
+                  <div key={idx} className="group flex items-start gap-6">
+                    <span className="w-8 shrink-0 text-left font-medium text-neutral-400 pt-1.5">
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <input
+                      type="text"
+                      value={chapter}
+                      onChange={(e) => updateChapter(idx, e.target.value)}
+                      placeholder={`${idx + 1}장 제목 입력...`}
+                      className="flex-1 bg-transparent py-1 border-0 border-b border-neutral-200 text-xl font-medium text-neutral-900 placeholder:text-neutral-300 focus:outline-none focus:border-neutral-900 focus:ring-0 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeChapter(idx)}
+                      className="text-neutral-300 hover:text-red-500 transition-colors pt-2"
+                      title="챕터 삭제"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addChapter}
+                  className="mt-8 flex items-center gap-2 text-xs tracking-wide font-semibold text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  <Plus size={12} />
+                  챕터 추가
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-16">
+              <div className="space-y-4">
+                <h2 className="text-xs font-semibold tracking-wide text-neutral-400">책 제목</h2>
+                <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">
+                  {bookTitle || "제목 없는 책"}
+                </h1>
+              </div>
+              {tableOfContents?.length > 0 ? (
+                <div className="space-y-6">
+                  {tableOfContents.map((chapter, idx) => (
+                    <div key={idx} className="flex gap-6 items-start">
+                      <span className="w-8 shrink-0 text-left font-medium text-neutral-400 pt-0.5">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
-                      <input
-                        type="text"
-                        value={chapter}
-                        onChange={(e) => updateChapter(idx, e.target.value)}
-                        placeholder={`${idx + 1}장 제목을 입력해 주세요...`}
-                        className="flex-1 bg-transparent py-1.5 text-base text-foreground placeholder:text-neutral-300 focus:outline-none focus:border-b focus:border-neutral-300 transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeChapter(idx)}
-                        className="p-1.5 text-neutral-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-                        title="챕터 삭제"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <span className="text-xl font-medium text-neutral-900 leading-relaxed">{chapter}</span>
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={addChapter}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-neutral-200 py-3 text-sm text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-foreground"
-                  >
-                    <Plus size={14} />
-                    챕터 추가
-                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                <div className="border-b border-neutral-100 pb-6">
-                  <h2 className="text-xl font-medium text-foreground">
-                    {bookTitle || "제목 없는 책"}
-                  </h2>
+              ) : (
+                <div className="text-neutral-400 py-12">
+                  아직 목차가 없습니다.
                 </div>
-                {tableOfContents?.length > 0 ? (
-                  <div className="space-y-5">
-                    {tableOfContents.map((chapter, idx) => (
-                      <div key={idx} className="flex gap-4">
-                        <span className="font-mono text-sm text-neutral-400 pt-0.5">
-                          {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <span className="text-base text-foreground leading-relaxed">{chapter}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-sm text-neutral-400">
-                    아직 생성된 챕터가 없습니다.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {!isEditing && (
-          <div className="space-y-6 pt-4 border-t border-neutral-100">
+          <div className="pt-24">
             {saveError && (
-              <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              <div className="mb-8 font-medium text-sm text-red-500">
                 {saveError}
               </div>
             )}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-neutral-500">
-                시작을 누르면 각 챕터의 전체 본문 생성을 시작합니다.
-              </p>
-              <div className="flex w-full sm:w-auto items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleRegenerate}
-                  disabled={isRegenerating}
-                  className="w-full sm:w-auto px-6"
-                >
-                  <RefreshCw size={14} className={cn("mr-2", isRegenerating && "animate-spin")} />
-                  다시 생성
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleStartWriting}
-                  disabled={isRegenerating || isSaving || tableOfContents.length === 0}
-                  className="w-full sm:w-auto px-8"
-                >
-                  {isSaving ? "저장 중..." : "시작"}
-                </Button>
-              </div>
+            
+            <div className="flex flex-col gap-8 md:flex-row md:items-end justify-between border-t border-neutral-100 pt-10">
+              <button
+                 type="button"
+                 onClick={handleRegenerate}
+                 disabled={isRegenerating}
+                 className="flex items-center text-xs font-semibold tracking-wide text-neutral-400 hover:text-neutral-900 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={12} className={cn("mr-2", isRegenerating && "animate-spin")} />
+                목차 다시 생성하기
+              </button>
+
+              <Button
+                variant="ghost"
+                onClick={handleStartWriting}
+                disabled={isRegenerating || isSaving || tableOfContents.length === 0}
+                className="group px-0 h-auto py-2 text-sm tracking-wide font-semibold text-neutral-900 hover:bg-transparent hover:text-neutral-600 disabled:opacity-50"
+              >
+                {isSaving ? "저장 중..." : "작성 시작하기"}
+                {!isSaving && <ArrowRight size={14} className="ml-2 transition-transform duration-300 group-hover:translate-x-1" />}
+              </Button>
             </div>
           </div>
         )}

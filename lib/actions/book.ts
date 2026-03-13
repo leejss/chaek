@@ -65,6 +65,7 @@ export async function getBookWithValidation(bookId: string, userId: string) {
   return {
     ...book,
     status: state?.status,
+    generationVersion: state?.generationVersion ?? 1,
     currentChapterIndex: state?.currentChapterIndex ?? null,
     error: state?.error ?? null,
     generationSettings: parsed.data,

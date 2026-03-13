@@ -89,10 +89,10 @@ function CreateBookContent() {
   if (isInitialTocGeneration) {
     return (
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="px-8 py-20 md:py-32">
           <AILoadingStep
-            title="책 구조 생성 중"
-            description="콘텐츠를 분석해 목차를 만들고 있습니다..."
+            title="GENERATING STRUCTURE"
+            description="Analyzing content to build the optimal table of contents..."
           />
         </div>
       </div>
@@ -101,7 +101,7 @@ function CreateBookContent() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="px-8 py-16 md:py-24">
         {currentStep === "settings" && <SettingsStep />}
         {currentStep === "source_input" && <SourceInputStep />}
         {currentStep === "toc_review" && <TOCReviewStep />}
