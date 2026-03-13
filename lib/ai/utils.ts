@@ -26,22 +26,18 @@ export async function handleGenerationError(params: {
     if (shouldMarkFailed) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-      await db.update(books).set({ updatedAt: new Date() }).where(eq(books.id, bookId));
-
       await db
         .insert(bookGenerationStates)
         .values({
           bookId,
           status: "failed",
           error: errorMessage,
-          updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: [bookGenerationStates.bookId],
           set: {
             status: "failed",
             error: errorMessage,
-            updatedAt: new Date(),
           },
         });
     }

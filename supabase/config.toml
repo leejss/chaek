@@ -1,0 +1,2 @@
+[functions.book-generation-dispatcher]
+verify_jwt = false

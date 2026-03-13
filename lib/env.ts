@@ -21,11 +21,11 @@ const aiSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required')
 });
 
-const awsQueueSchema = z.object({
-  AWS_REGION: z.string().min(1, 'AWS_REGION is required'),
-  AWS_SQS_BOOK_GENERATION_QUEUE_URL: z
-    .string()
-    .url('AWS_SQS_BOOK_GENERATION_QUEUE_URL must be a valid URL')
+const supabaseSchema = z.object({
+  SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
+  BOOK_GENERATION_JOB_SECRET: z.string().min(1, 'BOOK_GENERATION_JOB_SECRET is required'),
+  APP_URL: z.string().url('APP_URL must be a valid URL')
 });
 
 const clientSchema = z.object({
@@ -36,23 +36,23 @@ const appServerSchema = runtimeSchema
   .extend(databaseSchema.shape)
   .extend(authSchema.shape)
   .extend(aiSchema.shape)
-  .extend(awsQueueSchema.shape)
+  .extend(supabaseSchema.shape)
   .extend(clientSchema.shape);
 
 const workerServerSchema = runtimeSchema
   .extend(databaseSchema.shape)
   .extend(aiSchema.shape)
-  .extend(awsQueueSchema.shape);
+  .extend(supabaseSchema.shape);
 
 const databaseEnvSchema = runtimeSchema.extend(databaseSchema.shape);
 const aiEnvSchema = aiSchema;
-const awsQueueEnvSchema = awsQueueSchema;
+const supabaseEnvSchema = supabaseSchema;
 
 type AppServerEnv = z.infer<typeof appServerSchema>;
 type WorkerServerEnv = z.infer<typeof workerServerSchema>;
 type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 type AiEnv = z.infer<typeof aiEnvSchema>;
-type AwsQueueEnv = z.infer<typeof awsQueueEnvSchema>;
+type SupabaseEnv = z.infer<typeof supabaseEnvSchema>;
 type ClientEnv = z.infer<typeof clientSchema>;
 
 const isServer = () => typeof window === 'undefined';
@@ -166,9 +166,9 @@ export const aiEnv = isServer()
   ? parseServerEnv(aiEnvSchema, 'ai')
   : ({} as AiEnv);
 
-export const awsQueueEnv = isServer()
-  ? parseServerEnv(awsQueueEnvSchema, 'aws queue')
-  : ({} as AwsQueueEnv);
+export const supabaseEnv = isServer()
+  ? parseServerEnv(supabaseEnvSchema, 'supabase')
+  : ({} as SupabaseEnv);
 
 export const clientEnv = new Proxy({} as ClientEnv, {
   get(_target, property) {

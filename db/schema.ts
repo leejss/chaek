@@ -34,7 +34,6 @@ export type ChapterStatus = (typeof chapterStatusEnum.enumValues)[number];
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   googleSub: text("google_sub").notNull().unique(),
 });
 
@@ -48,7 +47,6 @@ export const refreshTokens = pgTable(
     tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     replacedByTokenId: uuid("replaced_by_token_id"),
   }),
   (table) => [
@@ -76,14 +74,9 @@ export const books = pgTable(
     tableOfContents: text("table_of_contents").array(),
     sourceText: text("source_text"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("books_user_id_idx").on(table.userId),
-    index("books_updated_at_idx").on(table.updatedAt),
   ],
 );
 
@@ -94,9 +87,6 @@ export const publishedBooks = pgTable(
     bookId: uuid("book_id")
       .notNull()
       .references(() => books.id, { onDelete: "cascade" }),
-    publisherUserId: uuid("publisher_user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     content: text("content").notNull().default(""),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
@@ -104,7 +94,6 @@ export const publishedBooks = pgTable(
   (table) => [
     uniqueIndex("published_books_book_id_uq").on(table.bookId),
     index("published_books_published_at_idx").on(table.publishedAt),
-    index("published_books_publisher_user_id_idx").on(table.publisherUserId),
   ],
 );
 
@@ -123,18 +112,10 @@ export const bookGenerationStates = pgTable(
     generationSettings: jsonb("generation_settings"),
     bookPlan: jsonb("book_plan"),
     startedAt: timestamp("started_at", { withTimezone: true }),
-    completedAt: timestamp("completed_at", { withTimezone: true }),
-    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("book_generation_states_status_idx").on(table.status),
     index("book_generation_states_generation_version_idx").on(table.generationVersion),
-    index("book_generation_states_updated_at_idx").on(table.updatedAt),
   ],
 );
 
@@ -150,11 +131,6 @@ export const chapters = pgTable(
     content: text("content").notNull().default(""),
     outline: jsonb("outline"),
     status: chapterStatusEnum("status").notNull().default("pending"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
   },
   (table) => [
     uniqueIndex("chapters_book_id_chapter_number_uq").on(table.bookId, table.chapterNumber),

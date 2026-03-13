@@ -64,13 +64,11 @@ export async function generatePlanAction(params: GeneratePlanParams): Promise<Pl
     .values({
       bookId,
       bookPlan: parsedPlan,
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [bookGenerationStates.bookId],
       set: {
         bookPlan: parsedPlan,
-        updatedAt: new Date(),
       },
     });
 

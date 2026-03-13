@@ -3,13 +3,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { bookGenerationStates, books } from "@/db/schema";
 import { bookGenerationJobSchema } from "@/lib/ai/jobs/bookGeneration";
+import { enqueueBookGenerationJob, triggerBookGenerationDispatcher } from "@/lib/ai/queue";
 import { BookGenerationSettingsSchema } from "@/lib/ai/schemas/settings";
-import { enqueueBookGenerationJob } from "@/lib/ai/sqs";
 import { authenticate } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
 import { normalizeToHttpError } from "@/utils";
-
-export const runtime = "nodejs";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -33,7 +31,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     if (!state) {
       throw new HttpError(409, "Book generation state not found");
     }
-
     if (state.status === "completed") {
       throw new HttpError(409, "Book already completed");
     }
@@ -61,9 +58,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         generationSettings: parsedSettings.data,
         attemptCount: 0,
         startedAt: null,
-        completedAt: null,
-        cancelledAt: null,
-        updatedAt: new Date(),
       })
       .where(eq(bookGenerationStates.bookId, bookId))
       .returning({ generationVersion: bookGenerationStates.generationVersion });
@@ -73,7 +67,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const generationVersion = updatedState.generationVersion;
-
     const job = bookGenerationJobSchema.parse({
       bookId,
       generationVersion,
@@ -81,6 +74,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     });
 
     await enqueueBookGenerationJob(job);
+    await triggerBookGenerationDispatcher();
 
     return NextResponse.json(
       {

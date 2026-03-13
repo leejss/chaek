@@ -277,7 +277,6 @@ export async function publishBookAction(bookId: string) {
     .insert(publishedBooks)
     .values({
       bookId: parsed.bookId,
-      publisherUserId: userId,
       title: row.book.title,
       content: content || row.book.content,
     })

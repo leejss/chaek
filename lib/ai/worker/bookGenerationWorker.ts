@@ -7,13 +7,13 @@ import type { BookGenerationJob } from "@/lib/ai/jobs/bookGeneration";
 import { generateDraftTextDev } from "@/lib/ai/prompts/draftDev";
 import { generateDraftText } from "@/lib/ai/prompts/draftText";
 import { generateOutline } from "@/lib/ai/prompts/outline";
+import { enqueueBookGenerationJob, triggerBookGenerationDispatcher } from "@/lib/ai/queue";
 import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
 import { type PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
 import {
   type BookGenerationSettings,
   BookGenerationSettingsSchema,
 } from "@/lib/ai/schemas/settings";
-import { enqueueBookGenerationJob } from "@/lib/ai/sqs";
 
 type BookRow = typeof books.$inferSelect;
 type BookGenerationStateRow = typeof bookGenerationStates.$inferSelect;
@@ -127,7 +127,6 @@ async function markGenerationStarted(job: BookGenerationJob, state: BookGenerati
       status: "generating",
       startedAt,
       attemptCount,
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [bookGenerationStates.bookId],
@@ -135,7 +134,6 @@ async function markGenerationStarted(job: BookGenerationJob, state: BookGenerati
         status: "generating",
         startedAt,
         attemptCount,
-        updatedAt: new Date(),
       },
     });
 }
@@ -146,13 +144,11 @@ async function persistBookPlan(bookId: string, bookPlan: PlanOutput) {
     .values({
       bookId,
       bookPlan,
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [bookGenerationStates.bookId],
       set: {
         bookPlan,
-        updatedAt: new Date(),
       },
     });
 }
@@ -222,7 +218,6 @@ async function markBookCompleted(bookId: string, tocLength: number, chapterRows:
       .update(books)
       .set({
         content: fullContent,
-        updatedAt: new Date(),
       })
       .where(eq(books.id, bookId));
 
@@ -234,8 +229,6 @@ async function markBookCompleted(bookId: string, tocLength: number, chapterRows:
         currentChapterIndex: tocLength,
         currentSectionIndex: null,
         error: null,
-        completedAt: new Date(),
-        updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: [bookGenerationStates.bookId],
@@ -244,8 +237,6 @@ async function markBookCompleted(bookId: string, tocLength: number, chapterRows:
           currentChapterIndex: tocLength,
           currentSectionIndex: null,
           error: null,
-          completedAt: new Date(),
-          updatedAt: new Date(),
         },
       });
   });
@@ -281,14 +272,12 @@ async function updateSectionProgress(bookId: string, chapterNumber: number, sect
       bookId,
       currentChapterIndex: chapterNumber,
       currentSectionIndex: sectionIndex + 1,
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [bookGenerationStates.bookId],
       set: {
         currentChapterIndex: chapterNumber,
         currentSectionIndex: sectionIndex + 1,
-        updatedAt: new Date(),
       },
     });
 }
@@ -335,7 +324,6 @@ async function saveCompletedChapter(params: {
         content: params.chapterContent,
         outline: params.outline,
         status: "completed",
-        updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: [chapters.bookId, chapters.chapterNumber],
@@ -344,7 +332,6 @@ async function saveCompletedChapter(params: {
           content: params.chapterContent,
           outline: params.outline,
           status: "completed",
-          updatedAt: new Date(),
         },
       });
 
@@ -356,7 +343,6 @@ async function saveCompletedChapter(params: {
         currentChapterIndex: params.chapterNumber,
         currentSectionIndex: null,
         error: null,
-        updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: [bookGenerationStates.bookId],
@@ -365,7 +351,6 @@ async function saveCompletedChapter(params: {
           currentChapterIndex: params.chapterNumber,
           currentSectionIndex: null,
           error: null,
-          updatedAt: new Date(),
         },
       });
   });
@@ -435,6 +420,8 @@ async function enqueueContinuation(job: BookGenerationJob) {
     generationVersion: job.generationVersion,
     trigger: "continue",
   });
+
+  await triggerBookGenerationDispatcher();
 }
 
 export async function runBookGenerationJob(job: BookGenerationJob) {

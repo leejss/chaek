@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const bookGenerationJobSchema = z.object({
-  bookId: z.string().uuid(),
+  bookId: z.string(),
   generationVersion: z.number().int().positive(),
   trigger: z.enum(["start", "continue"]),
 });

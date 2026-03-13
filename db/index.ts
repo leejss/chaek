@@ -17,3 +17,4 @@ const client =
 if (databaseEnv.NODE_ENV !== 'production') globalForDb.client = client;
 
 export const db = drizzle(client);
+export const dbClient = client;
