@@ -7,8 +7,8 @@ import type { BookGenerationJob } from "@/lib/ai/jobs/bookGeneration";
 import { generateDraftTextDev } from "@/lib/ai/prompts/draftDev";
 import { generateDraftText } from "@/lib/ai/prompts/draftText";
 import { generateOutline } from "@/lib/ai/prompts/outline";
-import { enqueueBookGenerationJob, triggerBookGenerationDispatcher } from "@/lib/ai/queue";
 import { generatePlan as generatePlanPrompt } from "@/lib/ai/prompts/plan";
+import { enqueueBookGenerationJob, triggerBookGenerationDispatcher } from "@/lib/ai/queue";
 import { type PlanOutput, PlanSchema } from "@/lib/ai/schemas/plan";
 import {
   type BookGenerationSettings,
@@ -177,7 +177,19 @@ async function ensureBookPlan(
 }
 
 async function loadChapterRows(bookId: string) {
-  return db.select().from(chapters).where(eq(chapters.bookId, bookId)).orderBy(asc(chapters.chapterNumber));
+  return db
+    .select()
+    .from(chapters)
+    .where(eq(chapters.bookId, bookId))
+    .orderBy(asc(chapters.chapterNumber));
+}
+
+function buildFullContent(chapterRows: ChapterRow[]) {
+  return chapterRows
+    .filter((chapter) => chapter.status === "completed")
+    .sort((left, right) => left.chapterNumber - right.chapterNumber)
+    .map((chapter) => chapter.content)
+    .join("\n\n");
 }
 
 function getCompletedChapterNumbers(chapterRows: ChapterRow[]) {
@@ -188,7 +200,10 @@ function getCompletedChapterNumbers(chapterRows: ChapterRow[]) {
   );
 }
 
-function getNextChapterContext(toc: string[], chapterRows: ChapterRow[]): NextChapterContext | null {
+function getNextChapterContext(
+  toc: string[],
+  chapterRows: ChapterRow[],
+): NextChapterContext | null {
   const completedNumbers = getCompletedChapterNumbers(chapterRows);
   const nextChapterNumber = getNextChapterNumber(toc.length, completedNumbers);
   if (!nextChapterNumber) {
@@ -207,11 +222,7 @@ function getNextChapterContext(toc: string[], chapterRows: ChapterRow[]): NextCh
 }
 
 async function markBookCompleted(bookId: string, tocLength: number, chapterRows: ChapterRow[]) {
-  const fullContent = chapterRows
-    .filter((chapter) => chapter.status === "completed")
-    .sort((left, right) => left.chapterNumber - right.chapterNumber)
-    .map((chapter) => chapter.content)
-    .join("\n\n");
+  const fullContent = buildFullContent(chapterRows);
 
   await db.transaction(async (tx) => {
     await tx
@@ -259,10 +270,12 @@ function isJobStillActive(
   current: { status: BookGenerationStateRow["status"]; generationVersion: number } | null,
   job: BookGenerationJob,
 ) {
-  return !!current &&
+  return (
+    !!current &&
     current.generationVersion === job.generationVersion &&
     current.status !== "cancel_requested" &&
-    current.status !== "cancelled";
+    current.status !== "cancelled"
+  );
 }
 
 async function updateSectionProgress(bookId: string, chapterNumber: number, sectionIndex: number) {
@@ -307,14 +320,15 @@ async function generateSectionContent(params: {
     : await generateDraftText(draftInput, params.context.languageModel);
 }
 
-async function saveCompletedChapter(params: {
+async function saveCompletedChapterAndMaybeComplete(params: {
   bookId: string;
   chapterNumber: number;
   chapterTitle: string;
   chapterContent: string;
   outline: Awaited<ReturnType<typeof generateOutline>>;
+  tocLength: number;
 }) {
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     await tx
       .insert(chapters)
       .values({
@@ -335,6 +349,47 @@ async function saveCompletedChapter(params: {
         },
       });
 
+    const chapterRows = await tx
+      .select()
+      .from(chapters)
+      .where(eq(chapters.bookId, params.bookId))
+      .orderBy(asc(chapters.chapterNumber));
+
+    const completedChapters = chapterRows.filter((chapter) => chapter.status === "completed").length;
+    const isBookCompleted = completedChapters >= params.tocLength;
+
+    if (isBookCompleted) {
+      // Product policy: once the final chapter has been fully generated and saved,
+      // the book is considered completed even if a late cancel request races in.
+      await tx
+        .update(books)
+        .set({
+          content: buildFullContent(chapterRows),
+        })
+        .where(eq(books.id, params.bookId));
+
+      await tx
+        .insert(bookGenerationStates)
+        .values({
+          bookId: params.bookId,
+          status: "completed",
+          currentChapterIndex: params.tocLength,
+          currentSectionIndex: null,
+          error: null,
+        })
+        .onConflictDoUpdate({
+          target: [bookGenerationStates.bookId],
+          set: {
+            status: "completed",
+            currentChapterIndex: params.tocLength,
+            currentSectionIndex: null,
+            error: null,
+          },
+        });
+
+      return { isBookCompleted: true as const };
+    }
+
     await tx
       .insert(bookGenerationStates)
       .values({
@@ -353,6 +408,8 @@ async function saveCompletedChapter(params: {
           error: null,
         },
       });
+
+    return { isBookCompleted: false as const };
   });
 }
 
@@ -403,15 +460,16 @@ async function generateNextChapter(
     chapterContent += `${sectionText}\n\n`;
   }
 
-  await saveCompletedChapter({
+  const saveResult = await saveCompletedChapterAndMaybeComplete({
     bookId: job.bookId,
     chapterNumber: nextChapter.chapterNumber,
     chapterTitle: nextChapter.chapterTitle,
     chapterContent,
     outline,
+    tocLength: context.toc.length,
   });
 
-  return { ok: true as const, skipped: false };
+  return { ok: true as const, skipped: false, completed: saveResult.isBookCompleted };
 }
 
 async function enqueueContinuation(job: BookGenerationJob) {
@@ -424,18 +482,28 @@ async function enqueueContinuation(job: BookGenerationJob) {
   await triggerBookGenerationDispatcher();
 }
 
+async function continueBookGeneration(job: BookGenerationJob) {
+  const current = await loadActiveGenerationState(job.bookId);
+  if (!isJobStillActive(current, job)) {
+    return { ok: true as const, skipped: true };
+  }
+
+  await enqueueContinuation(job);
+
+  return { ok: true as const, skipped: false };
+}
+
 export async function runBookGenerationJob(job: BookGenerationJob) {
   const loadedContext = await loadGenerationContext(job.bookId);
   if (!loadedContext) {
-    return { ok: true as const, skipped: true };
+    return { ok: true, skipped: true };
   }
 
   if (shouldSkipJob(loadedContext.state, job)) {
-    return { ok: true as const, skipped: true };
+    return { ok: true, skipped: true };
   }
 
   const context = buildValidatedContext(loadedContext);
-
   await markGenerationStarted(job, context.state);
 
   const bookPlan = await ensureBookPlan(job, context);
@@ -444,7 +512,7 @@ export async function runBookGenerationJob(job: BookGenerationJob) {
 
   if (!nextChapter) {
     await markBookCompleted(job.bookId, context.toc.length, chapterRows);
-    return { ok: true as const, skipped: false };
+    return { ok: true, skipped: false };
   }
 
   const result = await generateNextChapter(job, context, bookPlan, nextChapter);
@@ -452,7 +520,11 @@ export async function runBookGenerationJob(job: BookGenerationJob) {
     return result;
   }
 
-  await enqueueContinuation(job);
+  if (result.completed) {
+    // Completion takes precedence over a late cancel request after the final
+    // chapter has already been generated and persisted.
+    return { ok: true as const, skipped: false };
+  }
 
-  return { ok: true as const, skipped: false };
+  return continueBookGeneration(job);
 }

@@ -72,7 +72,7 @@ export default async function LibraryPage() {
           {userBooks.map((book) => (
             <Link
               key={book.id}
-              href={`/book/${book.id}`}
+              href={book.status === "completed" ? `/book/${book.id}` : `/book/new/${book.id}`}
               className="group flex items-center justify-between rounded-lg px-4 py-3 transition-colors hover:bg-neutral-100/50"
             >
               <div className="flex flex-col gap-1">

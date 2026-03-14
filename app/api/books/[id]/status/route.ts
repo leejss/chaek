@@ -7,6 +7,16 @@ import { HttpError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
+function buildFullContent(
+  chapterRows: Array<{ status: string; chapterNumber: number; content: string | null }>,
+) {
+  return chapterRows
+    .filter((chapter) => chapter.status === "completed")
+    .sort((left, right) => left.chapterNumber - right.chapterNumber)
+    .map((chapter) => chapter.content ?? "")
+    .join("\n\n");
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await authenticate(req);
@@ -44,13 +54,57 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       : chapterRows.length;
 
     const completedChapters = chapterRows.filter((c) => c.status === "completed").length;
+    // Product policy: if every chapter has been persisted, completion wins over any
+    // stale in-progress or late cancel status so the UI can converge to completed.
+    const shouldHealCompleted =
+      totalChapters > 0 && completedChapters >= totalChapters && status !== "completed";
+
+    let responseStatus = status;
+    let responseError = error;
+    let responseCurrentChapterIndex = currentChapterIndex;
+    let responseCurrentSectionIndex = currentSectionIndex;
+
+    if (shouldHealCompleted) {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(books)
+          .set({
+            content: buildFullContent(chapterRows),
+          })
+          .where(eq(books.id, bookId));
+
+        await tx
+          .insert(bookGenerationStates)
+          .values({
+            bookId,
+            status: "completed",
+            currentChapterIndex: totalChapters,
+            currentSectionIndex: null,
+            error: null,
+          })
+          .onConflictDoUpdate({
+            target: [bookGenerationStates.bookId],
+            set: {
+              status: "completed",
+              currentChapterIndex: totalChapters,
+              currentSectionIndex: null,
+              error: null,
+            },
+          });
+      });
+
+      responseStatus = "completed";
+      responseError = null;
+      responseCurrentChapterIndex = totalChapters;
+      responseCurrentSectionIndex = null;
+    }
 
     return NextResponse.json({
       ok: true,
-      status,
-      error,
-      currentChapterIndex,
-      currentSectionIndex,
+      status: responseStatus,
+      error: responseError,
+      currentChapterIndex: responseCurrentChapterIndex,
+      currentSectionIndex: responseCurrentSectionIndex,
       generationVersion,
       totalChapters,
       completedChapters,
