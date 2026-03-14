@@ -105,13 +105,13 @@ export default function GenerationView({
   }, [bookId]);
 
   useEffect(() => {
-    void refreshStatus();
+    refreshStatus();
   }, [refreshStatus]);
 
   useEffect(() => {
     if (status !== "generating" && status !== "waiting") return;
     const timer = window.setInterval(() => {
-      void refreshStatus();
+      refreshStatus();
     }, 3000);
     return () => window.clearInterval(timer);
   }, [refreshStatus, status]);
@@ -139,9 +139,7 @@ export default function GenerationView({
       setGenerationVersion(data.generationVersion ?? generationVersion);
       await refreshStatus();
     } catch (startError) {
-      setError(
-        startError instanceof Error ? startError.message : "작업을 시작하지 못했습니다.",
-      );
+      setError(startError instanceof Error ? startError.message : "작업을 시작하지 못했습니다.");
     } finally {
       setIsStarting(false);
     }
@@ -200,7 +198,13 @@ export default function GenerationView({
             disabled={isStarting || isWorking}
             className="h-9 px-4 text-xs tracking-wide"
           >
-            {isStarting ? "준비 중..." : status === "failed" ? "다시 시도" : isWorking ? "작성 중" : "작성 시작"}
+            {isStarting
+              ? "준비 중..."
+              : status === "failed"
+                ? "다시 시도"
+                : isWorking
+                  ? "작성 중"
+                  : "작성 시작"}
           </Button>
           <button
             type="button"
@@ -236,7 +240,9 @@ export default function GenerationView({
                 <h3
                   className={cn(
                     "text-lg font-medium tracking-tight",
-                    isActive || chapterStatus === "completed" ? "text-neutral-900" : "text-neutral-600",
+                    isActive || chapterStatus === "completed"
+                      ? "text-neutral-900"
+                      : "text-neutral-600",
                   )}
                 >
                   {String(chapterNumber).padStart(2, "0")}. {title}
