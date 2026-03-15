@@ -281,7 +281,7 @@ export default function BookView({
               </div>
             </div>
 
-            <div className="prose prose-neutral prose-lg max-w-none prose-headings:font-semibold prose-a:font-normal prose-a:underline-offset-4 hover:prose-a:text-neutral-900 transition-colors">
+            <div className="max-w-none">
               {markdownHtml}
 
               <div className="mt-40 pt-16 flex justify-center">
