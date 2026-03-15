@@ -10,7 +10,9 @@ import {
   useBookCreationStore,
 } from "@/context/bookCreationStore";
 import { selectBookCreationDraftSnapshot } from "@/context/types/bookCreation";
+import { createBookAction } from "@/lib/actions/book";
 import {
+  clearBookCreationDraft,
   createDraftId,
   readBookCreationDraft,
   writeBookCreationDraft,
@@ -82,6 +84,20 @@ function CreateBookContent() {
 
   useBeforeUnload({ isEnabled: isLoading });
 
+  const handleStartWriting = async () => {
+    const state = useBookCreationStore.getState();
+    const { bookTitle, tableOfContents, sourceText, contentProvider, contentModel, language, chapterCount, userPreference } = state;
+    const { bookId } = await createBookAction(bookTitle, tableOfContents, sourceText, {
+      provider: contentProvider,
+      model: contentModel,
+      language,
+      chapterCount,
+      userPreference,
+    });
+    if (draftId) clearBookCreationDraft(draftId);
+    router.push(`/book/new/${bookId}`);
+  };
+
   if (!draftId || !isDraftReady || !isAccessible) {
     return <div className="flex-1 bg-white" />;
   }
@@ -102,9 +118,9 @@ function CreateBookContent() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="px-8 py-16 md:py-24">
-        {currentStep === "settings" && <SettingsStep />}
-        {currentStep === "source_input" && <SourceInputStep />}
-        {currentStep === "toc_review" && <TOCReviewStep />}
+        {currentStep === "settings" && <SettingsStep draftId={draftId} />}
+        {currentStep === "source_input" && <SourceInputStep draftId={draftId} />}
+        {currentStep === "toc_review" && <TOCReviewStep draftId={draftId} onStartWriting={handleStartWriting} />}
       </div>
     </div>
   );

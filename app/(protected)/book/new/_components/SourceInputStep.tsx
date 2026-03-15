@@ -1,18 +1,18 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
 import Button from "@/components/Button";
 import { setBookField, useBookCreationStore } from "@/context/bookCreationStore";
 import { useTocGeneration } from "@/lib/hooks/useTocGeneration";
 import { bookNewStepPath } from "@/lib/routes";
 
-export default function SourceInputStep() {
+export default function SourceInputStep({ draftId }: { draftId: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const draftId = searchParams.get("draftId") || undefined;
 
-  const sourceText = useBookCreationStore((s) => s.sourceText);
-  const tocGeneration = useBookCreationStore((s) => s.tocGeneration);
+  const { sourceText, tocGeneration } = useBookCreationStore(
+    useShallow((s) => ({ sourceText: s.sourceText, tocGeneration: s.tocGeneration })),
+  );
   const { generate } = useTocGeneration();
 
   const isLoading = tocGeneration.status === "loading";

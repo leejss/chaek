@@ -2,6 +2,7 @@
 
 import { ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
 import {
   canAccessStep,
   isStepCompleted,
@@ -23,11 +24,15 @@ export default function StepNavigation() {
   const draftId = searchParams.get("draftId") || undefined;
   const currentStep = searchParams.get("step") || "settings";
 
-  const tocGenerationStatus = useBookCreationStore((s) => s.tocGeneration.status);
-  const tableOfContents = useBookCreationStore((s) => s.tableOfContents);
+  const { isGenerating, tableOfContents } = useBookCreationStore(
+    useShallow((s) => ({
+      isGenerating: s.tocGeneration.status === "loading",
+      tableOfContents: s.tableOfContents,
+    })),
+  );
 
   const handleBack = () => {
-    if (tocGenerationStatus === "loading") {
+    if (isGenerating) {
       if (!confirm("진행 중인 작업을 중단하고 이전 단계로 돌아가시겠습니까?")) {
         return;
       }
