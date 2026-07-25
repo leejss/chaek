@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/*.svg"]
+    "includes": ["**", "!!**/*.svg", "!!drizzle/meta"]
   },
   "formatter": {
     "enabled": true,
