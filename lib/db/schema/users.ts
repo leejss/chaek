@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  index,
   integer,
   sqliteTable,
   text,
@@ -13,25 +12,21 @@ export const users = sqliteTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    authProvider: text("auth_provider").notNull(),
-    authSubject: text("auth_subject").notNull(),
-    email: text("email"),
-    displayName: text("display_name"),
-    avatarUrl: text("avatar_url"),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    emailVerified: integer("email_verified", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    image: text("image"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .default(sql`(unixepoch() * 1000)`)
+      .$onUpdate(() => new Date()),
   },
-  (table) => [
-    uniqueIndex("users_auth_identity_unique").on(
-      table.authProvider,
-      table.authSubject,
-    ),
-    index("users_email_idx").on(table.email),
-  ],
+  (table) => [uniqueIndex("users_email_unique").on(table.email)],
 );
 
 export type User = typeof users.$inferSelect;
