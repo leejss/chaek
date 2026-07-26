@@ -27,18 +27,18 @@ export function ThemeMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="색상 테마 선택"
+        aria-label="화면 테마 선택"
         className={cn(
           buttonVariants({ variant: "outline", size: "sm" }),
-          "min-w-9 px-2 sm:min-w-24",
+          "min-w-8 px-2 sm:min-w-24",
         )}
       >
         <SunMoonIcon data-icon="inline-start" />
-        <span className="hidden sm:inline">테마</span>
+        <span className="hidden sm:inline">화면</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>색상 테마</DropdownMenuLabel>
+          <DropdownMenuLabel>화면 테마</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup

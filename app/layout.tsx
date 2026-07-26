@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
-import "@fontsource-variable/noto-serif-kr";
 import "./globals.css";
 
 const geist = Geist({
@@ -19,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Chaek Design System",
   description:
-    "콘텐츠의 위계와 읽는 흐름을 우선하는 Chaek의 편집형 디자인 시스템",
+    "명확한 작업 흐름과 상태 피드백을 우선하는 Chaek의 제품 디자인 시스템",
 };
 
 export default function RootLayout({
