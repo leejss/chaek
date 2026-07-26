@@ -1,6 +1,6 @@
 # Chaek Database Schema
 
-Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현재 데이터 모델은 내부 사용자, 로그인 계정, Gemini Background Interaction 작업 상태, Gemini 웹훅의 중복 제거와 복구를 다루는 네 테이블로 구성된다.
+Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현재 데이터 모델은 내부 사용자, 로그인 계정, Chaek 세션, 일회용 OAuth 상태, Gemini Background Interaction 작업 상태, Gemini 웹훅의 중복 제거와 복구를 다루는 여섯 테이블로 구성된다.
 
 이 문서의 기준 소스는 다음과 같다.
 
@@ -8,13 +8,14 @@ Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현�
 - migrations: `drizzle/*.sql`
 - DB 클라이언트: `lib/db/client.ts`
 
-현재 스키마와 migration은 구현되어 있지만 인증 연동, AI Job Route Handler, Gemini 웹훅 Route Handler, reconciliation 작업은 아직 구현되지 않았다. 이 문서에서 설명하는 상태 전이와 처리 흐름 중 일부는 이후 애플리케이션 코드가 지켜야 할 규칙이다.
+현재 스키마와 migration, Google OAuth, Chaek 세션 처리는 구현되어 있다. AI Job Route Handler, Gemini 웹훅 Route Handler, reconciliation 작업은 아직 구현되지 않았다. 이 문서에서 설명하는 AI Job 상태 전이와 웹훅 처리 흐름 중 일부는 이후 애플리케이션 코드가 지켜야 할 규칙이다.
 
 ## Overview
 
 ```mermaid
 erDiagram
     USERS ||--o{ ACCOUNTS : authenticates
+    USERS ||--o{ SESSIONS : has
     USERS ||--o{ AI_JOBS : owns
     AI_JOBS o|--o{ WEBHOOK_EVENTS : matches
 
@@ -37,6 +38,23 @@ erDiagram
         text refresh_token
         integer created_at
         integer updated_at
+    }
+
+    SESSIONS {
+        text id PK
+        text user_id FK
+        text token_hash UK
+        integer expires_at
+        integer created_at
+    }
+
+    OAUTH_STATES {
+        text state_hash PK
+        text code_verifier
+        text nonce
+        text return_to
+        integer expires_at
+        integer created_at
     }
 
     AI_JOBS {
@@ -68,6 +86,9 @@ erDiagram
 
 - 한 `users` 행은 여러 `accounts`를 가질 수 있다.
 - 각 `accounts` 행은 Google 같은 외부 인증 계정 하나를 나타내며 반드시 한 사용자를 참조한다.
+- 한 `users` 행은 여러 `sessions`를 가질 수 있다.
+- 각 `sessions` 행은 Chaek 브라우저 세션 하나를 나타내며 반드시 한 사용자를 참조한다.
+- `oauth_states`는 아직 인증된 사용자가 없는 로그인 시작 단계를 저장하므로 `users`와 외래키 관계가 없다.
 - 한 `users` 행은 여러 `ai_jobs`를 소유할 수 있다.
 - 각 `ai_jobs` 행은 반드시 한 사용자를 참조한다.
 - 한 `ai_jobs`에는 상태 변화와 재전송에 따라 여러 `webhook_events`가 연결될 수 있다.
@@ -78,11 +99,13 @@ erDiagram
 
 ### Identifiers
 
-`users.id`, `accounts.id`, `ai_jobs.id`는 애플리케이션에서 `crypto.randomUUID()`로 생성하는 `TEXT` Primary Key다.
+`users.id`, `accounts.id`, `sessions.id`, `ai_jobs.id`는 애플리케이션에서 `crypto.randomUUID()`로 생성하는 `TEXT` Primary Key다.
 
 UUID 생성은 Drizzle의 `$defaultFn()`이 담당한다. 따라서 Drizzle을 거치지 않고 migration SQL이나 다른 SQL 클라이언트로 직접 `INSERT`할 때는 `id`를 명시해야 한다. DB migration 자체에는 UUID 생성 기본값이 없다.
 
 `webhook_events.id`는 애플리케이션 UUID가 아니라 Gemini 웹훅 요청의 `webhook-id`를 그대로 사용한다. 이 값은 동일한 웹훅 재전송을 식별하는 멱등성 키다.
+
+`oauth_states.state_hash`는 UUID가 아니라 로그인 시작 시 생성한 원본 OAuth `state`의 SHA-256 hash다. 원본은 브라우저의 짧은 HttpOnly cookie에만 저장한다.
 
 ### Timestamps
 
@@ -181,19 +204,66 @@ users.id
 ai_jobs.user_id
 ```
 
-OAuth 토큰 컬럼은 인증 서버에서만 접근한다. Chaek가 Google API를 추가로 호출할 필요가 없다면 토큰 보관 범위를 인증 라이브러리 설정에서 최소화하고, 로그나 API 응답에 포함하지 않는다.
+OAuth 토큰 컬럼은 인증 서버에서만 접근할 수 있는 구조지만, 현재 직접 구현한 Google 로그인은 Google API를 추가 호출하지 않으므로 토큰을 저장하지 않는다. callback은 검증된 ID token에서 사용자 정보를 읽은 뒤 token을 폐기하며 `access_token`, `refresh_token`, `id_token` 컬럼은 `NULL`로 유지한다.
 
 ### Delete behavior
 
-사용자를 삭제하면 연결된 `accounts`와 해당 사용자가 소유한 `ai_jobs`가 `ON DELETE CASCADE`로 삭제된다.
+사용자를 삭제하면 연결된 `accounts`, `sessions`, 해당 사용자가 소유한 `ai_jobs`가 `ON DELETE CASCADE`로 삭제된다.
 
 ```text
 DELETE users
   ├── CASCADE DELETE accounts
+  ├── CASCADE DELETE sessions
   └── CASCADE DELETE ai_jobs
 ```
 
 Job과 연결된 `webhook_events`는 삭제되지 않고 `ai_job_id`만 `NULL`로 변경된다. 웹훅 payload는 Gemini Interaction ID와 상태를 담는 운영 이벤트이므로 Job 삭제 후에도 전달 이력을 보존한다.
+
+## `sessions`
+
+`sessions`는 Google OAuth 성공 후 Chaek가 발급하는 자체 로그인 세션을 저장한다. Google access token이나 ID token을 애플리케이션 세션으로 재사용하지 않는다.
+
+### Columns
+
+| Column        | Drizzle property | Required | Description                                                                        |
+| ------------- | ---------------- | -------- | ---------------------------------------------------------------------------------- |
+| `id`          | `id`             | Yes      | Chaek 내부 session UUID. 운영과 관리용 식별자이며 cookie에는 넣지 않는다.          |
+| `user_id`     | `userId`         | Yes      | 인증된 `users.id`. 사용자 삭제 시 session도 삭제된다.                             |
+| `token_hash`  | `tokenHash`      | Yes      | 브라우저에 발급한 원본 session token의 SHA-256 hash. 전체 session에서 고유하다.    |
+| `expires_at`  | `expiresAt`      | Yes      | session이 유효한 마지막 시각. 현재 생성 시점부터 30일인 고정 만료 방식이다.        |
+| `created_at`  | `createdAt`      | Yes      | session이 생성된 시각.                                                             |
+
+원본 session token은 브라우저의 HttpOnly cookie에만 존재하고 DB에는 hash만 저장한다.
+
+```text
+Browser cookie: raw session token
+                        │
+                        ▼ SHA-256
+DB sessions.token_hash: token hash
+```
+
+요청이 들어오면 cookie token을 서버에서 hash한 뒤 `token_hash`와 `expires_at`으로 조회한다. API 응답, 로그, URL에는 원본 token이나 hash를 포함하지 않는다.
+
+현재 한 사용자에게 여러 session을 허용한다. 새 로그인은 동일 브라우저가 보내온 이전 session만 삭제하고 다른 기기의 session은 유지한다.
+
+## `oauth_states`
+
+`oauth_states`는 Google OAuth 로그인 시작부터 callback까지 필요한 일회용 서버 상태를 최대 10분 동안 보관한다. 아직 인증된 사용자가 없는 단계이므로 `users`와 외래키 관계를 만들지 않는다.
+
+### Columns
+
+| Column          | Drizzle property | Required | Description                                                                           |
+| --------------- | ---------------- | -------- | ------------------------------------------------------------------------------------- |
+| `state_hash`    | `stateHash`      | Yes      | 원본 OAuth `state`의 SHA-256 hash. Primary Key이며 callback 재생을 막는 일회용 키다.  |
+| `code_verifier` | `codeVerifier`   | Yes      | PKCE token 교환에 필요한 원본 verifier. authorization 요청에는 challenge만 보낸다.  |
+| `nonce`         | `nonce`          | Yes      | callback에서 받은 Google ID token과 로그인 시도를 연결한다.                          |
+| `return_to`     | `returnTo`       | Yes      | 인증 성공 후 돌아갈 애플리케이션 내부 경로. 기본값은 `/`다.                          |
+| `expires_at`    | `expiresAt`      | Yes      | 로그인 시도의 만료 시각.                                                              |
+| `created_at`    | `createdAt`      | Yes      | 로그인 시도가 생성된 시각.                                                            |
+
+callback은 URL의 원본 `state`와 브라우저의 HttpOnly state cookie를 먼저 비교하고, `state`를 hash해 DB 행을 찾는다. 일치한 행은 `DELETE ... RETURNING`으로 읽는 동시에 제거한다. 같은 callback을 두 번 재생하면 두 번째 요청에는 사용할 행이 없다.
+
+`return_to`에는 애플리케이션 내부 상대 경로만 저장한다. 입력을 `AUTH_BASE_URL` 기준 URL로 해석한 뒤 origin이 정확히 같은지 확인하므로 외부 절대 URL, `//`로 시작하는 protocol-relative URL, `/\`처럼 URL parser가 외부 origin으로 해석하는 값은 `/`로 정규화한다.
 
 ## `ai_jobs`
 
@@ -445,6 +515,27 @@ WHERE accounts.provider_id = :provider_id
 
 이메일이 같다는 사실만으로 기존 사용자와 새 Google 계정을 자동 연결하지 않는다. 기존 사용자에게 계정을 추가하는 기능은 로그인된 세션에서 별도의 계정 연결 절차로 구현해야 한다.
 
+### Authentication session
+
+```text
+users.id
+   │
+   └── sessions.user_id (NOT NULL, FK, ON DELETE CASCADE)
+```
+
+Google callback이 외부 identity를 `users.id`로 해석한 뒤 Chaek session을 만든다. 브라우저는 원본 session token을 HttpOnly cookie로 가지고, 서버는 그 값을 SHA-256 hash해 `sessions.token_hash`를 조회한다.
+
+`oauth_states`는 인증 이전의 임시 데이터이므로 사용자에 연결하지 않는다.
+
+```text
+OAuth 시작
+  ├── raw state → browser HttpOnly cookie
+  └── state hash + PKCE verifier + nonce → oauth_states
+                                                │
+                                                ▼ callback에서 1회 소비
+Google identity → accounts → users → sessions
+```
+
 ### User ownership
 
 ```text
@@ -510,11 +601,12 @@ webhook_events.ai_job_id
 ```text
 DELETE users
   ├── CASCADE DELETE accounts
+  ├── CASCADE DELETE sessions
   └── CASCADE DELETE ai_jobs
         └── SET NULL webhook_events.ai_job_id
 ```
 
-인증 토큰을 포함할 수 있는 `accounts`와 사용자 입력·생성 결과를 가진 `ai_jobs`는 사용자와 함께 삭제된다. 웹훅 전달 이력은 남지만 더 이상 삭제된 Job을 참조하지 않는다.
+외부 로그인 연결인 `accounts`, 활성 로그인인 `sessions`, 사용자 입력·생성 결과를 가진 `ai_jobs`는 사용자와 함께 삭제된다. `oauth_states`는 사용자와 무관한 짧은 일회용 데이터이므로 별도의 만료 정리 대상이다. 웹훅 전달 이력은 남지만 더 이상 삭제된 Job을 참조하지 않는다.
 
 ## Indexes and query paths
 
@@ -530,6 +622,21 @@ DELETE users
 | ---------------------------------- | --------------------------- | ------------------------------------------------------------------------ |
 | `accounts_provider_account_unique` | `provider_id`, `account_id` | 외부 계정 identity 중복 연결을 막고 OAuth callback에서 사용자를 찾는다. |
 | `accounts_user_id_idx`             | `user_id`                   | 한 사용자에게 연결된 로그인 계정 목록을 조회한다.                       |
+
+### `sessions`
+
+| Index                        | Columns      | Purpose                                                        |
+| ---------------------------- | ------------ | -------------------------------------------------------------- |
+| `sessions_token_hash_unique` | `token_hash` | cookie token hash로 session을 조회하고 중복 token을 막는다.    |
+| `sessions_user_id_idx`       | `user_id`    | 사용자의 session 목록과 전체 기기 로그아웃을 지원한다.         |
+| `sessions_expires_at_idx`    | `expires_at` | 만료된 session을 정리한다.                                     |
+
+### `oauth_states`
+
+| Index                         | Columns      | Purpose                                               |
+| ----------------------------- | ------------ | ----------------------------------------------------- |
+| Primary Key                   | `state_hash` | callback에서 OAuth 상태를 한 번만 소비한다.           |
+| `oauth_states_expires_at_idx` | `expires_at` | 완료되지 않고 만료된 로그인 시도를 정리한다.          |
 
 ### `ai_jobs`
 
@@ -550,7 +657,7 @@ DELETE users
 
 ## Intended data flow
 
-다음 흐름은 현재 스키마가 지원하는 목표 구조이며 Route Handler와 서비스 코드는 아직 구현되지 않았다.
+인증 흐름은 현재 Route Handler와 서비스 코드까지 구현되어 있다. AI Job과 Gemini 웹훅 흐름은 스키마가 지원하는 목표 구조이며 Route Handler와 서비스 코드는 아직 구현되지 않았다.
 
 ### 1. User synchronization
 
@@ -566,7 +673,9 @@ accounts 조회
   └── 없음: users + accounts 생성
               │
               ▼
-users.id를 세션 사용자 ID로 사용
+Chaek session 생성
+  ├── raw token → HttpOnly cookie
+  └── token hash + users.id → sessions
 ```
 
 신규 사용자와 Google 계정 생성은 하나의 짧은 DB transaction으로 처리한다. 동일한 Google callback이 동시에 처리되더라도 `(provider_id, account_id)` unique index가 하나의 외부 계정만 생성되도록 보장한다.
@@ -656,12 +765,16 @@ webhook_events
 
 ## Application-level rules
 
-현재 DB 제약만으로는 다음 규칙을 보장하지 않는다. 이후 서비스와 Route Handler에서 명시적으로 구현해야 한다.
+현재 DB 제약만으로는 다음 규칙을 모두 보장하지 않는다. 인증 관련 규칙은 현재 서비스와 Route Handler에 구현되어 있고, AI 관련 규칙은 이후 코드에서 명시적으로 구현해야 한다.
 
 - 인증된 사용자의 `users.id`와 `ai_jobs.user_id`가 일치해야 한다.
 - Google 로그인 callback은 `accounts.provider_id = 'google'`만 허용해야 한다.
 - 외부 계정 조회는 이메일이 아니라 `(provider_id, account_id)`를 사용해야 한다.
-- OAuth token과 ID token을 로그, 클라이언트 응답, AI 입력에 포함하지 않아야 한다.
+- 같은 이메일을 발견했다는 이유만으로 새 Google identity를 기존 사용자에 자동 연결하지 않아야 한다.
+- OAuth `state`는 만료 전에 한 번만 사용할 수 있어야 한다.
+- ID token의 서명, issuer, audience, expiry, nonce, subject, 검증된 이메일을 확인해야 한다.
+- 원본 session token은 HttpOnly cookie에만 저장하고 DB에는 hash만 저장해야 한다.
+- OAuth token과 ID token을 DB, 로그, 클라이언트 응답, AI 입력에 포함하지 않아야 한다.
 - Job 생성 요청은 사용자별 `idempotency_key`를 사용해야 한다.
 - `input_json`은 `task_type`과 `payload_version`에 맞게 런타임 검증해야 한다.
 - `updated_at`은 모든 상태 변경과 결과 변경에서 함께 갱신해야 한다.
@@ -677,7 +790,10 @@ webhook_events
 
 - Turso/libSQL용 Drizzle 스키마
 - 내부 사용자와 외부 로그인 계정 분리
-- Google 로그인을 위한 account 및 OAuth token 필드
+- Google 로그인을 위한 account 필드
+- Authorization Code Flow, PKCE, state, nonce
+- Google ID token 검증과 사용자 동기화
+- Chaek 자체 opaque session과 로그아웃
 - 사용자 소유권
 - 기본 `content_generation` 작업 타입
 - Gemini Background Interaction 연결 필드
@@ -689,10 +805,10 @@ webhook_events
 
 현재 포함되지 않은 범위:
 
-- Google OAuth와 세션 처리
 - Better Auth 서버·클라이언트 설정
-- 로그인, 로그아웃 및 callback Route Handler
-- 사용자 upsert 서비스
+- 실제 Google credential을 이용한 end-to-end 로그인 검증
+- 계정 명시적 연결·해제와 모든 기기 로그아웃
+- session rotation과 주기적인 만료 데이터 정리
 - `content_generation` 입력·결과의 구체적인 런타임 스키마
 - AI Job 생성·조회·취소 Route Handler
 - Gemini 웹훅 서명 검증과 결과 조회
