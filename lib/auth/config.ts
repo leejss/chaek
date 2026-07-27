@@ -16,15 +16,19 @@ export const SESSION_COOKIE_NAME = "chaek_session";
 export const OAUTH_STATE_TTL_SECONDS = 10 * 60;
 export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 
-type AuthConfig = {
+type ApplicationConfig = {
   baseUrl: URL;
-  callbackUrl: string;
-  googleClientId: string;
-  googleClientSecret: string;
   secureCookies: boolean;
 };
 
-let authConfig: AuthConfig | undefined;
+type GoogleOauthConfig = {
+  callbackUrl: string;
+  googleClientId: string;
+  googleClientSecret: string;
+};
+
+let applicationConfig: ApplicationConfig | undefined;
+let googleOauthConfig: GoogleOauthConfig | undefined;
 
 function requireEnvironmentVariable(name: string) {
   const value = process.env[name]?.trim();
@@ -36,9 +40,9 @@ function requireEnvironmentVariable(name: string) {
   return value;
 }
 
-export function getAuthConfig() {
-  if (authConfig) {
-    return authConfig;
+export function getApplicationConfig() {
+  if (applicationConfig) {
+    return applicationConfig;
   }
 
   const baseUrl = new URL(requireEnvironmentVariable("AUTH_BASE_URL"));
@@ -51,17 +55,30 @@ export function getAuthConfig() {
     throw new Error("AUTH_BASE_URL must use HTTPS in production.");
   }
 
-  authConfig = {
+  applicationConfig = {
     baseUrl,
+    secureCookies: baseUrl.protocol === "https:",
+  };
+
+  return applicationConfig;
+}
+
+export function getGoogleOauthConfig() {
+  if (googleOauthConfig) {
+    return googleOauthConfig;
+  }
+
+  const { baseUrl } = getApplicationConfig();
+
+  googleOauthConfig = {
     callbackUrl: new URL("/api/auth/google/callback", baseUrl).toString(),
     googleClientId: requireEnvironmentVariable("GOOGLE_OAUTH_CLIENT_ID"),
     googleClientSecret: requireEnvironmentVariable(
       "GOOGLE_OAUTH_CLIENT_SECRET",
     ),
-    secureCookies: baseUrl.protocol === "https:",
   };
 
-  return authConfig;
+  return googleOauthConfig;
 }
 
 export function sanitizeReturnTo(value: string | null) {
@@ -70,7 +87,7 @@ export function sanitizeReturnTo(value: string | null) {
   }
 
   try {
-    const { baseUrl } = getAuthConfig();
+    const { baseUrl } = getApplicationConfig();
     const returnToUrl = new URL(value, baseUrl);
 
     if (returnToUrl.origin !== baseUrl.origin) {
@@ -85,7 +102,7 @@ export function sanitizeReturnTo(value: string | null) {
 
 export function assertTrustedOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  const { baseUrl } = getAuthConfig();
+  const { baseUrl } = getApplicationConfig();
 
   if (origin !== baseUrl.origin) {
     throw new Error("Untrusted request origin.");
@@ -98,7 +115,7 @@ export function getOauthStateCookieOptions() {
     maxAge: OAUTH_STATE_TTL_SECONDS,
     path: "/api/auth/google",
     sameSite: "lax" as const,
-    secure: getAuthConfig().secureCookies,
+    secure: getApplicationConfig().secureCookies,
   };
 }
 
@@ -109,6 +126,6 @@ export function getSessionCookieOptions() {
     path: "/",
     priority: "high" as const,
     sameSite: "lax" as const,
-    secure: getAuthConfig().secureCookies,
+    secure: getApplicationConfig().secureCookies,
   };
 }

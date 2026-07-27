@@ -4,7 +4,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | Proposed |
+| 상태 | Phase 0–3 implemented, verification pending |
 | 작성일 | 2026-07-27 |
 | 대상 프로젝트 | Chaek |
 | 대상 기능 | 사용자 입력을 장편 독립 콘텐츠로 완성하는 Content Compiler |
@@ -13,7 +13,7 @@
 
 이 문서는 Chaek의 콘텐츠 생성 기능에 대한 구현 Source of Truth다. 여기서 말하는 구현은 사용자 입력을 해석해 콘텐츠 그래프를 만들고, Gemini를 이용해 각 그래프 노드를 리서치·작성·검수·수정하여 한 권의 장편 독립 콘텐츠로 완성하는 흐름을 뜻한다.
 
-이 문서는 목표 구조와 단계별 구현 경계를 정의한다. 현재 코드에 이미 구현된 기능과 이후 구현할 기능을 명시적으로 구분하며, 문서에 등장하는 테이블·Route Handler·서비스가 현재 존재한다는 의미는 아니다.
+이 문서는 목표 구조와 단계별 구현 경계를 정의한다. Phase 0–3의 계약, Graph 영속성, Brief/Graph Planning, Webhook과 Reconciliation 코드는 구현되어 있다. Phase 4 이후의 Revision, Research, 전체 의존성 Build와 Review 구조는 아직 목표 설계이며, 문서에 등장한다는 이유만으로 현재 구현으로 간주하지 않는다.
 
 ## 요약
 
@@ -145,22 +145,33 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
   - `requireUser()` 기반 인증 사용자 확인
 - Turso/libSQL과 Drizzle ORM
 - Google OAuth와 Chaek opaque session
+- Zod 4 기반 `ContentBriefResult`와 `GraphPlanResult`
+- 결정론적 Graph Validator, Stable Topological Sort와 Impact Analyzer
+- `content_projects`, `content_nodes`, `content_edges`, `content_builds`
+- `POST /api/content-projects`와 Project, Graph, Build 조회 Route Handler
+- Brief Generation과 Graph Planning Background Interaction
+- Structured Output 회수, 런타임 검증과 Graph 저장 Transaction
+- Standard Webhooks 서명 검증, Webhook Inbox와 `after()` Fast Path
+- Polling 및 내부 Reconciliation 경로
+- 실제 Gemini credential, Vercel Preview와 Turso를 사용한
+  `LLM From Scratch` Brief → Graph Planning → Graph 저장 E2E
+  - Polling Reconciliation을 통해 완료
+  - 동일 Idempotency Key 재요청이 같은 Project와 Build로 수렴
 
 ### 4.2 아직 구현되지 않은 범위
 
 현재 다음 요소는 구현되어 있지 않다.
 
-- `content_generation` 작업의 구체적인 입력·결과 런타임 스키마
-- AI Job 생성·조회·취소 Route Handler
-- Gemini Background Interaction 제출 서비스
-- Gemini 웹훅 Route Handler와 서명 검증
-- `interactions.get()` 결과 회수와 정규화
-- reconciliation 실행 경로
-- 책·Chapter·Revision 같은 콘텐츠 도메인 테이블
-- 여러 `ai_jobs`를 묶는 Content Build
-- 콘텐츠 그래프 검증기
-- 영향 범위 계산과 `stale` 전파
+- Chapter Revision과 Apply Gate
+- Research Packet, Source와 Citation
+- 여러 Chapter의 의존성 Scheduler
+- 실제 Revision 변경에 따른 `stale` 전파
+- Node Review, Project Review와 Completion 판정
 - 사용자용 콘텐츠 생성 UI
+- Production Static Webhook 등록
+- 실제 Gemini completion event가 Static Webhook → Inbox로 전달되는 E2E
+  - 2026-07-27 Preview 검증에서는 enabled webhook에 completion event가
+    5분 내 전달되지 않았고, Polling Reconciliation으로 복구했다.
 
 ### 4.3 공식 API 기준
 
@@ -738,10 +749,13 @@ export const graphPlanResultSchema = z.object({
 
 export type GraphPlanResult = z.infer<typeof graphPlanResultSchema>;
 
-export const graphPlanJsonSchema = z.toJSONSchema(graphPlanResultSchema);
+export const graphPlanJsonSchema = toGeminiJsonSchema(graphPlanResultSchema, {
+  omitBounds: true,
+});
 ```
 
-같은 Schema를 두 방향에 사용한다.
+같은 Zod Schema를 Source of Truth로 두 방향에 사용하되, Provider Schema는
+Gemini 복잡도 한도에 맞게 축소한다.
 
 ```text
 Zod Schema
@@ -750,6 +764,14 @@ Zod Schema
 ```
 
 Gemini가 지원하는 JSON Schema 부분집합을 넘도록 Provider Schema를 단순하게 유지한다. 복잡한 의미 규칙과 Graph Cycle 검사는 Zod Transform이나 깊은 JSON Schema에 넣지 않고 별도 Domain Validator에서 수행한다.
+
+Graph Plan처럼 속성과 중첩 배열이 많은 계약은 Provider Schema에서
+`minimum`, `maximum`, `minItems`, `maxItems`를 생략한다. 2026-07-27 실제
+Interactions API 검증에서 bounds를 포함한 Graph Schema는
+`400 invalid_argument`로 거부됐고, bounds를 생략하자 같은 입력이
+6 Parts, 12 Chapters, 18 Concepts, 7 Examples, 66 Edges를 생성해 Zod와
+Domain Validator를 통과했다. 개수와 숫자 범위 제약은 응답 회수 후 Zod
+런타임 검증에서 계속 강제한다.
 
 ### 11.2 계약 버전
 
@@ -1165,6 +1187,14 @@ Interactions API와 Legacy Generate Content API 필드를 혼합하지 않는다
 Static Webhook 하나를 Project 수준에서 등록하는 방향을 유지한다.
 
 Dynamic Webhook은 Job별 라우팅이 반드시 필요한 경우에만 재검토한다. 현재는 `gemini_interaction_id`와 내부 Job Mapping으로 충분하며, Dynamic Webhook의 별도 JWKS 검증 경계를 추가할 필요가 없다.
+
+단, 2026-07-27 Vercel Preview에서는 Static Webhook이 `enabled` 상태였음에도
+완료된 Background Interaction의 completion event가 5분 내 도착하지
+않았다. 동일 Interaction은 `interactions.get()`에서 `completed`로
+조회됐고 Polling Reconciliation으로 정상 반영됐다. 따라서 현재
+Webhook Fast Path는 구현 완료·실배포 미검증으로 간주하며, Production
+활성화 전에 Static delivery 원인을 재확인하거나 Dynamic Webhook을
+비교 검증한다.
 
 ```text
 Gemini
@@ -2001,9 +2031,9 @@ Phase별로 다음 결정을 확인한다.
 
 ### Graph Planning 전에
 
-- 최초 Graph Plan을 자동 승인할지 사용자 확인을 받을지
-- 사용자 입력만으로 결정할 수 없는 기술 선택을 어떻게 표시할지
-- 초기 Content Brief에서 언어와 독자 수준의 기본값
+- 최초 Vertical Slice에서는 결정론적 Blocking Validation을 통과한 Graph Plan을 자동 적용한다.
+- 사용자 입력만으로 결정할 수 없는 기술 선택은 Brief `assumptions`와 Graph `unresolvedQuestions`에 보존한다.
+- 초기 Content Brief의 언어와 독자 수준은 모델이 입력에서 추론하고, 중요한 추론은 `assumptions`에 기록한다.
 
 ### Chapter Generation 전에
 

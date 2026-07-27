@@ -7,7 +7,7 @@ import {
   GOOGLE_ISSUERS,
   GOOGLE_JWKS_ENDPOINT,
   GOOGLE_TOKEN_ENDPOINT,
-  getAuthConfig,
+  getGoogleOauthConfig,
 } from "./config";
 import { constantTimeEqual, createPkceChallenge } from "./crypto";
 import { OAuthFlowError } from "./errors";
@@ -39,7 +39,7 @@ export function createGoogleAuthorizationUrl({
   nonce: string;
   state: string;
 }) {
-  const { callbackUrl, googleClientId } = getAuthConfig();
+  const { callbackUrl, googleClientId } = getGoogleOauthConfig();
   const url = new URL(GOOGLE_AUTHORIZATION_ENDPOINT);
 
   url.search = new URLSearchParams({
@@ -65,7 +65,8 @@ export async function exchangeGoogleAuthorizationCode({
   code: string;
   codeVerifier: string;
 }) {
-  const { callbackUrl, googleClientId, googleClientSecret } = getAuthConfig();
+  const { callbackUrl, googleClientId, googleClientSecret } =
+    getGoogleOauthConfig();
   const response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
     body: new URLSearchParams({
       client_id: googleClientId,
@@ -102,7 +103,7 @@ export async function verifyGoogleIdToken({
   idToken: string;
   nonce: string;
 }): Promise<GoogleProfile> {
-  const { googleClientId } = getAuthConfig();
+  const { googleClientId } = getGoogleOauthConfig();
   const { payload } = await jwtVerify(idToken, googleJwks, {
     algorithms: ["RS256"],
     audience: googleClientId,

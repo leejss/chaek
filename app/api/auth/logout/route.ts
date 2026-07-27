@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import {
   assertTrustedOrigin,
-  getAuthConfig,
+  getApplicationConfig,
   getSessionCookieOptions,
   SESSION_COOKIE_NAME,
 } from "@/lib/auth/config";
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   await deleteSession(request.cookies.get(SESSION_COOKIE_NAME)?.value);
 
   const response = NextResponse.redirect(
-    new URL("/sign-in", getAuthConfig().baseUrl),
+    new URL("/sign-in", getApplicationConfig().baseUrl),
     303,
   );
   response.cookies.set(SESSION_COOKIE_NAME, "", {

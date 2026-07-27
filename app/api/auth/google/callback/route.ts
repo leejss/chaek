@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import {
   GOOGLE_ISSUERS,
-  getAuthConfig,
+  getApplicationConfig,
   getSessionCookieOptions,
   OAUTH_STATE_COOKIE_NAME,
   SESSION_COOKIE_NAME,
@@ -23,7 +23,7 @@ function clearOauthStateCookie(response: NextResponse, request: NextRequest) {
   let secure = request.nextUrl.protocol === "https:";
 
   try {
-    secure = getAuthConfig().secureCookies;
+    secure = getApplicationConfig().secureCookies;
   } catch {
     // The callback still needs to expire a stale cookie when auth is misconfigured.
   }
@@ -42,7 +42,7 @@ function createErrorRedirect(request: NextRequest, code: string) {
   let baseUrl: URL = request.nextUrl;
 
   try {
-    baseUrl = getAuthConfig().baseUrl;
+    baseUrl = getApplicationConfig().baseUrl;
   } catch {
     // Falling back to the request URL keeps configuration errors observable.
   }
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     const previousSessionToken =
       request.cookies.get(SESSION_COOKIE_NAME)?.value;
     const session = await createSession(user.id, previousSessionToken);
-    const { baseUrl } = getAuthConfig();
+    const { baseUrl } = getApplicationConfig();
     const response = NextResponse.redirect(
       new URL(oauthState.returnTo, baseUrl),
     );

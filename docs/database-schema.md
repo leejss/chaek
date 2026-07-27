@@ -1,6 +1,6 @@
 # Chaek Database Schema
 
-Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현재 데이터 모델은 내부 사용자, 로그인 계정, Chaek 세션, 일회용 OAuth 상태, Gemini Background Interaction 작업 상태, Gemini 웹훅의 중복 제거와 복구를 다루는 여섯 테이블로 구성된다.
+Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현재 데이터 모델은 인증과 세션, Gemini Background Interaction, 웹훅 inbox, Content Project, Content Graph와 Build를 다루는 열 개 테이블로 구성된다.
 
 이 문서의 기준 소스는 다음과 같다.
 
@@ -8,7 +8,7 @@ Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현�
 - migrations: `drizzle/*.sql`
 - DB 클라이언트: `lib/db/client.ts`
 
-현재 스키마와 migration, Google OAuth, Chaek 세션 처리는 구현되어 있다. AI Job Route Handler, Gemini 웹훅 Route Handler, reconciliation 작업은 아직 구현되지 않았다. 이 문서에서 설명하는 AI Job 상태 전이와 웹훅 처리 흐름 중 일부는 이후 애플리케이션 코드가 지켜야 할 규칙이다.
+현재 스키마와 migration, Google OAuth, Chaek 세션, Brief/Graph Planning AI Job, Gemini 웹훅 Route Handler와 reconciliation 서비스가 구현되어 있다. Chapter Revision, Research, 전체 책 Build와 Review 관련 테이블은 아직 구현되지 않았다. Content Compiler의 상세 계약은 [`content-compiler-implementation-design.md`](./content-compiler-implementation-design.md)를 기준으로 한다.
 
 ## Overview
 
@@ -17,6 +17,11 @@ erDiagram
     USERS ||--o{ ACCOUNTS : authenticates
     USERS ||--o{ SESSIONS : has
     USERS ||--o{ AI_JOBS : owns
+    USERS ||--o{ CONTENT_PROJECTS : owns
+    CONTENT_PROJECTS ||--o{ CONTENT_NODES : contains
+    CONTENT_PROJECTS ||--o{ CONTENT_EDGES : defines
+    CONTENT_PROJECTS ||--o{ CONTENT_BUILDS : generates
+    CONTENT_BUILDS ||--o{ AI_JOBS : contains
     AI_JOBS o|--o{ WEBHOOK_EVENTS : matches
 
     USERS {
@@ -277,7 +282,10 @@ callback은 URL의 원본 `state`와 브라우저의 HttpOnly state cookie를 �
 | ----------------------- | --------------------- | -------- | -------------------------------------------------------------- |
 | `id`                    | `id`                  | Yes      | Chaek 내부 AI Job UUID. 클라이언트에 노출하는 작업 식별자다.   |
 | `user_id`               | `userId`              | Yes      | Job 소유자의 `users.id`. 사용자 삭제 시 Job도 삭제된다.        |
-| `idempotency_key`       | `idempotencyKey`      | Yes      | 동일 사용자의 중복 작업 생성 요청을 막는 클라이언트 요청 키다. |
+| `content_project_id`    | `contentProjectId`    | No       | Content Compiler Project 연결이다.                             |
+| `content_build_id`      | `contentBuildId`      | No       | 여러 Job을 묶는 Content Build 연결이다.                        |
+| `target_node_id`        | `targetNodeId`        | No       | Chapter 등 Node 단위 작업의 대상이다.                          |
+| `idempotency_key`       | `idempotencyKey`      | Yes      | 동일 사용자의 중복 작업 생성을 막는 요청 키다.                 |
 | `gemini_interaction_id` | `geminiInteractionId` | No       | Gemini가 Background Interaction 생성 시 반환하는 외부 ID다.    |
 
 `user_id`와 `idempotency_key`는 함께 고유하다.
@@ -298,16 +306,21 @@ UNIQUE (gemini_interaction_id)
 
 ### Request and result columns
 
-| Column            | Drizzle property | Required | Default              | Description                                                                |
-| ----------------- | ---------------- | -------- | -------------------- | -------------------------------------------------------------------------- |
-| `task_type`       | `taskType`       | Yes      | `content_generation` | AI 요청 종류. 현재 TypeScript에서 지원하는 기본 작업은 콘텐츠 생성 하나다. |
-| `payload_version` | `payloadVersion` | Yes      | `1`                  | `input_json`과 `result_json` 계약의 버전이다.                              |
-| `model`           | `model`          | Yes      | `gemini-3.6-flash`   | 실제 Job 실행에 사용한 Gemini 모델 기록이다.                               |
-| `input_json`      | `inputJson`      | Yes      | -                    | 검증과 정규화를 마친 AI 요청 입력이다.                                     |
-| `result_json`     | `resultJson`     | No       | `NULL`               | 완료된 AI 결과를 Chaek 도메인 형식으로 정규화한 값이다.                    |
-| `usage_json`      | `usageJson`      | No       | `NULL`               | Gemini 토큰 사용량이다.                                                    |
+| Column               | Drizzle property    | Required | Default              | Description                                                                 |
+| -------------------- | ------------------- | -------- | -------------------- | --------------------------------------------------------------------------- |
+| `task_type`          | `taskType`          | Yes      | `content_generation` | AI 요청 종류다. Brief와 Graph Planning을 포함한 Compiler Pass를 구분한다.   |
+| `payload_version`    | `payloadVersion`    | Yes      | `1`                  | `input_json`과 `result_json` 계약의 버전이다.                               |
+| `model`              | `model`             | Yes      | `gemini-3.6-flash`   | 실제 Job 실행에 사용한 Gemini 모델 기록이다.                                |
+| `input_json`         | `inputJson`         | Yes      | -                    | 검증과 정규화를 마친 AI 요청 입력이다.                                      |
+| `result_json`        | `resultJson`        | No       | `NULL`               | 완료된 AI 결과를 Chaek 도메인 형식으로 정규화한 값이다.                     |
+| `usage_json`         | `usageJson`         | No       | `NULL`               | Gemini 토큰 사용량이다.                                                     |
+| `base_graph_version` | `baseGraphVersion`  | No       | `NULL`               | 결과가 만들어진 기준 Graph Version이다.                                    |
+| `base_revision_id`   | `baseRevisionId`    | No       | `NULL`               | 이후 Chapter 작업에서 사용할 기준 Revision ID다.                           |
+| `attempt_number`     | `attemptNumber`     | Yes      | `1`                  | 동일 논리 작업의 시도 번호다.                                               |
+| `result_disposition` | `resultDisposition` | No       | `NULL`               | AI 실행 성공과 결과 적용 결과를 분리하는 값이다.                            |
+| `applied_at`         | `appliedAt`         | No       | `NULL`               | 검증된 결과가 Content Project에 적용된 시각이다.                            |
 
-`task_type`은 현재 TypeScript 타입에서 `content_generation`만 허용하지만 DB `CHECK` 제약은 없다. 이후 새로운 작업 종류를 추가할 때 DB 스키마 변경 없이 애플리케이션 타입과 검증 규칙을 확장할 수 있도록 한 결정이다.
+현재 TypeScript가 허용하는 `task_type`은 `content_generation`, `brief_generation`, `graph_planning`, `graph_repair`, `node_research`, `node_drafting`, `node_review`, `project_review`, `node_revision`이다. Phase 0–3 실행 서비스는 이 중 `brief_generation`과 `graph_planning`을 처리한다.
 
 `payload_version`은 1 이상이어야 한다.
 
@@ -354,7 +367,7 @@ incomplete
 ```mermaid
 stateDiagram-v2
     [*] --> queued
-    queued --> processing: Interaction ID 저장
+    queued --> processing: 제출 권한 선점
     queued --> failed: 제출 실패
     processing --> requires_action: 추가 입력 또는 도구 실행 필요
     requires_action --> processing: 필요한 action 완료
@@ -390,7 +403,7 @@ DB `CHECK` 제약은 허용된 상태 문자열만 검사한다. 위 전이 순�
 | -------------------- | ------------------ | -------- | --------------------------------------------------------- |
 | `created_at`         | `createdAt`        | Yes      | DB에 Job이 처음 만들어진 시각이다.                        |
 | `updated_at`         | `updatedAt`        | Yes      | 상태, 결과, 오류 등 Job이 마지막으로 변경된 시각이다.     |
-| `submitted_at`       | `submittedAt`      | No       | Gemini Interaction ID를 받아 DB에 연결한 시각이다.        |
+| `submitted_at`       | `submittedAt`      | No       | Gemini Interaction 제출을 시작한 시각이다.                |
 | `finished_at`        | `finishedAt`       | No       | Job이 terminal 상태에 도달한 시각이다.                    |
 | `last_reconciled_at` | `lastReconciledAt` | No       | 서버가 Gemini에 현재 상태를 마지막으로 재조회한 시각이다. |
 
@@ -399,7 +412,7 @@ DB `CHECK` 제약은 허용된 상태 문자열만 검사한다. 위 전이 순�
 | Condition             | Expected columns                                                                                         |
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
 | `status = queued`     | `gemini_interaction_id`와 `submitted_at`이 아직 `NULL`일 수 있다.                                        |
-| `status = processing` | `gemini_interaction_id`와 `submitted_at`이 존재해야 한다.                                                |
+| `status = processing` | `submitted_at`이 존재한다. 정상 제출 후에는 `gemini_interaction_id`도 존재하며, 없는 상태가 오래 지속되면 reconciliation이 제출 실패로 정리한다. |
 | `status = completed`  | `result_json`과 `finished_at`이 존재해야 한다.                                                           |
 | `status = failed`     | `error_stage`와 `finished_at`이 존재해야 하며, 가능한 경우 `error_code` 또는 `error_message`도 기록한다. |
 | `status = cancelled`  | `finished_at`이 존재해야 한다.                                                                           |
@@ -646,6 +659,9 @@ DELETE users
 | `ai_jobs_gemini_interaction_unique` | `gemini_interaction_id`      | 웹훅으로 Job을 찾고 Interaction 중복 연결을 방지한다.                   |
 | `ai_jobs_user_created_at_idx`       | `user_id`, `created_at`      | 사용자의 Job 목록을 생성 시각 기준으로 조회한다.                        |
 | `ai_jobs_status_updated_at_idx`     | `status`, `updated_at`       | 오래된 `queued` 또는 `processing` Job을 reconciliation 대상으로 찾는다. |
+| `ai_jobs_content_project_idx`       | `content_project_id`         | Project에 연결된 Compiler Job을 조회한다.                               |
+| `ai_jobs_content_build_idx`         | `content_build_id`           | Build 진행 상태를 구성하는 Job을 조회한다.                              |
+| `ai_jobs_target_node_idx`           | `target_node_id`             | 이후 Node 단위 작업 이력을 조회한다.                                    |
 
 ### `webhook_events`
 
@@ -657,7 +673,7 @@ DELETE users
 
 ## Intended data flow
 
-인증 흐름은 현재 Route Handler와 서비스 코드까지 구현되어 있다. AI Job과 Gemini 웹훅 흐름은 스키마가 지원하는 목표 구조이며 Route Handler와 서비스 코드는 아직 구현되지 않았다.
+인증 흐름과 Content Graph Planning 흐름은 Route Handler와 서비스 코드까지 구현되어 있다. 아래 AI 흐름은 Phase 0–3의 현재 실행 경로다.
 
 ### 1. User synchronization
 
@@ -684,16 +700,21 @@ Chaek session 생성
 
 ```text
 Client
-  └── POST /api/ai/jobs
+  └── POST /api/content-projects
         ├── authenticated user
         ├── Idempotency-Key
-        └── content generation input
+        └── seedInput
                   │
                   ▼
-ai_jobs INSERT
-  ├── task_type = content_generation
-  ├── status = queued
+content_projects + content_builds + ai_jobs INSERT
+  ├── task_type = brief_generation
+  ├── build.phase = interpreting
   └── user_id = users.id
+                  │
+                  ▼
+ai_jobs UPDATE
+  ├── status = processing
+  └── submitted_at
                   │
                   ▼
 Gemini interactions.create(background = true)
@@ -701,8 +722,6 @@ Gemini interactions.create(background = true)
                   ▼
 ai_jobs UPDATE
   ├── gemini_interaction_id
-  ├── status = processing
-  ├── submitted_at
   └── updated_at
 ```
 
@@ -761,11 +780,11 @@ webhook_events
 웹훅 이벤트 재처리
 ```
 
-새 Gemini Interaction을 자동으로 만드는 재시도는 하지 않는다. reconciliation은 기존 `gemini_interaction_id`의 상태와 결과를 다시 확인하는 복구 절차다.
+아직 제출되지 않은 `queued` Job은 reconciliation이 제출할 수 있다. `gemini_interaction_id`가 저장된 Job은 새 Interaction을 만들지 않고 기존 Interaction의 상태와 결과를 다시 확인한다.
 
 ## Application-level rules
 
-현재 DB 제약만으로는 다음 규칙을 모두 보장하지 않는다. 인증 관련 규칙은 현재 서비스와 Route Handler에 구현되어 있고, AI 관련 규칙은 이후 코드에서 명시적으로 구현해야 한다.
+현재 DB 제약만으로는 다음 규칙을 모두 보장하지 않는다. 인증 및 Phase 0–3 AI 관련 규칙은 현재 서비스와 Route Handler에도 명시적으로 구현되어 있다.
 
 - 인증된 사용자의 `users.id`와 `ai_jobs.user_id`가 일치해야 한다.
 - Google 로그인 callback은 `accounts.provider_id = 'google'`만 허용해야 한다.
@@ -796,11 +815,15 @@ webhook_events
 - Chaek 자체 opaque session과 로그아웃
 - 사용자 소유권
 - 기본 `content_generation` 작업 타입
+- Brief Generation과 Graph Planning 작업 타입
 - Gemini Background Interaction 연결 필드
 - AI Job 상태와 오류 모델
 - 사용자 요청 멱등성
 - 웹훅 inbox와 중복 제거
 - reconciliation 조회를 위한 컬럼과 인덱스
+- Content Project, Node, Edge와 Build
+- Content Graph 소유권과 Project 생성 멱등성
+- AI Job과 Project, Build, Target Node 연결
 - Drizzle migrations
 
 현재 포함되지 않은 범위:
@@ -809,9 +832,8 @@ webhook_events
 - 실제 Google credential을 이용한 end-to-end 로그인 검증
 - 계정 명시적 연결·해제와 모든 기기 로그아웃
 - session rotation과 주기적인 만료 데이터 정리
-- `content_generation` 입력·결과의 구체적인 런타임 스키마
-- AI Job 생성·조회·취소 Route Handler
-- Gemini 웹훅 서명 검증과 결과 조회
-- Vercel Cron reconciliation
+- 일반 목적 AI Job 생성·취소 Route Handler
+- Vercel Scheduled Trigger 설정
 - 데이터 보존 기간과 자동 삭제
-- 대화, 책, 문서 등 AI 결과가 귀속될 제품 도메인 테이블
+- Chapter Revision, Research Source, Issue와 Review 테이블
+- 실제 Gemini/Webhook E2E 검증

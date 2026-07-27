@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import {
-  getAuthConfig,
+  getGoogleOauthConfig,
   getOauthStateCookieOptions,
   OAUTH_STATE_COOKIE_NAME,
 } from "@/lib/auth/config";
@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    getAuthConfig();
+    getGoogleOauthConfig();
 
     const oauthState = await createOauthState(
       request.nextUrl.searchParams.get("returnTo"),
