@@ -13,7 +13,7 @@
 
 이 문서는 Chaek의 콘텐츠 생성 기능에 대한 구현 Source of Truth다. 여기서 말하는 구현은 사용자 입력을 해석해 콘텐츠 그래프를 만들고, Gemini를 이용해 각 그래프 노드를 리서치·작성·검수·수정하여 한 권의 장편 독립 콘텐츠로 완성하는 흐름을 뜻한다.
 
-이 문서는 목표 구조와 단계별 구현 경계를 정의한다. Phase 0–3의 계약, Graph 영속성, Brief/Graph Planning, Webhook과 Reconciliation 코드는 구현되어 있다. Phase 4 이후의 Revision, Research, 전체 의존성 Build와 Review 구조는 아직 목표 설계이며, 문서에 등장한다는 이유만으로 현재 구현으로 간주하지 않는다.
+이 문서는 목표 구조와 단계별 구현 경계를 정의한다. Phase 0–3의 계약, Graph 영속성, Brief/Graph Planning과 client polling 기반 Reconciliation 코드는 구현되어 있다. Phase 4 이후의 Revision, Research, 전체 의존성 Build와 Review 구조는 아직 목표 설계이며, 문서에 등장한다는 이유만으로 현재 구현으로 간주하지 않는다.
 
 ## 요약
 
@@ -39,8 +39,8 @@ Chaek은 Gemini에게 한 권의 책을 한 번에 생성하도록 요청하지 
 5. 구조 검증, 순환 검증, 참조 검증, 버전 충돌 검증은 결정론적인 애플리케이션 코드가 수행한다.
 6. 리서치와 집필을 분리한다. 리서치 단계에서 출처를 확정하고 집필 단계에서는 승인된 Research Packet을 사용한다.
 7. `previous_interaction_id`는 동일 작업의 짧은 Repair에만 사용하고 책 전체의 기억으로 사용하지 않는다.
-8. 웹훅은 완료 알림일 뿐 최종 결과가 아니다. 서명 검증과 중복 제거 후 `interactions.get()`으로 실제 결과를 회수한다.
-9. Next.js `after()`는 빠른 후속 처리에 사용할 수 있지만, 영속적인 복구는 DB inbox와 reconciliation이 담당한다.
+8. Background Interaction의 완료 결과는 client가 Build Status API를 polling할 때 `interactions.get()`으로 회수한다.
+9. 탭이 중지된 동안 즉시 반영되지 않아도, 사용자가 돌아와 다시 조회하면 동일한 idempotent reconciliation이 결과를 DB에 적용한다.
 10. 최초 구현은 전체 자동 생성이 아니라 Graph Planning 수직 단면부터 시작한다.
 
 ## 1. 배경과 제품 정의
@@ -137,10 +137,6 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
   - Gemini Interaction ID
   - Job 상태·오류·사용량
   - reconciliation 시각
-- `lib/db/schema/webhook-events.ts`
-  - 웹훅 inbox
-  - `webhook-id` 기반 중복 제거
-  - 처리 상태와 재시도 시각
 - `lib/auth/session.ts`
   - `requireUser()` 기반 인증 사용자 확인
 - Turso/libSQL과 Drizzle ORM
@@ -151,12 +147,17 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
 - `POST /api/content-projects`와 Project, Graph, Build 조회 Route Handler
 - Brief Generation과 Graph Planning Background Interaction
 - Structured Output 회수, 런타임 검증과 Graph 저장 Transaction
-- Standard Webhooks 서명 검증, Webhook Inbox와 `after()` Fast Path
-- Polling 및 내부 Reconciliation 경로
-- 실제 Gemini credential, Vercel Preview와 Turso를 사용한
+- Build Status 요청 기반 Polling과 Reconciliation 경로
+- `/content` 사용자용 생성·상태·Outline 화면
+  - nonterminal Build를 2.5초 간격으로 조회
+  - background 탭에서는 조회 중지
+  - 탭 복귀 시 즉시 Build Status 재조회
+  - 완료 후 Project Summary를 조회해 Part와 Chapter 표시
+- `/content/test` 인증 없는 정적 Content View 검증 화면
+- 실제 Gemini credential, Vercel Production과 Turso를 사용한
   `LLM From Scratch` Brief → Graph Planning → Graph 저장 E2E
   - Polling Reconciliation을 통해 완료
-  - 동일 Idempotency Key 재요청이 같은 Project와 Build로 수렴
+  - 약 65초 안에 4 Parts, 9 Chapters, 12 Concepts, 5 Examples 저장
 
 ### 4.2 아직 구현되지 않은 범위
 
@@ -167,11 +168,6 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
 - 여러 Chapter의 의존성 Scheduler
 - 실제 Revision 변경에 따른 `stale` 전파
 - Node Review, Project Review와 Completion 판정
-- 사용자용 콘텐츠 생성 UI
-- Production Static Webhook 등록
-- 실제 Gemini completion event가 Static Webhook → Inbox로 전달되는 E2E
-  - 2026-07-27 Preview 검증에서는 enabled webhook에 completion event가
-    5분 내 전달되지 않았고, Polling Reconciliation으로 복구했다.
 
 ### 4.3 공식 API 기준
 
@@ -188,11 +184,7 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
   - Schema 적합성 외의 의미 검증은 애플리케이션이 수행한다.
 - [Gemini Background Execution](https://ai.google.dev/gemini-api/docs/background-execution)
   - 장시간 작업은 `background=true`로 실행한다.
-  - Interaction ID를 저장한 뒤 polling, streaming 또는 webhook으로 상태를 확인한다.
-- [Gemini Webhooks](https://ai.google.dev/gemini-api/docs/webhooks)
-  - 웹훅은 Thin Payload다.
-  - 서명과 timestamp를 검증한다.
-  - 전달은 at-least-once이므로 `webhook-id`로 중복 제거한다.
+  - Interaction ID를 저장한 뒤 `interactions.get()` polling으로 상태와 결과를 확인한다.
 - [Grounding with Google Search](https://ai.google.dev/gemini-api/docs/google-search)
   - 현재 정보와 기술적 근거가 필요한 Research Job에서 사용한다.
   - 응답의 Annotation과 Search Step을 Source 정규화에 사용한다.
@@ -202,9 +194,6 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
 - [Next.js Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)
   - API 경계는 `app/**/route.ts`의 Web Request/Response 기반 Route Handler로 구현한다.
   - 사용자·Job 조회 응답은 캐시하지 않는다.
-- [Next.js `after`](https://nextjs.org/docs/app/api-reference/functions/after)
-  - 응답 이후의 짧은 후속 처리에 사용할 수 있다.
-  - 플랫폼의 Route 최대 실행 시간 안에서만 실행되므로 유일한 복구 경로로 사용하지 않는다.
 - [Zod JSON Schema](https://zod.dev/json-schema)
   - 구현 시 Zod 4를 런타임 스키마의 Source of Truth로 도입한다.
   - `z.toJSONSchema()`로 Gemini에 전달할 JSON Schema를 만든다.
@@ -278,8 +267,6 @@ Gemini는 데이터베이스 명령을 생성하지 않는다. 단계별 도메�
 │ POST content-projects               │
 │ GET  project / graph / build        │
 │ POST builds / cancel                │
-│ POST Gemini webhook                 │
-│ POST internal reconciliation        │
 └──────────┬──────────────────────────┘
            │
            ▼
@@ -295,7 +282,7 @@ Gemini는 데이터베이스 명령을 생성하지 않는다. 단계별 도메�
 │ Impact Analyzer                     │
 │ Build Coordinator                   │
 └───────┬─────────────────┬───────────┘
-        │                 │
+        │                 │ interactions.get()
         │                 ▼
         │      ┌──────────────────────┐
         │      │ Gemini Interactions  │
@@ -304,7 +291,6 @@ Gemini는 데이터베이스 명령을 생성하지 않는다. 단계별 도메�
         │      │ Background Execution │
         │      │ Google Search        │
         │      └──────────┬───────────┘
-        │                 │ thin webhook
         ▼                 ▼
 ┌─────────────────────────────────────┐
 │ Turso / Drizzle                     │
@@ -318,7 +304,6 @@ Gemini는 데이터베이스 명령을 생성하지 않는다. 단계별 도메�
 │ content_builds                      │
 │ content_issues                      │
 │ ai_jobs                             │
-│ webhook_events                      │
 └─────────────────────────────────────┘
 ```
 
@@ -356,7 +341,7 @@ Gemini는 데이터베이스 명령을 생성하지 않는다. 단계별 도메�
 - Job 생성은 사용자별 Idempotency Key를 사용한다.
 - 외부 API 호출 중에는 DB Transaction을 열어두지 않는다.
 - terminal Job을 비terminal 상태로 되돌리지 않는다.
-- Gemini 웹훅 payload를 최종 AI 결과로 간주하지 않는다.
+- Gemini Interaction 조회 결과를 런타임 계약과 도메인 규칙 검증 없이 적용하지 않는다.
 - Structured Output 통과만으로 결과를 적용하지 않는다.
 - Gemini 오류 원문과 내부 Prompt를 클라이언트에 그대로 노출하지 않는다.
 
@@ -391,8 +376,6 @@ erDiagram
 
     CONTENT_BUILDS ||--o{ AI_JOBS : contains
     CONTENT_BUILDS ||--o{ CONTENT_ISSUES : discovers
-
-    AI_JOBS o|--o{ WEBHOOK_EVENTS : matches
 ```
 
 ### 9.2 `content_projects`
@@ -419,7 +402,7 @@ INDEX (user_id, updated_at)
 INDEX (user_id, created_at)
 ```
 
-사용자가 Project를 삭제하면 해당 Project의 Node, Edge, Revision, Source, Build와 Issue를 삭제한다. 연결된 AI Job과 웹훅 보존 정책은 데이터 보존 정책 확정 시 다시 검토한다.
+사용자가 Project를 삭제하면 해당 Project의 Node, Edge, Revision, Source, Build와 Issue를 삭제한다. 연결된 AI Job의 보존 정책은 데이터 보존 정책 확정 시 다시 검토한다.
 
 ### 9.3 `content_nodes`
 
@@ -1005,7 +988,7 @@ dependency_revision_ids
 task-specific input
 ```
 
-API Key, Session Token, OAuth Token, Webhook Secret은 포함하지 않는다.
+API Key, Session Token과 OAuth Token은 포함하지 않는다.
 
 ## 13. Build 단계
 
@@ -1182,60 +1165,41 @@ const interaction = await getGeminiClient().interactions.create({
 
 Interactions API와 Legacy Generate Content API 필드를 혼합하지 않는다.
 
-### 14.3 웹훅
+### 14.3 Client polling
 
-Static Webhook 하나를 Project 수준에서 등록하는 방향을 유지한다.
-
-Dynamic Webhook은 Job별 라우팅이 반드시 필요한 경우에만 재검토한다. 현재는 `gemini_interaction_id`와 내부 Job Mapping으로 충분하며, Dynamic Webhook의 별도 JWKS 검증 경계를 추가할 필요가 없다.
-
-단, 2026-07-27 Vercel Preview에서는 Static Webhook이 `enabled` 상태였음에도
-완료된 Background Interaction의 completion event가 5분 내 도착하지
-않았다. 동일 Interaction은 `interactions.get()`에서 `completed`로
-조회됐고 Polling Reconciliation으로 정상 반영됐다. 따라서 현재
-Webhook Fast Path는 구현 완료·실배포 미검증으로 간주하며, Production
-활성화 전에 Static delivery 원인을 재확인하거나 Dynamic Webhook을
-비교 검증한다.
+사용자 화면은 nonterminal Build를 2–3초 간격으로 조회한다. 브라우저는 Gemini를 직접 호출하지 않고 Chaek의 Build Status API만 호출한다.
 
 ```text
-Gemini
-  → POST /api/webhooks/gemini
-      1. request.text()
-      2. timestamp 검사
-      3. signature 검증
-      4. webhook-id 중복 제거
-      5. webhook_events INSERT
-      6. 2xx 반환
-      7. after() 빠른 처리 예약
+Client
+  → GET /api/content-projects/{projectId}/builds/{buildId}
+      1. Session과 Project 소유권 확인
+      2. reconcileContentBuild(buildId)
+      3. 조회 가능한 nonterminal ai_jobs 선택
+      4. interactions.get(geminiInteractionId)
+      5. normalize
+      6. apply
+      7. advanceContentBuild()
+      8. 최신 Build 상태 반환
 ```
 
-Signature 검증 전에 JSON을 신뢰하거나 `webhook_events`에 정상 이벤트로 저장하지 않는다.
+Client 요청은 2–3초 간격이어도 Gemini Provider 조회는 `last_reconciled_at`을 기준으로 최소 5초 간격을 유지한다. Build가 `completed`에 도달하면 Project 또는 Graph API를 다시 조회해 적용된 콘텐츠를 표시하고 polling을 중단한다. `failed` 또는 `cancelled`에서도 polling을 중단한다.
 
-### 14.4 빠른 처리와 복구 처리
+### 14.4 탭 복귀와 Request-driven reconciliation
 
-`after()`는 빠른 UX를 위한 Fast Path다.
+브라우저가 background 상태인 동안 polling이 중지되거나 지연되는 것을 허용한다. 이 기간에는 Gemini Interaction이 완료되어도 Chaek DB 반영이 늦을 수 있다.
+
+사용자가 탭으로 돌아오거나 화면을 다시 열면 즉시 Build Status API를 호출한다.
 
 ```text
-after()
-  → processWebhookEvent(eventId)
+tab visible 또는 screen mount
+  → Build Status GET
+  → reconcileContentBuild(buildId)
   → interactions.get()
-  → normalize
-  → apply
-  → advanceContentBuild()
+  → 완료 결과 적용
+  → 다음 Job 제출 또는 terminal 상태 반환
 ```
 
-`after()`는 Route 최대 실행 시간에 제한되므로 Durable Queue로 간주하지 않는다.
-
-다음 경로가 Recovery Path다.
-
-```text
-Reconciliation Trigger
-  ├── received / failed webhook_events 재처리
-  ├── 오래된 queued / processing ai_jobs 조회
-  ├── interactions.get()으로 실제 상태 확인
-  └── advanceContentBuild() 재호출
-```
-
-Fast Path와 Recovery Path는 동일한 idempotent service 함수를 호출한다.
+현재 단계에서는 Scheduled Trigger나 별도 Worker를 두지 않는다. 사용자가 돌아오기 전까지 DB 상태 반영이 지연될 수 있다는 trade-off를 받아들이고, 동일 결과의 반복 조회는 조건부 Update와 Job Idempotency Key로 한 번만 적용되도록 한다.
 
 ### 14.5 `advanceContentBuild`
 
@@ -1478,21 +1442,11 @@ POST /api/content-projects/{projectId}/nodes/{nodeId}/revisions
 
 사용자 저장도 새 Revision을 생성한다. 요청에는 현재 `baseRevisionId`를 포함해 낙관적 동시성 제어를 적용한다.
 
-### 17.8 Gemini Webhook
+### 17.8 Client polling lifecycle
 
-```http
-POST /api/webhooks/gemini
-```
+사용자 화면은 Build 생성 직후와 화면 mount 시 Build Status API를 즉시 호출하고, nonterminal 상태에서는 2–3초 간격으로 반복한다. `document.visibilityState`가 다시 `visible`이 되면 interval을 기다리지 않고 즉시 한 번 더 조회한다. 완료 상태를 받으면 Project 또는 Graph API를 다시 조회해야 실제 콘텐츠가 화면에 나타난다.
 
-브라우저 Session 인증을 사용하지 않는다. Gemini Webhook Signature만 신뢰 경계로 사용한다.
-
-### 17.9 Reconciliation
-
-```http
-POST /api/internal/ai/reconcile
-```
-
-공개 사용자 API가 아니다. 배포 환경의 Scheduled Trigger와 내부 인증 방법은 구현 단계에서 Vercel 현재 계약을 확인해 확정한다.
+이 lifecycle은 `components/content-compiler-view.tsx`에 구현되어 있다. polling은 Build가 `completed`, `failed`, `cancelled` 중 하나에 도달하면 중단한다.
 
 ## 18. 모듈 경계
 
@@ -1505,8 +1459,7 @@ lib/
 │       ├── client.ts
 │       ├── config.ts
 │       ├── interactions.ts
-│       ├── results.ts
-│       └── webhooks.ts
+│       └── results.ts
 ├── content/
 │   ├── contracts/
 │   │   ├── brief.ts
@@ -1638,7 +1591,6 @@ stateDiagram-v2
 - `TURSO_AUTH_TOKEN`
 - Google OAuth Token과 ID Token
 - Chaek Session Token과 Hash
-- Webhook Signing Secret
 
 ### 20.3 Prompt Injection
 
@@ -1658,11 +1610,8 @@ Background Interaction은 결과 회수 전까지 `store=true`가 필요하다. 
 ```text
 Chaek Content Data
 Gemini Stored Interaction
-Webhook Delivery Payload
 Operational Logs
 ```
-
-사용자 Project 삭제 후 남는 `webhook_events.payload_json`의 보존 기간도 별도 결정이 필요하다.
 
 ## 21. 비용과 성능
 
@@ -1715,7 +1664,6 @@ Planner나 Reviewer에 별도 모델을 쓰는 Model Routing은 실제 품질 �
 - 전체 Prompt
 - 전체 Chapter 본문
 - API Key와 Token
-- Webhook Secret
 - 사용자 Session 정보
 - 검증되지 않은 Gemini Error 원문
 
@@ -1745,11 +1693,11 @@ error_stage = execution
 
 ```text
 ai_jobs.status = processing
-webhook_events.status = failed
-next_attempt_at = backoff
+error_stage = result_fetch
+last_reconciled_at = now
 ```
 
-Interaction이 terminal인지 확정하기 전에는 Job을 즉시 최종 실패로 바꾸지 않는다.
+Interaction이 terminal인지 확정하기 전에는 Job을 즉시 최종 실패로 바꾸지 않는다. 다음 client polling 요청이 다시 조회한다.
 
 ### 23.4 Structured Output 실패
 
@@ -1774,9 +1722,9 @@ result_disposition = conflicted
 
 현재 Revision을 덮어쓰지 않는다. 사용자가 비교하거나 새 기준으로 다시 생성할 수 있다.
 
-### 23.7 웹훅 누락
+### 23.7 Client polling 중단
 
-오래된 `processing` Job을 reconciliation이 조회하고 `interactions.get()` 결과로 보정한다.
+탭이 background 상태가 되면 상태 반영이 지연될 수 있다. 사용자가 탭으로 돌아오거나 화면을 다시 열 때 Build Status API를 즉시 조회해 `interactions.get()` 결과로 보정한다.
 
 ### 23.8 Coordinator 중복 실행
 
@@ -1828,7 +1776,7 @@ Chapter 3, 4, 7을 다시 확인해야 합니다.
 
 ## 25. 테스트 전략
 
-이 절은 구현 후 수행할 검증을 정의한다. 이 문서 작성 시점에는 아래 검증을 실행하지 않았다.
+이 절은 현재 수직 단면과 이후 단계에서 수행할 검증을 함께 정의한다. Unit 8건, Production build, Production DB migration, 실제 Gemini Background Interaction과 client polling 완료 경로는 검증했다. Chapter Revision과 Research가 필요한 항목은 해당 Phase 구현 후 검증한다.
 
 ### 25.1 Unit
 
@@ -1853,7 +1801,6 @@ Chapter 3, 4, 7을 다시 확인해야 합니다.
 - Build Idempotency
 - AI Job과 Build 소유권
 - 사용자 삭제 Cascade
-- AI Job 삭제 후 Webhook `ai_job_id` 처리
 
 ### 25.3 Service Integration
 
@@ -1874,18 +1821,17 @@ Chapter 3, 4, 7을 다시 확인해야 합니다.
 - `Idempotency-Key` 누락
 - 잘못된 요청 Schema
 - `Cache-Control: no-store`
-- Webhook Raw Body 검증
-- Webhook 중복 전달 `2xx`
-- 잘못된 Signature 거부
+- Build Status 조회 시 nonterminal Job reconciliation
 - 내부 Error 비노출
 
-### 25.5 Reconciliation
+### 25.5 Client polling reconciliation
 
-- 웹훅 누락 후 완료 결과 회수
-- Interaction ID 저장 전 웹훅 도착
+- 반복 Build Status 조회에서 완료 결과 회수
+- 5초 Provider polling throttle
+- 동일 완료 결과의 중복 적용 방지
 - 오래된 `queued` Job
 - `processing` Job의 provider terminal 상태 반영
-- 실패한 Webhook Event 재처리
+- 결과 조회 실패 후 다음 client 요청에서 재시도
 
 ### 25.6 End-to-End
 
@@ -1894,9 +1840,9 @@ Chapter 3, 4, 7을 다시 확인해야 합니다.
 - Chapter 1 수정 후 Chapter 2 stale
 - Chapter 2 재생성
 - 실행 중 사용자 편집 후 AI 결과 conflicted
-- 실제 Gemini Background Interaction과 Webhook
+- 실제 Gemini Background Interaction과 polling
 
-실제 Gemini·Google Search·Webhook E2E는 개발 Key, 공개 HTTPS Callback과 비용이 필요하므로 Mock 검증과 분리해 기록한다.
+실제 Gemini·Google Search E2E는 개발 Key와 비용이 필요하므로 Mock 검증과 분리해 기록한다.
 
 ## 26. 구현 단계
 
@@ -1949,18 +1895,15 @@ DB와 Gemini 호출 없이 순수 함수로 검증한다.
 - Build 상태 조회
 - Polling 기반 결과 확인
 
-초기에는 웹훅 없이 polling/reconciliation으로 흐름을 먼저 검증할 수 있다. 단, Production 완료 조건에는 웹훅이 포함된다.
-
-### Phase 3. Webhook과 Reconciliation
+### Phase 3. Polling과 Reconciliation
 
 범위:
 
-- Static Webhook 등록
-- Raw Body 서명 검증
-- Webhook inbox
-- `after()` Fast Path
-- `processWebhookEvent`
-- 오래된 Job Reconciliation
+- Build Status 요청 기반 `reconcileContentBuild`
+- `interactions.get()` 결과 회수
+- Provider polling throttle
+- 완료 결과와 다음 Job의 멱등 적용
+- 결과 조회 실패 후 다음 요청 재시도
 - 중복·경합 테스트
 
 ### Phase 4. 단일 Chapter Revision
@@ -2020,7 +1963,6 @@ DB와 Gemini 호출 없이 순수 함수로 검증한다.
 - `waiting_for_user`로 전환하는 중요 가정 기준
 - Gemini Interaction 삭제 시점
 - Source Snapshot 보존 여부
-- Project 삭제 후 Webhook Event 보존 기간
 - Planner와 Reviewer의 별도 모델 사용
 
 이 값들을 DB Schema나 Product Contract에 고정하지 않는다.
@@ -2049,8 +1991,6 @@ Phase별로 다음 결정을 확인한다.
 
 ### Production 전에
 
-- Vercel Reconciliation Trigger 인증
-- Gemini Webhook Secret Rotation
 - Interaction과 사용자 콘텐츠 보존 기간
 - 사용자 삭제와 외부 Provider 데이터 삭제 절차
 

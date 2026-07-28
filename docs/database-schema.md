@@ -1,6 +1,6 @@
 # Chaek Database Schema
 
-Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현재 데이터 모델은 인증과 세션, Gemini Background Interaction, 웹훅 inbox, Content Project, Content Graph와 Build를 다루는 열 개 테이블로 구성된다.
+Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현재 데이터 모델은 인증과 세션, Gemini Background Interaction, Content Project, Content Graph와 Build를 다루는 아홉 개 테이블로 구성된다.
 
 이 문서의 기준 소스는 다음과 같다.
 
@@ -8,7 +8,7 @@ Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현�
 - migrations: `drizzle/*.sql`
 - DB 클라이언트: `lib/db/client.ts`
 
-현재 스키마와 migration, Google OAuth, Chaek 세션, Brief/Graph Planning AI Job, Gemini 웹훅 Route Handler와 reconciliation 서비스가 구현되어 있다. Chapter Revision, Research, 전체 책 Build와 Review 관련 테이블은 아직 구현되지 않았다. Content Compiler의 상세 계약은 [`content-compiler-implementation-design.md`](./content-compiler-implementation-design.md)를 기준으로 한다.
+현재 스키마와 migration, Google OAuth, Chaek 세션, Brief/Graph Planning AI Job과 Build Status 요청 기반 reconciliation이 구현되어 있다. Chapter Revision, Research, 전체 책 Build와 Review 관련 테이블은 아직 구현되지 않았다. Content Compiler의 상세 계약은 [`content-compiler-implementation-design.md`](./content-compiler-implementation-design.md)를 기준으로 한다.
 
 ## Overview
 
@@ -22,7 +22,6 @@ erDiagram
     CONTENT_PROJECTS ||--o{ CONTENT_EDGES : defines
     CONTENT_PROJECTS ||--o{ CONTENT_BUILDS : generates
     CONTENT_BUILDS ||--o{ AI_JOBS : contains
-    AI_JOBS o|--o{ WEBHOOK_EVENTS : matches
 
     USERS {
         text id PK
@@ -74,17 +73,6 @@ erDiagram
         integer created_at
         integer updated_at
     }
-
-    WEBHOOK_EVENTS {
-        text id PK
-        text event_type
-        text gemini_interaction_id
-        text ai_job_id FK
-        text payload_json
-        text status
-        integer received_at
-        integer processed_at
-    }
 ```
 
 관계의 핵심은 다음과 같다.
@@ -96,9 +84,6 @@ erDiagram
 - `oauth_states`는 아직 인증된 사용자가 없는 로그인 시작 단계를 저장하므로 `users`와 외래키 관계가 없다.
 - 한 `users` 행은 여러 `ai_jobs`를 소유할 수 있다.
 - 각 `ai_jobs` 행은 반드시 한 사용자를 참조한다.
-- 한 `ai_jobs`에는 상태 변화와 재전송에 따라 여러 `webhook_events`가 연결될 수 있다.
-- `webhook_events`는 아직 Job을 찾지 못한 상태로 먼저 저장될 수 있으므로 `ai_job_id`가 `NULL`일 수 있다.
-- `ai_jobs.gemini_interaction_id`와 `webhook_events.gemini_interaction_id`는 DB 외래키가 아니라 Gemini가 발급한 외부 식별자를 통한 논리적 연결이다.
 
 ## Common conventions
 
@@ -107,8 +92,6 @@ erDiagram
 `users.id`, `accounts.id`, `sessions.id`, `ai_jobs.id`는 애플리케이션에서 `crypto.randomUUID()`로 생성하는 `TEXT` Primary Key다.
 
 UUID 생성은 Drizzle의 `$defaultFn()`이 담당한다. 따라서 Drizzle을 거치지 않고 migration SQL이나 다른 SQL 클라이언트로 직접 `INSERT`할 때는 `id`를 명시해야 한다. DB migration 자체에는 UUID 생성 기본값이 없다.
-
-`webhook_events.id`는 애플리케이션 UUID가 아니라 Gemini 웹훅 요청의 `webhook-id`를 그대로 사용한다. 이 값은 동일한 웹훅 재전송을 식별하는 멱등성 키다.
 
 `oauth_states.state_hash`는 UUID가 아니라 로그인 시작 시 생성한 원본 OAuth `state`의 SHA-256 hash다. 원본은 브라우저의 짧은 HttpOnly cookie에만 저장한다.
 
@@ -120,11 +103,11 @@ UUID 생성은 Drizzle의 `$defaultFn()`이 담당한다. 따라서 Drizzle을 �
 integer("created_at", { mode: "timestamp_ms" });
 ```
 
-`created_at`, `received_at` 등의 기본값은 DB의 `(unixepoch() * 1000)`을 사용한다. DB 자동 갱신 trigger는 없다. `users.updated_at`과 `accounts.updated_at`에는 Drizzle의 `$onUpdate()`가 설정되어 있지만 이는 Drizzle update 실행 시 동작하는 애플리케이션 레벨 기능이다. 직접 SQL을 실행하거나 다른 클라이언트를 사용하면 수정 코드가 `updated_at`을 함께 변경해야 한다.
+`created_at` 등의 기본값은 DB의 `(unixepoch() * 1000)`을 사용한다. DB 자동 갱신 trigger는 없다. `users.updated_at`과 `accounts.updated_at`에는 Drizzle의 `$onUpdate()`가 설정되어 있지만 이는 Drizzle update 실행 시 동작하는 애플리케이션 레벨 기능이다. 직접 SQL을 실행하거나 다른 클라이언트를 사용하면 수정 코드가 `updated_at`을 함께 변경해야 한다.
 
 ### JSON
 
-`input_json`, `result_json`, `usage_json`, `payload_json`은 SQLite에는 `TEXT`로 저장되고 Drizzle에서는 `text(..., { mode: "json" })`으로 직렬화된다.
+`input_json`, `result_json`, `usage_json`은 SQLite에는 `TEXT`로 저장되고 Drizzle에서는 `text(..., { mode: "json" })`으로 직렬화된다.
 
 현재 DB에는 `json_valid()` `CHECK` 제약이 없다. JSON 구조와 필수 속성은 Route Handler 또는 서비스 계층의 런타임 검증이 담당해야 한다.
 
@@ -221,8 +204,6 @@ DELETE users
   ├── CASCADE DELETE sessions
   └── CASCADE DELETE ai_jobs
 ```
-
-Job과 연결된 `webhook_events`는 삭제되지 않고 `ai_job_id`만 `NULL`로 변경된다. 웹훅 payload는 Gemini Interaction ID와 상태를 담는 운영 이벤트이므로 Job 삭제 후에도 전달 이력을 보존한다.
 
 ## `sessions`
 
@@ -391,8 +372,7 @@ DB `CHECK` 제약은 허용된 상태 문자열만 검사한다. 위 전이 순�
 | -------------- | ----------------------------------------------------- |
 | `submission`   | Gemini Interaction 생성 요청 단계                     |
 | `execution`    | Gemini Background Interaction 실행 단계               |
-| `result_fetch` | 완료 웹훅 수신 후 `interactions.get()` 결과 조회 단계 |
-| `webhook`      | 웹훅 검증, 저장 또는 매칭 단계                        |
+| `result_fetch` | client polling에서 `interactions.get()` 결과 조회 단계 |
 | `internal`     | DB 처리 등 Chaek 내부 단계                            |
 
 `submission_failed` 같은 상태를 별도로 두지 않고 `status = failed`, `error_stage = submission` 조합으로 표현한다.
@@ -417,94 +397,6 @@ DB `CHECK` 제약은 허용된 상태 문자열만 검사한다. 위 전이 순�
 | `status = failed`     | `error_stage`와 `finished_at`이 존재해야 하며, 가능한 경우 `error_code` 또는 `error_message`도 기록한다. |
 | `status = cancelled`  | `finished_at`이 존재해야 한다.                                                                           |
 | `status = incomplete` | 가능한 부분 결과가 있다면 `result_json`에 저장하고 `finished_at`을 기록한다.                             |
-
-## `webhook_events`
-
-`webhook_events`는 Gemini 웹훅 전달을 먼저 안전하게 보관하고 중복·실패·Job 매칭 경합을 흡수하는 inbox 테이블이다.
-
-### Identity and matching columns
-
-| Column                  | Drizzle property      | Required | Description                                                           |
-| ----------------------- | --------------------- | -------- | --------------------------------------------------------------------- |
-| `id`                    | `id`                  | Yes      | Gemini `webhook-id`. Primary Key이며 웹훅 전달 중복 제거 키다.        |
-| `event_type`            | `eventType`           | Yes      | Gemini Interaction 이벤트 종류다.                                     |
-| `event_version`         | `eventVersion`        | No       | Gemini 웹훅 envelope 버전이다.                                        |
-| `gemini_interaction_id` | `geminiInteractionId` | Yes      | 이벤트가 가리키는 Gemini Interaction ID다.                            |
-| `ai_job_id`             | `aiJobId`             | No       | 매칭된 `ai_jobs.id`. 아직 매칭되지 않았다면 `NULL`이다.               |
-| `payload_json`          | `payloadJson`         | Yes      | 서명 검증을 통과한 웹훅 payload다. 서명이나 API 키는 저장하지 않는다. |
-
-허용되는 `event_type`은 다음과 같다.
-
-```text
-interaction.requires_action
-interaction.completed
-interaction.failed
-interaction.cancelled
-```
-
-`webhook_events.gemini_interaction_id`는 `ai_jobs.gemini_interaction_id`를 논리적으로 참조하지만 DB 외래키는 아니다. 웹훅이 먼저 도착하면 아직 일치하는 Job 행이 없을 수 있기 때문이다.
-
-매칭 흐름은 다음과 같다.
-
-```text
-webhook_events.gemini_interaction_id
-                │
-                ▼
-ai_jobs.gemini_interaction_id
-                │
-                ▼
-webhook_events.ai_job_id = ai_jobs.id
-```
-
-Interaction ID로 Job을 찾지 못한 경우에도 웹훅 행을 삭제하지 않는다. `ai_job_id = NULL`, `status = received` 또는 `failed` 상태로 남겨 이후 reconciliation이 다시 매칭할 수 있어야 한다.
-
-### Processing columns
-
-| Column            | Drizzle property | Required | Default      | Description                                                             |
-| ----------------- | ---------------- | -------- | ------------ | ----------------------------------------------------------------------- |
-| `status`          | `status`         | Yes      | `received`   | Chaek 내부의 웹훅 처리 상태다. Gemini Interaction 상태와 다른 개념이다. |
-| `attempt_count`   | `attemptCount`   | Yes      | `0`          | Chaek 내부에서 이벤트 처리를 시도한 횟수다.                             |
-| `next_attempt_at` | `nextAttemptAt`  | No       | `NULL`       | 실패한 이벤트를 다시 처리할 수 있는 가장 이른 시각이다.                 |
-| `last_error`      | `lastError`      | No       | `NULL`       | 가장 최근 웹훅 처리 오류다.                                             |
-| `occurred_at`     | `occurredAt`     | No       | `NULL`       | Gemini payload에 기록된 이벤트 발생 시각이다.                           |
-| `received_at`     | `receivedAt`     | Yes      | DB 현재 시각 | Chaek가 이벤트를 최초 수신한 시각이다.                                  |
-| `processed_at`    | `processedAt`    | No       | `NULL`       | 이벤트 처리가 완료된 시각이다.                                          |
-| `updated_at`      | `updatedAt`      | Yes      | DB 현재 시각 | 이벤트 처리 상태가 마지막으로 변경된 시각이다.                          |
-
-웹훅 처리 상태는 다음과 같이 사용한다.
-
-```mermaid
-stateDiagram-v2
-    [*] --> received: 검증 후 INSERT
-    received --> processing: 처리 시도 시작
-    processing --> processed: Job 반영 완료
-    processing --> failed: 매칭 또는 결과 조회 실패
-    failed --> processing: 재시도 시각 도달
-    processed --> [*]
-```
-
-`attempt_count`는 음수가 될 수 없도록 DB `CHECK`가 적용되어 있다. 실제 처리 시도마다 증가시키고, 재시도가 필요하면 `next_attempt_at`과 `last_error`를 함께 갱신한다.
-
-웹훅의 `status`는 전달된 Gemini Interaction 상태가 아니다.
-
-```text
-event_type = interaction.completed
-status = received
-```
-
-위 조합은 “Gemini 작업은 완료되었고, Chaek는 완료 이벤트를 받았지만 아직 결과를 DB에 반영하지 않았다”는 의미다.
-
-### Webhook idempotency
-
-동일한 Gemini 웹훅이 재전송되면 같은 `webhook-id`가 다시 들어온다.
-
-```text
-INSERT webhook_events(id = webhook-id)
-  ├── 성공: 최초 수신
-  └── Primary Key 충돌: 이미 수신한 이벤트
-```
-
-Primary Key 충돌은 정상적인 중복 전달로 처리하고, 기존 이벤트 상태를 확인한 뒤 적절한 `2xx`를 반환해야 한다. 중복 이벤트 때문에 `attempt_count`를 무조건 증가시키거나 완료 Job을 다시 덮어쓰면 안 된다.
 
 ## Cross-table relationships
 
@@ -591,23 +483,9 @@ ai_jobs.gemini_interaction_id    Gemini 외부 ID
 두 ID는 책임이 다르다.
 
 - `ai_jobs.id`: 클라이언트 polling, 사용자 권한 검사, Chaek 내부 관계에 사용한다.
-- `gemini_interaction_id`: 웹훅 매칭, `interactions.get()`, 취소 및 reconciliation에 사용한다.
+- `gemini_interaction_id`: `interactions.get()`, 취소 및 request-driven reconciliation에 사용한다.
 
 클라이언트에 Gemini Interaction ID를 작업 조회 ID로 노출하지 않는다.
-
-### Job and webhook matching
-
-```text
-webhook_events.gemini_interaction_id
-                │ logical match
-                ▼
-ai_jobs.gemini_interaction_id
-                │
-                ▼
-webhook_events.ai_job_id
-```
-
-`gemini_interaction_id`를 DB 외래키로 만들지 않고, 매칭 완료 후 내부 `ai_job_id` 외래키를 채운다. 이 구조는 Job 저장과 웹훅 도착 사이의 경합을 허용하면서, 매칭 이후에는 내부 관계를 명시적으로 남긴다.
 
 ### Delete propagation
 
@@ -616,10 +494,9 @@ DELETE users
   ├── CASCADE DELETE accounts
   ├── CASCADE DELETE sessions
   └── CASCADE DELETE ai_jobs
-        └── SET NULL webhook_events.ai_job_id
 ```
 
-외부 로그인 연결인 `accounts`, 활성 로그인인 `sessions`, 사용자 입력·생성 결과를 가진 `ai_jobs`는 사용자와 함께 삭제된다. `oauth_states`는 사용자와 무관한 짧은 일회용 데이터이므로 별도의 만료 정리 대상이다. 웹훅 전달 이력은 남지만 더 이상 삭제된 Job을 참조하지 않는다.
+외부 로그인 연결인 `accounts`, 활성 로그인인 `sessions`, 사용자 입력·생성 결과를 가진 `ai_jobs`는 사용자와 함께 삭제된다. `oauth_states`는 사용자와 무관한 짧은 일회용 데이터이므로 별도의 만료 정리 대상이다.
 
 ## Indexes and query paths
 
@@ -656,20 +533,12 @@ DELETE users
 | Index                               | Columns                      | Purpose                                                                 |
 | ----------------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
 | `ai_jobs_user_idempotency_unique`   | `user_id`, `idempotency_key` | 사용자별 중복 Job 생성을 방지한다.                                      |
-| `ai_jobs_gemini_interaction_unique` | `gemini_interaction_id`      | 웹훅으로 Job을 찾고 Interaction 중복 연결을 방지한다.                   |
+| `ai_jobs_gemini_interaction_unique` | `gemini_interaction_id`      | polling 대상 Interaction의 중복 연결을 방지한다.                       |
 | `ai_jobs_user_created_at_idx`       | `user_id`, `created_at`      | 사용자의 Job 목록을 생성 시각 기준으로 조회한다.                        |
 | `ai_jobs_status_updated_at_idx`     | `status`, `updated_at`       | 오래된 `queued` 또는 `processing` Job을 reconciliation 대상으로 찾는다. |
 | `ai_jobs_content_project_idx`       | `content_project_id`         | Project에 연결된 Compiler Job을 조회한다.                               |
 | `ai_jobs_content_build_idx`         | `content_build_id`           | Build 진행 상태를 구성하는 Job을 조회한다.                              |
 | `ai_jobs_target_node_idx`           | `target_node_id`             | 이후 Node 단위 작업 이력을 조회한다.                                    |
-
-### `webhook_events`
-
-| Index                                    | Columns                     | Purpose                                        |
-| ---------------------------------------- | --------------------------- | ---------------------------------------------- |
-| `webhook_events_gemini_interaction_idx`  | `gemini_interaction_id`     | Interaction별 웹훅 이력을 조회한다.            |
-| `webhook_events_ai_job_idx`              | `ai_job_id`                 | 한 Job에 연결된 웹훅 이력을 조회한다.          |
-| `webhook_events_status_next_attempt_idx` | `status`, `next_attempt_at` | 재처리가 필요한 이벤트를 스케줄 순서로 찾는다. |
 
 ## Intended data flow
 
@@ -725,62 +594,33 @@ ai_jobs UPDATE
   └── updated_at
 ```
 
-DB 트랜잭션을 열어 둔 채 Gemini 외부 API를 호출하지 않는다. Job 생성과 Interaction ID 저장은 별도의 짧은 DB 작업으로 처리하고, 그 사이의 불일치는 웹훅 inbox와 reconciliation으로 복구한다.
+DB 트랜잭션을 열어 둔 채 Gemini 외부 API를 호출하지 않는다. Job 생성과 Interaction ID 저장은 별도의 짧은 DB 작업으로 처리한다.
 
-### 3. Webhook completion
+### 3. Client polling completion
 
 ```text
-Gemini
-  └── interaction.completed
+Client
+  └── GET /api/content-projects/{projectId}/builds/{buildId}
             │
             ▼
-Webhook Route Handler
-  ├── raw body 서명 검증
-  ├── webhook-id 중복 확인
-  └── webhook_events INSERT
+Build 소유권 확인
             │
             ▼
-ai_jobs lookup by gemini_interaction_id
+reconcileContentBuild(buildId)
+  └── 마지막 조회 후 5초 이상 지난 nonterminal ai_jobs 조회
             │
             ▼
-Gemini interactions.get()
+Gemini interactions.get(gemini_interaction_id)
             │
             ▼
 DB update
   ├── ai_jobs.status = completed
   ├── ai_jobs.result_json
   ├── ai_jobs.usage_json
-  ├── ai_jobs.finished_at
-  ├── webhook_events.ai_job_id
-  └── webhook_events.status = processed
+  └── ai_jobs.finished_at
 ```
 
-Gemini 웹훅은 최종 응답 전체가 아닌 Interaction ID 중심의 thin payload를 전달한다. `result_json`은 웹훅 payload를 그대로 복사하는 값이 아니라 `interactions.get()` 결과를 Chaek 형식으로 정규화한 값이다.
-
-### 4. Reconciliation
-
-```text
-ai_jobs
-  └── status in (queued, processing)
-  └── updated_at < threshold
-            │
-            ▼
-Gemini interactions.get(gemini_interaction_id)
-            │
-            ▼
-실제 Gemini 상태로 ai_jobs 보정
-```
-
-```text
-webhook_events
-  └── status = failed
-  └── next_attempt_at <= now
-            │
-            ▼
-웹훅 이벤트 재처리
-```
-
-아직 제출되지 않은 `queued` Job은 reconciliation이 제출할 수 있다. `gemini_interaction_id`가 저장된 Job은 새 Interaction을 만들지 않고 기존 Interaction의 상태와 결과를 다시 확인한다.
+`result_json`은 `interactions.get()` 결과를 Chaek 형식으로 정규화한 값이다. Client는 nonterminal Build를 polling하고, 탭이 중지되었다가 다시 활성화되면 같은 Build Status API를 즉시 다시 호출한다. 그동안 Gemini가 완료되었다면 복귀 시점의 요청이 결과를 DB에 반영한다. 아직 제출되지 않은 `queued` Job은 이 request-driven reconciliation이 제출할 수 있고, `gemini_interaction_id`가 저장된 Job은 새 Interaction을 만들지 않고 기존 Interaction을 조회한다.
 
 ## Application-level rules
 
@@ -798,10 +638,8 @@ webhook_events
 - `input_json`은 `task_type`과 `payload_version`에 맞게 런타임 검증해야 한다.
 - `updated_at`은 모든 상태 변경과 결과 변경에서 함께 갱신해야 한다.
 - terminal Job을 비terminal 상태로 되돌리지 않아야 한다.
-- `completed` 처리와 웹훅 `processed` 처리는 가능한 한 하나의 짧은 DB transaction에서 함께 반영해야 한다.
-- 웹훅 서명 검증 전에는 `webhook_events`에 신뢰된 이벤트로 저장하지 않아야 한다.
+- 같은 완료 결과를 반복 조회해도 결과 적용과 다음 Job 생성은 한 번만 일어나야 한다.
 - Gemini 원본 오류와 `error_message`를 클라이언트에 그대로 노출하지 않아야 한다.
-- 사용자 삭제 후 남은 `webhook_events.payload_json`의 보존 기간은 개인정보 정책이 정해지면 다시 검토해야 한다.
 
 ## Current boundaries
 
@@ -819,8 +657,7 @@ webhook_events
 - Gemini Background Interaction 연결 필드
 - AI Job 상태와 오류 모델
 - 사용자 요청 멱등성
-- 웹훅 inbox와 중복 제거
-- reconciliation 조회를 위한 컬럼과 인덱스
+- client polling과 request-driven reconciliation을 위한 컬럼과 인덱스
 - Content Project, Node, Edge와 Build
 - Content Graph 소유권과 Project 생성 멱등성
 - AI Job과 Project, Build, Target Node 연결
@@ -833,7 +670,7 @@ webhook_events
 - 계정 명시적 연결·해제와 모든 기기 로그아웃
 - session rotation과 주기적인 만료 데이터 정리
 - 일반 목적 AI Job 생성·취소 Route Handler
-- Vercel Scheduled Trigger 설정
+- Scheduled reconciliation
 - 데이터 보존 기간과 자동 삭제
 - Chapter Revision, Research Source, Issue와 Review 테이블
-- 실제 Gemini/Webhook E2E 검증
+- Content Compiler 사용자 화면
