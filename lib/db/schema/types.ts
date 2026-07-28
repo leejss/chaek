@@ -24,22 +24,7 @@ export const AI_JOB_ERROR_STAGES = [
   "submission",
   "execution",
   "result_fetch",
-  "webhook",
   "internal",
-] as const;
-
-export const WEBHOOK_EVENT_TYPES = [
-  "interaction.requires_action",
-  "interaction.completed",
-  "interaction.failed",
-  "interaction.cancelled",
-] as const;
-
-export const WEBHOOK_EVENT_STATUSES = [
-  "received",
-  "processing",
-  "processed",
-  "failed",
 ] as const;
 
 export const AI_JOB_RESULT_DISPOSITIONS = [
@@ -115,8 +100,6 @@ export type AiJobStatus = (typeof AI_JOB_STATUSES)[number];
 export type AiJobErrorStage = (typeof AI_JOB_ERROR_STAGES)[number];
 export type AiJobResultDisposition =
   (typeof AI_JOB_RESULT_DISPOSITIONS)[number];
-export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
-export type WebhookEventStatus = (typeof WEBHOOK_EVENT_STATUSES)[number];
 export type ContentProjectStatus = (typeof CONTENT_PROJECT_STATUSES)[number];
 export type ContentNodeKind = (typeof CONTENT_NODE_KINDS)[number];
 export type ContentNodeEditorialStatus =
@@ -143,5 +126,3 @@ export type AiJobUsage = {
   toolUseTokens?: number;
   totalTokens?: number;
 };
-
-export type WebhookPayload = JsonObject;

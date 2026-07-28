@@ -107,7 +107,7 @@ export const aiJobs = sqliteTable(
     ),
     check(
       "ai_jobs_error_stage_check",
-      sql`${table.errorStage} is null or ${table.errorStage} in ('submission', 'execution', 'result_fetch', 'webhook', 'internal')`,
+      sql`${table.errorStage} is null or ${table.errorStage} in ('submission', 'execution', 'result_fetch', 'internal')`,
     ),
     check(
       "ai_jobs_result_disposition_check",
