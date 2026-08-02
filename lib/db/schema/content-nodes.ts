@@ -8,6 +8,8 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { ChapterContentResult } from "@/lib/content/contracts";
+
 import { contentProjects } from "./content-projects";
 import type { JsonObject } from "./types";
 import {
@@ -36,6 +38,9 @@ export const contentNodes = sqliteTable(
     title: text("title").notNull(),
     position: integer("position"),
     contractJson: text("contract_json", { mode: "json" }).$type<JsonObject>(),
+    contentJson: text("content_json", {
+      mode: "json",
+    }).$type<ChapterContentResult>(),
     editorialStatus: text("editorial_status", {
       enum: CONTENT_NODE_EDITORIAL_STATUSES,
     })

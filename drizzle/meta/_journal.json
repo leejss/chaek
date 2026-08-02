@@ -36,6 +36,13 @@
       "when": 1785249731937,
       "tag": "0004_nosy_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785252479974,
+      "tag": "0005_thick_selene",
+      "breakpoints": true
     }
   ]
 }
