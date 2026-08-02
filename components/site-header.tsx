@@ -37,7 +37,7 @@ export function SiteHeader({
 
         <Link
           className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/20"
-          href="/content"
+          href="/"
         >
           <Image alt="" className="size-7 rounded-md" src={chaekIcon} />
           <span className="text-sm font-semibold tracking-[-0.02em]">
