@@ -15,6 +15,7 @@ export default async function ContentPage({
     buildId?: string;
     nodeId?: string;
     projectId?: string;
+    topic?: string;
   }>;
 }) {
   const [params, session] = await Promise.all([
@@ -35,6 +36,10 @@ export default async function ContentPage({
     contentSearchParams.set("projectId", params.projectId);
   }
 
+  if (params.topic) {
+    contentSearchParams.set("topic", params.topic);
+  }
+
   const signInReturnTo = contentSearchParams.size
     ? `/content?${contentSearchParams.toString()}`
     : "/content";
@@ -44,6 +49,7 @@ export default async function ContentPage({
       initialBuildId={session ? (params.buildId ?? null) : null}
       initialNodeId={session ? (params.nodeId ?? null) : null}
       initialProjectId={session ? (params.projectId ?? null) : null}
+      initialSeedInput={params.topic?.trim() || undefined}
       isAuthenticated={Boolean(session)}
       signInReturnTo={signInReturnTo}
     />

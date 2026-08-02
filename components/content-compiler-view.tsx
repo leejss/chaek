@@ -171,12 +171,14 @@ export function ContentCompilerView({
   initialBuildId,
   initialNodeId,
   initialProjectId,
+  initialSeedInput = "LLM From Scratch",
   isAuthenticated,
   signInReturnTo = "/content",
 }: {
   initialBuildId: string | null;
   initialNodeId: string | null;
   initialProjectId: string | null;
+  initialSeedInput?: string;
   isAuthenticated: boolean;
   signInReturnTo?: string;
 }) {
@@ -186,7 +188,7 @@ export function ContentCompilerView({
     key: string;
     nodeId: string;
   } | null>(null);
-  const [seedInput, setSeedInput] = useState("LLM From Scratch");
+  const [seedInput, setSeedInput] = useState(initialSeedInput);
   const [activeBuild, setActiveBuild] = useState<ActiveBuild | null>(
     initialBuildId && initialProjectId
       ? {

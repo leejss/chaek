@@ -18,20 +18,27 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; returnTo?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    returnTo?: string;
+    topic?: string;
+  }>;
 }) {
   const [params, session] = await Promise.all([
     searchParams,
     getCurrentSession(),
   ]);
   let returnTo = DEFAULT_AUTH_RETURN_TO;
+  const topic = params.topic?.trim();
 
-  try {
-    returnTo = sanitizeAuthReturnTo(
-      params.returnTo ?? DEFAULT_AUTH_RETURN_TO,
-    );
-  } catch {
-    // The OAuth start handler will surface a configuration error if needed.
+  if (params.returnTo) {
+    try {
+      returnTo = sanitizeAuthReturnTo(params.returnTo);
+    } catch {
+      // The OAuth start handler will surface a configuration error if needed.
+    }
+  } else if (topic) {
+    returnTo = `/content?${new URLSearchParams({ topic }).toString()}`;
   }
 
   if (session) {
