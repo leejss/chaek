@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import {
@@ -15,6 +15,103 @@ import {
   ContentBuildNotFoundError,
   ContentProjectNotFoundError,
 } from "../errors";
+
+export type ContentProjectNavigationSection = "today" | "week" | "older";
+
+export type ContentProjectNavigationItem = {
+  buildId: string | null;
+  buildStatus: (typeof contentBuilds.$inferSelect)["status"] | null;
+  id: string;
+  section: ContentProjectNavigationSection;
+  status: (typeof contentProjects.$inferSelect)["status"];
+  title: string;
+  updatedAt: string;
+};
+
+function getNavigationSection(
+  updatedAt: Date,
+  now: Date,
+): ContentProjectNavigationSection {
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  const weekStart = new Date(todayStart);
+  const dayOfWeek = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() - ((dayOfWeek + 6) % 7));
+
+  if (updatedAt >= todayStart) {
+    return "today";
+  }
+
+  if (updatedAt >= weekStart) {
+    return "week";
+  }
+
+  return "older";
+}
+
+export async function getContentProjectNavigation(userId: string) {
+  const db = getDb();
+  const projects = await db
+    .select({
+      createdAt: contentProjects.createdAt,
+      id: contentProjects.id,
+      status: contentProjects.status,
+      title: contentProjects.title,
+      updatedAt: contentProjects.updatedAt,
+    })
+    .from(contentProjects)
+    .where(eq(contentProjects.userId, userId))
+    .orderBy(desc(contentProjects.updatedAt), desc(contentProjects.createdAt))
+    .limit(50);
+
+  if (!projects.length) {
+    return [] satisfies ContentProjectNavigationItem[];
+  }
+
+  const builds = await db
+    .select({
+      id: contentBuilds.id,
+      projectId: contentBuilds.projectId,
+      status: contentBuilds.status,
+      createdAt: contentBuilds.createdAt,
+    })
+    .from(contentBuilds)
+    .where(
+      inArray(
+        contentBuilds.projectId,
+        projects.map((project) => project.id),
+      ),
+    )
+    .orderBy(desc(contentBuilds.createdAt));
+
+  const latestBuildByProjectId = new Map<
+    string,
+    (typeof builds)[number]
+  >();
+
+  for (const build of builds) {
+    if (!latestBuildByProjectId.has(build.projectId)) {
+      latestBuildByProjectId.set(build.projectId, build);
+    }
+  }
+
+  const now = new Date();
+
+  return projects.map((project) => {
+    const latestBuild = latestBuildByProjectId.get(project.id);
+
+    return {
+      buildId: latestBuild?.id ?? null,
+      buildStatus: latestBuild?.status ?? null,
+      id: project.id,
+      section: getNavigationSection(project.updatedAt, now),
+      status: project.status,
+      title: project.title,
+      updatedAt: project.updatedAt.toISOString(),
+    } satisfies ContentProjectNavigationItem;
+  });
+}
 
 export async function getOwnedContentProject(
   userId: string,

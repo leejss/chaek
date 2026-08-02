@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 
-import chaekIcon from "@/app/icon.png";
 import {
   ContentOutline,
   type ProjectSummary,
 } from "@/components/content-outline";
-import { ThemeMenu } from "@/components/theme-menu";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
@@ -206,54 +202,37 @@ const testSummary: ProjectSummary = {
 
 export default function ContentTestPage() {
   return (
-    <main className="min-h-svh px-5 sm:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <header className="flex h-20 items-center justify-between border-b border-border">
-          <Link
-            className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/20"
-            href="/content/test"
+    <div className="py-12 sm:py-16">
+      <section
+        aria-labelledby="content-test-title"
+        className="grid gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-16"
+      >
+        <div className="lg:sticky lg:top-10 lg:self-start">
+          <Badge variant="outline">Content View Test</Badge>
+          <h1
+            className="mt-5 text-4xl leading-[1.08] font-medium tracking-[-0.045em] text-balance sm:text-5xl"
+            id="content-test-title"
           >
-            <Image alt="" className="size-8 rounded-md" src={chaekIcon} />
-            <span className="text-sm font-semibold tracking-[-0.02em]">
-              Chaek
-            </span>
-          </Link>
-          <ThemeMenu />
-        </header>
-
-        <div className="py-12 sm:py-16">
-          <section
-            aria-labelledby="content-test-title"
-            className="grid gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-16"
-          >
-            <div className="lg:sticky lg:top-10 lg:self-start">
-              <Badge variant="outline">Content View Test</Badge>
-              <h1
-                className="mt-5 text-4xl leading-[1.08] font-medium tracking-[-0.045em] text-balance sm:text-5xl"
-                id="content-test-title"
-              >
-                {testSummary.project.title}
-              </h1>
-              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-                {testSummary.project.briefJson?.promise}
-              </p>
-              <div className="mt-8 border-t border-border pt-6">
-                <p className="text-xs font-medium text-muted-foreground">
-                  검증 범위
-                </p>
-                <p className="mt-2 text-sm leading-6">
-                  인증과 생성 요청 없이 완성된 Brief, Part, Chapter, Chapter
-                  Contract의 읽기 화면만 확인합니다.
-                </p>
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              <ContentOutline summary={testSummary} />
-            </div>
-          </section>
+            {testSummary.project.title}
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
+            {testSummary.project.briefJson?.promise}
+          </p>
+          <div className="mt-8 border-t border-border pt-6">
+            <p className="text-xs font-medium text-muted-foreground">
+              검증 범위
+            </p>
+            <p className="mt-2 text-sm leading-6">
+              인증과 생성 요청 없이 완성된 Brief, Part, Chapter, Chapter
+              Contract의 읽기 화면만 확인합니다.
+            </p>
+          </div>
         </div>
-      </div>
-    </main>
+
+        <div className="min-w-0">
+          <ContentOutline summary={testSummary} />
+        </div>
+      </section>
+    </div>
   );
 }
