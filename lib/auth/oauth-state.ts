@@ -5,7 +5,7 @@ import { eq, lt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { oauthStates } from "@/lib/db/schema";
 
-import { OAUTH_STATE_TTL_SECONDS, sanitizeReturnTo } from "./config";
+import { OAUTH_STATE_TTL_SECONDS, sanitizeAuthReturnTo } from "./config";
 import { constantTimeEqual, createRandomToken, createSha256 } from "./crypto";
 
 export async function createOauthState(returnToValue: string | null) {
@@ -21,7 +21,7 @@ export async function createOauthState(returnToValue: string | null) {
     stateHash: createSha256(state),
     codeVerifier,
     nonce,
-    returnTo: sanitizeReturnTo(returnToValue),
+    returnTo: sanitizeAuthReturnTo(returnToValue),
     expiresAt,
   });
 

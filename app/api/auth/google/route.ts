@@ -5,19 +5,27 @@ import {
   getGoogleOauthConfig,
   getOauthStateCookieOptions,
   OAUTH_STATE_COOKIE_NAME,
+  sanitizeAuthReturnTo,
 } from "@/lib/auth/config";
 import { createGoogleAuthorizationUrl } from "@/lib/auth/google";
 import { createOauthState } from "@/lib/auth/oauth-state";
+import {
+  createSignInPath,
+  DEFAULT_AUTH_RETURN_TO,
+} from "@/lib/auth/redirects";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  try {
-    getGoogleOauthConfig();
+  let returnTo = DEFAULT_AUTH_RETURN_TO;
 
-    const oauthState = await createOauthState(
+  try {
+    returnTo = sanitizeAuthReturnTo(
       request.nextUrl.searchParams.get("returnTo"),
     );
+    getGoogleOauthConfig();
+
+    const oauthState = await createOauthState(returnTo);
     const authorizationUrl = createGoogleAuthorizationUrl(oauthState);
     const response = NextResponse.redirect(authorizationUrl);
 
@@ -35,7 +43,10 @@ export async function GET(request: NextRequest) {
     });
 
     const response = NextResponse.redirect(
-      new URL("/sign-in?error=configuration", request.url),
+      new URL(
+        createSignInPath({ error: "configuration", returnTo }),
+        request.url,
+      ),
     );
     response.headers.set("cache-control", "no-store");
 

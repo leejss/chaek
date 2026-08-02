@@ -15,6 +15,11 @@ import {
 } from "@/lib/auth/google";
 import { synchronizeGoogleAccount } from "@/lib/auth/google-account";
 import { consumeOauthState } from "@/lib/auth/oauth-state";
+import {
+  type AuthErrorCode,
+  createSignInPath,
+  DEFAULT_AUTH_RETURN_TO,
+} from "@/lib/auth/redirects";
 import { createSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -38,7 +43,11 @@ function clearOauthStateCookie(response: NextResponse, request: NextRequest) {
   });
 }
 
-function createErrorRedirect(request: NextRequest, code: string) {
+function createErrorRedirect(
+  request: NextRequest,
+  code: AuthErrorCode,
+  returnTo = DEFAULT_AUTH_RETURN_TO,
+) {
   let baseUrl: URL = request.nextUrl;
 
   try {
@@ -48,7 +57,7 @@ function createErrorRedirect(request: NextRequest, code: string) {
   }
 
   const response = NextResponse.redirect(
-    new URL(`/sign-in?error=${encodeURIComponent(code)}`, baseUrl),
+    new URL(createSignInPath({ error: code, returnTo }), baseUrl),
   );
 
   clearOauthStateCookie(response, request);
@@ -65,6 +74,8 @@ export async function GET(request: NextRequest) {
     return createErrorRedirect(request, "invalid_state");
   }
 
+  let returnTo = DEFAULT_AUTH_RETURN_TO;
+
   try {
     const oauthState = await consumeOauthState(receivedState, cookieState);
 
@@ -72,10 +83,16 @@ export async function GET(request: NextRequest) {
       return createErrorRedirect(request, "invalid_state");
     }
 
+    returnTo = oauthState.returnTo;
+
     const providerError = request.nextUrl.searchParams.get("error");
 
     if (providerError) {
-      return createErrorRedirect(request, "access_denied");
+      return createErrorRedirect(
+        request,
+        providerError === "access_denied" ? "access_denied" : "oauth_failed",
+        returnTo,
+      );
     }
 
     const issuer = request.nextUrl.searchParams.get("iss");
@@ -118,13 +135,18 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("[auth/google/callback] OAuth callback failed.", {
-      error: error instanceof Error ? error.name : "UnknownError",
+      error:
+        error instanceof OAuthFlowError
+          ? error.code
+          : error instanceof Error
+            ? error.name
+            : "UnknownError",
     });
 
     if (error instanceof OAuthAccountConflictError) {
-      return createErrorRedirect(request, "account_conflict");
+      return createErrorRedirect(request, "account_conflict", returnTo);
     }
 
-    return createErrorRedirect(request, "oauth_failed");
+    return createErrorRedirect(request, "oauth_failed", returnTo);
   }
 }

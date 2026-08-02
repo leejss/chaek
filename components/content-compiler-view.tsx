@@ -28,6 +28,7 @@ import {
 } from "@/components/chapter-reader";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { createSignInPath } from "@/lib/auth/redirects";
 import { cn } from "@/lib/utils";
 
 const POLL_INTERVAL_MS = 2_500;
@@ -93,6 +94,14 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+function redirectToSignIn() {
+  const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  window.location.assign(
+    createSignInPath({ error: "session_expired", returnTo }),
+  );
 }
 
 function getBuildLabel(status: BuildStatus | null) {
@@ -163,11 +172,13 @@ export function ContentCompilerView({
   initialNodeId,
   initialProjectId,
   isAuthenticated,
+  signInReturnTo = "/content",
 }: {
   initialBuildId: string | null;
   initialNodeId: string | null;
   initialProjectId: string | null;
   isAuthenticated: boolean;
+  signInReturnTo?: string;
 }) {
   const router = useRouter();
   const idempotencyKeyRef = useRef<string | null>(null);
@@ -277,6 +288,14 @@ export function ContentCompilerView({
           }
 
           if (chapterResult.status === "rejected") {
+            if (
+              chapterResult.reason instanceof ApiResponseError &&
+              chapterResult.reason.status === 401
+            ) {
+              redirectToSignIn();
+              return;
+            }
+
             setIsLoadingChapter(false);
             setErrorMessage("완성된 Chapter를 불러오지 못했습니다.");
           }
@@ -304,7 +323,7 @@ export function ContentCompilerView({
         }
 
         if (error instanceof ApiResponseError && error.status === 401) {
-          setErrorMessage("콘텐츠를 확인하려면 로그인이 필요합니다.");
+          redirectToSignIn();
           return;
         }
 
@@ -394,10 +413,11 @@ export function ContentCompilerView({
       startTransition(() => {
         const query = new URLSearchParams(nextBuild);
         router.replace(`/content?${query.toString()}`, { scroll: false });
+        router.refresh();
       });
     } catch (error) {
       if (error instanceof ApiResponseError && error.status === 401) {
-        setErrorMessage("콘텐츠를 생성하려면 로그인이 필요합니다.");
+        redirectToSignIn();
       } else {
         setErrorMessage(
           "콘텐츠 생성을 시작하지 못했습니다. 다시 시도해 주세요.",
@@ -459,7 +479,9 @@ export function ContentCompilerView({
     } catch (error) {
       setSelectedChapterId(null);
 
-      if (error instanceof ApiResponseError && error.status === 404) {
+      if (error instanceof ApiResponseError && error.status === 401) {
+        redirectToSignIn();
+      } else if (error instanceof ApiResponseError && error.status === 404) {
         setErrorMessage("이 Chapter를 찾을 수 없습니다.");
       } else {
         setErrorMessage("Chapter를 불러오지 못했습니다.");
@@ -535,7 +557,9 @@ export function ContentCompilerView({
         router.replace(`/content?${query.toString()}`, { scroll: false });
       });
     } catch (error) {
-      if (error instanceof ApiResponseError && error.status === 409) {
+      if (error instanceof ApiResponseError && error.status === 401) {
+        redirectToSignIn();
+      } else if (error instanceof ApiResponseError && error.status === 409) {
         setErrorMessage(
           "현재 Content Graph로 이 Chapter를 만들 수 없습니다.",
         );
@@ -642,7 +666,7 @@ export function ContentCompilerView({
                     buttonVariants({ size: "lg" }),
                     "mt-5 w-full sm:w-auto",
                   )}
-                  href="/api/auth/google?returnTo=%2Fcontent"
+                  href={createSignInPath({ returnTo: signInReturnTo })}
                 >
                   Google로 로그인
                   <ArrowRightIcon data-icon="inline-end" />

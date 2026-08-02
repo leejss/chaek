@@ -1,5 +1,11 @@
 import "server-only";
 
+import {
+  DEFAULT_AUTH_RETURN_TO,
+  sanitizeAuthReturnToValue,
+  sanitizeReturnToValue,
+} from "./redirects";
+
 export const GOOGLE_AUTHORIZATION_ENDPOINT =
   "https://accounts.google.com/o/oauth2/v2/auth";
 export const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -81,23 +87,23 @@ export function getGoogleOauthConfig() {
   return googleOauthConfig;
 }
 
-export function sanitizeReturnTo(value: string | null) {
-  if (!value?.startsWith("/")) {
-    return "/";
-  }
+export function sanitizeReturnTo(value: string | null, fallback = "/") {
+  return sanitizeReturnToValue(
+    value,
+    getApplicationConfig().baseUrl,
+    fallback,
+  );
+}
 
-  try {
-    const { baseUrl } = getApplicationConfig();
-    const returnToUrl = new URL(value, baseUrl);
-
-    if (returnToUrl.origin !== baseUrl.origin) {
-      return "/";
-    }
-
-    return `${returnToUrl.pathname}${returnToUrl.search}${returnToUrl.hash}`;
-  } catch {
-    return "/";
-  }
+export function sanitizeAuthReturnTo(
+  value: string | null,
+  fallback = DEFAULT_AUTH_RETURN_TO,
+) {
+  return sanitizeAuthReturnToValue(
+    value,
+    getApplicationConfig().baseUrl,
+    fallback,
+  );
 }
 
 export function assertTrustedOrigin(request: Request) {

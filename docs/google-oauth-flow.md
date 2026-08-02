@@ -18,7 +18,7 @@ Chaek은 Google OpenID Connect의 Authorization Code Flow를 직접 구현한다
 - 일회용 OAuth 상태: [`oauth-state.ts`](../lib/auth/oauth-state.ts)
 - Chaek 세션: [`session.ts`](../lib/auth/session.ts)
 - Route Handlers: [`app/api/auth`](../app/api/auth)
-- 로그인 확인 화면: [`app/sign-in/page.tsx`](../app/sign-in/page.tsx)
+- 로그인 화면과 작업 복귀: [`app/sign-in/page.tsx`](../app/sign-in/page.tsx)
 - 데이터베이스 스키마: [`oauth-states.ts`](../lib/db/schema/oauth-states.ts), [`sessions.ts`](../lib/db/schema/sessions.ts)
 
 Google의 현재 OpenID Connect discovery 문서에 정의된 authorization endpoint, token endpoint, JWKS endpoint를 사용한다. Authorization Code 교환에는 PKCE `S256`을 추가하고, `state`와 `nonce`를 각각 다른 공격 경계에 사용한다. 자세한 provider 계약은 [Google OpenID Connect reference](https://developers.google.com/identity/openid-connect/reference)와 [Google OAuth 2.0 web server applications guide](https://developers.google.com/identity/protocols/oauth2/web-server)를 기준으로 한다.
@@ -36,6 +36,10 @@ Google의 현재 OpenID Connect discovery 문서에 정의된 authorization endp
 - Chaek 자체 opaque session 생성·조회·삭제
 - `GET /api/auth/session`을 통한 현재 사용자 조회
 - `POST /api/auth/logout`을 통한 로그아웃
+- `/sign-in`의 성공·취소·실패·만료 상태 처리
+- 로그인 전 작업 URL을 보존하는 안전한 `returnTo`
+- `/content`의 인증 계정 menu와 로그아웃 진입점
+- 작업 중 session 만료 시 현재 URL을 보존한 재로그인
 
 현재 Google scope는 `openid email profile`뿐이다. Gmail, Drive, Calendar 같은 Google API 권한은 요청하지 않으며, token endpoint가 반환한 access token도 저장하지 않는다.
 
@@ -47,6 +51,25 @@ Google의 현재 OpenID Connect discovery 문서에 정의된 authorization endp
 - Google의 외부 identity와 Chaek의 내부 사용자가 분리되어야 하는 이유
 - 브라우저에 저장하는 값과 DB에 저장하는 값의 차이
 - 인증과 사용자 데이터 authorization이 별개의 검사인 이유
+
+## 인증 vertical slice
+
+인증은 OAuth callback 하나가 성공하는 것으로 끝나지 않는다. Chaek의 인증 vertical slice는 사용자가 비로그인 상태에서 작업을 시작해 로그인하고, 원래 위치로 돌아오며, session이 만료되거나 로그아웃할 때까지의 상태 전이를 하나의 기능 단위로 정의한다.
+
+| 시나리오 | 시작 상태 | 사용자 행동 또는 사건 | 기대 결과 |
+| --- | --- | --- | --- |
+| 비로그인 콘텐츠 진입 | session 없음 | `/content` 확인 | 콘텐츠 입력은 볼 수 있고 생성 action은 `/sign-in?returnTo=/content`로 연결 |
+| 직접 로그인 진입 | session 없음 | `/sign-in` 확인 | 단일 Google 로그인 action과 허용된 오류만 표시 |
+| OAuth 성공 | 유효한 일회용 state | Google 인증 완료 | 내부 사용자 동기화, Chaek session 발급, 안전한 `returnTo`로 복귀 |
+| OAuth 취소·실패 | OAuth 진행 중 | 취소, state 오류, 계정 충돌, provider 실패 | 오류 code와 `returnTo`를 `/sign-in`으로 전달하고 같은 작업으로 재시도 가능 |
+| 이미 로그인됨 | 유효한 session | `/sign-in` 진입 | 로그인 화면을 다시 보여주지 않고 안전한 `returnTo`로 이동 |
+| session 만료 | 열린 `/content`에서 session 만료 | 보호 API가 `401` 반환 | 현재 path·query·hash를 보존해 `session_expired` 상태로 `/sign-in` 이동 |
+| 로그아웃 | 유효한 session | 계정 menu에서 로그아웃 | strict Origin을 확인한 POST로 DB session과 cookie를 제거한 뒤 `/sign-in` 이동 |
+| 보호 API 접근 | session 있음 또는 없음 | project, build, Chapter API 호출 | `requireUser()`와 `resource.user_id` 조건을 모두 통과한 사용자 데이터만 응답 |
+
+`returnTo`는 일반 navigation 값이 아니라 인증 상태 전이의 일부다. URL parser로 해석한 origin이 `AUTH_BASE_URL`과 정확히 같은 내부 경로만 허용한다. `/sign-in`과 `/api/auth/*`는 post-login 목적지에서 제외해 로그인 성공 후 인증 화면으로 되돌아가는 loop를 막는다.
+
+이 slice는 사용자에게 보이는 인증 흐름과 애플리케이션의 session·authorization 경계를 포함한다. 분산 rate limiting, 보안 이벤트 집계, 정기 cleanup은 여러 instance가 공유해야 하는 운영 통제이므로 별도의 배포 계층 책임으로 둔다.
 
 ## 배경지식
 
@@ -232,7 +255,12 @@ app/
 │   ├── google/callback/route.ts
 │   ├── logout/route.ts
 │   └── session/route.ts
+├── content/page.tsx
 └── sign-in/page.tsx
+
+components/
+├── account-menu.tsx
+└── content-compiler-view.tsx
 
 lib/
 ├── auth/
@@ -242,6 +270,7 @@ lib/
 │   ├── google.ts
 │   ├── google-account.ts
 │   ├── oauth-state.ts
+│   ├── redirects.ts
 │   └── session.ts
 └── db/schema/
     ├── users.ts
@@ -251,6 +280,9 @@ lib/
 
 drizzle/
 └── 0002_fresh_magneto.sql
+
+tests/
+└── auth-redirects.test.ts
 ```
 
 ### 인증 데이터 관계
@@ -302,11 +334,14 @@ erDiagram
 | `lib/auth/google.ts` | Google authorization URL, code 교환, ID token 검증 |
 | `lib/auth/google-account.ts` | Google subject와 `users`/`accounts` 동기화 |
 | `lib/auth/session.ts` | Chaek session 생성, 조회, 삭제, 인증 사용자 요구 |
+| `lib/auth/redirects.ts` | 로그인 오류 allowlist, 안전한 복귀 경로와 sign-in URL 계약 |
 | `app/api/auth/google/route.ts` | 로그인 시작 endpoint |
 | `app/api/auth/google/callback/route.ts` | callback 전체 orchestration |
 | `app/api/auth/session/route.ts` | 현재 로그인 사용자 조회 |
 | `app/api/auth/logout/route.ts` | origin 검증 후 session 삭제 |
-| `app/sign-in/page.tsx` | 로그인·현재 사용자·로그아웃 확인 화면 |
+| `app/sign-in/page.tsx` | 로그인 action, 오류 표시, 기존 session의 작업 복귀 |
+| `components/account-menu.tsx` | 인증 사용자 식별과 POST 로그아웃 진입점 |
+| `components/content-compiler-view.tsx` | 로그인 진입과 session 만료 복구 |
 
 Route Handler는 HTTP 입력과 redirect/cookie 응답을 담당하고, 검증과 DB 규칙은 `lib/auth`에 둔다. 이 분리는 이후 다른 Route Handler나 Server Component가 같은 session 규칙을 재사용하게 한다.
 
@@ -314,8 +349,8 @@ Route Handler는 HTTP 입력과 redirect/cookie 응답을 담당하고, 검증�
 
 | Method | Path | 입력 | 성공 결과 | 실패 결과 |
 | --- | --- | --- | --- | --- |
-| `GET` | `/api/auth/google` | 선택적 `returnTo` | Google authorization endpoint로 redirect | `/sign-in?error=configuration` |
-| `GET` | `/api/auth/google/callback` | `code`, `state`, 선택적 `iss`·`error` | session cookie 후 `returnTo` redirect | `/sign-in?error=...` |
+| `GET` | `/api/auth/google` | 선택적 `returnTo` | Google authorization endpoint로 redirect | `/sign-in?error=configuration&returnTo=...` |
+| `GET` | `/api/auth/google/callback` | `code`, `state`, 선택적 `iss`·`error` | session cookie 후 `returnTo` redirect | `/sign-in?error=...&returnTo=...` |
 | `GET` | `/api/auth/session` | session cookie | `{ user }` 또는 `{ user: null }` | 민감 정보 없는 JSON |
 | `POST` | `/api/auth/logout` | session cookie, `Origin` | session 삭제 후 `/sign-in` | 잘못된 origin은 `403` |
 
@@ -392,9 +427,11 @@ Google 인증이 성공하면 별도의 random session token을 만든다. 원�
 
 인증 redirect와 session JSON에는 `Cache-Control: no-store`를 적용한다.
 
-### 9. 로그인 확인 화면
+### 9. 로그인 화면과 작업 복귀
 
-`/sign-in`은 Server Component다. 로그인 전에는 Google 시작 링크를, 로그인 후에는 현재 사용자와 `POST` 로그아웃 form을 보여준다. 로그인 기능 때문에 루트 페이지의 기존 “비어 있음” 요구사항을 바꾸지 않는다.
+`/sign-in`은 Server Component다. 로그인 전에는 Google 시작 링크와 허용된 오류만 표시한다. 이미 유효한 session이 있으면 로그인 화면을 반복하지 않고 안전한 `returnTo`로 이동한다. 인증된 사용자의 계정 확인과 `POST` 로그아웃 form은 실제 작업 화면인 `/content`의 compact account menu가 담당한다.
+
+보호 API가 `401`을 반환하면 Client Component는 현재 path, query, hash를 `returnTo`로 보존하고 `/sign-in?error=session_expired`로 이동한다. 재로그인에 성공하면 사용자가 보고 있던 project, build, Chapter 위치로 돌아온다.
 
 ### 10. 보안·런타임 검증
 
@@ -443,7 +480,7 @@ Chaek는 Google이 발급한 access token을 애플리케이션 세션으로 사
 브라우저는 다음 Route Handler로 이동한다.
 
 ```text
-GET /api/auth/google?returnTo=/sign-in
+GET /api/auth/google?returnTo=/content
 ```
 
 서버는 먼저 OAuth 환경 변수가 유효한지 확인한 뒤 세 개의 서로 다른 무작위 값을 만든다.
@@ -458,7 +495,7 @@ GET /api/auth/google?returnTo=/sign-in
 
 DB에는 원본 `state` 대신 SHA-256 hash를 저장한다. 원본 `state`는 짧게 유지되는 HttpOnly cookie에도 저장한다. callback은 URL의 `state`, 브라우저 cookie의 `state`, DB의 `state_hash`가 모두 같은 로그인 시도에서 나온 값일 때만 진행한다.
 
-`returnTo`는 `/`로 시작하는 값만 받은 뒤 `AUTH_BASE_URL`을 기준으로 실제 URL을 해석한다. 해석된 origin이 정확히 같을 때만 path, query, hash를 저장한다. `//evil.example`, `/\evil.example`, 외부 절대 URL처럼 URL parser에서 다른 origin이 되는 값을 `/`로 정규화해 open redirect를 막는다.
+`returnTo`는 `/`로 시작하는 값만 받은 뒤 `AUTH_BASE_URL`을 기준으로 실제 URL을 해석한다. 해석된 origin이 정확히 같을 때만 path, query, hash를 저장한다. `//evil.example`, `/\evil.example`, 외부 절대 URL처럼 URL parser에서 다른 origin이 되는 값과 `/sign-in`, `/api/auth/*` 같은 인증 endpoint는 기본 작업 경로 `/content`로 정규화한다.
 
 ### 2. Google authorization request
 
@@ -623,11 +660,12 @@ callback의 provider 응답이나 내부 오류 내용을 그대로 브라우저
 | --- | --- | --- |
 | `configuration` | 필수 OAuth 환경 변수가 없거나 잘못됨 | 서버 설정을 확인해야 함 |
 | `invalid_state` | state, cookie, DB 행이 없거나 만료·소비됨 | 로그인 시도를 처음부터 다시 시작해야 함 |
-| `access_denied` | 사용자가 Google 화면에서 취소하거나 거부함 | 사용자가 원하면 다시 시도할 수 있음 |
+| `access_denied` | Google이 사용자 취소·거부를 `access_denied`로 반환 | 사용자가 원하면 다시 시도할 수 있음 |
 | `account_conflict` | 같은 이메일의 다른 내부 사용자가 이미 존재함 | 자동 병합하지 않고 명시적 연결 절차가 필요함 |
-| `oauth_failed` | code 교환, ID token 검증, DB 처리 등 나머지 실패 | 로그인 전체를 다시 시작해야 함 |
+| `oauth_failed` | Google의 기타 오류, code 교환, ID token 검증, DB 처리 등 나머지 실패 | 로그인 전체를 다시 시작해야 함 |
+| `session_expired` | 열린 화면에서 보호 API가 `401` 반환 | 현재 작업 URL을 보존하고 다시 로그인해야 함 |
 
-서버 로그에는 token, authorization code, 이메일, 원본 provider 응답을 남기지 않고 오류 이름만 기록한다.
+서버 로그에는 token, authorization code, 이메일, 원본 provider 응답을 남기지 않는다. 애플리케이션이 정의한 `OAuthFlowError`는 제한된 내부 code를, 그 밖의 오류는 이름만 기록한다.
 
 ### 단계별 실패 의미
 
@@ -678,11 +716,12 @@ OAuth state 소비, Google token 교환, 사용자 동기화, session 발급은 
 | 위조된 ID token                   | Google JWKS 서명, `RS256`, issuer와 audience 검증                        |
 | Callback 재생                     | `DELETE ... RETURNING`을 통한 OAuth 상태 1회 사용                        |
 | Open redirect                     | URL 해석 후 `AUTH_BASE_URL`과 origin이 같은 `returnTo`만 허용             |
+| Post-login redirect loop          | `/sign-in`, `/api/auth/*`를 인증 복귀 목적지에서 제외                    |
 | Session DB 유출 후 token 사용     | 브라우저에는 원본, DB에는 SHA-256 hash만 저장                            |
 | 브라우저 JavaScript의 token 탈취  | `HttpOnly` cookie                                                       |
 | Logout CSRF                       | `POST`와 strict `Origin` 비교                                           |
 | 이메일 기반 계정 오연결          | `(provider_id, account_id)` 조회와 이메일 자동 연결 금지                 |
-| 민감 token 로그·응답 노출         | access token과 ID token 미저장, 오류 로그에는 오류 이름만 기록          |
+| 민감 token 로그·응답 노출         | access token과 ID token 미저장, 오류 로그에는 제한된 code·이름만 기록   |
 
 ## 환경 변수와 Google Console 설정
 
@@ -723,6 +762,8 @@ Vercel에는 production 도메인에 맞춘 환경 변수를 등록한다. Previ
 ## 구현 검증
 
 ### 자동·로컬 검증
+
+아래 통과 기록은 최초 OAuth 구현 시점의 검증이다. 이후 추가한 인증 vertical slice에는 `tests/auth-redirects.test.ts`로 내부 복귀 URL, open redirect, 인증 route loop, 오류 allowlist 계약을 작성했지만 이번 변경에서는 프로젝트 지침에 따라 테스트·lint·build·브라우저 검증을 실행하지 않았다.
 
 | 검증 | 확인 내용 | 결과 |
 | --- | --- | --- |
@@ -783,17 +824,15 @@ Vercel에는 production 도메인에 맞춘 환경 변수를 등록한다. Previ
 - Google grant 철회
 - 로그인 시작 endpoint rate limiting
 - 만료된 `oauth_states`와 `sessions`를 주기적으로 정리하는 작업
-- 인증된 사용자와 `ai_jobs.user_id`를 연결하는 AI Route Handler
+- 여러 기기별 session 조회·개별 폐기
 
 권장 구현 순서는 다음과 같다.
 
-1. 실제 Google credential로 end-to-end 로그인을 검증한다.
-2. AI Job 생성·조회 Route Handler에 `requireUser()`를 연결한다.
-3. 모든 Job 쿼리에 `user.id` 소유권 조건을 추가한다.
-4. OAuth 시작과 callback에 rate limit과 관측 지표를 추가한다.
-5. 만료된 OAuth state와 session을 정리하는 Vercel Cron 작업을 추가한다.
-6. state replay, nonce mismatch, account conflict, session expiry 통합 테스트를 자동화한다.
-7. 필요해질 때 session rotation, 모든 기기 로그아웃, 명시적 계정 연결을 설계한다.
+1. 현재 vertical slice를 로컬 브라우저와 실제 Google credential로 end-to-end 검증한다.
+2. state replay, nonce mismatch, account conflict, session expiry의 DB·Route 통합 테스트를 자동화한다.
+3. OAuth 시작과 callback에 공유 저장소 기반 rate limit과 관측 지표를 추가한다.
+4. 만료된 OAuth state와 session을 정리하는 Vercel Cron 작업을 추가한다.
+5. 필요해질 때 session rotation, 모든 기기 로그아웃, 명시적 계정 연결을 설계한다.
 
 직접 구현은 OAuth와 session의 신뢰 경계를 학습하는 데 적합하지만, provider 추가, 계정 연결, session rotation, 이메일 로그인, 보안 패치 유지보수까지 제품 범위가 넓어지면 Better Auth 같은 검증된 인증 라이브러리로 전환하는 편이 안전하다. 현재 `users`와 `accounts` 구조와 Route Handler 바깥의 인증 모듈 분리는 그 전환 비용을 낮추는 방향으로 유지한다.
 
