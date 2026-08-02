@@ -8,7 +8,7 @@ Chaek은 Turso의 libSQL 데이터베이스와 Drizzle ORM을 사용한다. 현�
 - migrations: `drizzle/*.sql`
 - DB 클라이언트: `lib/db/client.ts`
 
-현재 스키마와 migration, Google OAuth, Chaek 세션, Brief/Graph Planning AI Job과 Build Status 요청 기반 reconciliation이 구현되어 있다. Chapter Revision, Research, 전체 책 Build와 Review 관련 테이블은 아직 구현되지 않았다. Content Compiler의 상세 계약은 [`content-compiler-implementation-design.md`](./content-compiler-implementation-design.md)를 기준으로 한다.
+현재 스키마와 migration, Google OAuth, Chaek 세션, Brief/Graph Planning, 단일 Chapter Drafting AI Job과 Build Status 요청 기반 reconciliation이 구현되어 있다. Chapter 본문은 현재 `content_nodes.content_json`에 Structured JSON으로 직접 저장한다. Chapter Revision, Research, 전체 책 Build와 Review 관련 테이블은 아직 구현되지 않았다. Content Compiler의 상세 계약은 [`content-compiler-implementation-design.md`](./content-compiler-implementation-design.md)를 기준으로 한다.
 
 ## Overview
 
@@ -107,7 +107,7 @@ integer("created_at", { mode: "timestamp_ms" });
 
 ### JSON
 
-`input_json`, `result_json`, `usage_json`은 SQLite에는 `TEXT`로 저장되고 Drizzle에서는 `text(..., { mode: "json" })`으로 직렬화된다.
+`input_json`, `result_json`, `usage_json`, `brief_json`, `contract_json`, `content_json`은 SQLite에는 `TEXT`로 저장되고 Drizzle에서는 `text(..., { mode: "json" })`으로 직렬화된다.
 
 현재 DB에는 `json_valid()` `CHECK` 제약이 없다. JSON 구조와 필수 속성은 Route Handler 또는 서비스 계층의 런타임 검증이 담당해야 한다.
 
@@ -301,7 +301,7 @@ UNIQUE (gemini_interaction_id)
 | `result_disposition` | `resultDisposition` | No       | `NULL`               | AI 실행 성공과 결과 적용 결과를 분리하는 값이다.                            |
 | `applied_at`         | `appliedAt`         | No       | `NULL`               | 검증된 결과가 Content Project에 적용된 시각이다.                            |
 
-현재 TypeScript가 허용하는 `task_type`은 `content_generation`, `brief_generation`, `graph_planning`, `graph_repair`, `node_research`, `node_drafting`, `node_review`, `project_review`, `node_revision`이다. Phase 0–3 실행 서비스는 이 중 `brief_generation`과 `graph_planning`을 처리한다.
+현재 TypeScript가 허용하는 `task_type`은 `content_generation`, `brief_generation`, `graph_planning`, `graph_repair`, `node_research`, `node_drafting`, `node_review`, `project_review`, `node_revision`이다. 현재 실행 서비스는 이 중 `brief_generation`, `graph_planning`, `node_drafting`을 처리한다.
 
 `payload_version`은 1 이상이어야 한다.
 
@@ -542,7 +542,7 @@ DELETE users
 
 ## Intended data flow
 
-인증 흐름과 Content Graph Planning 흐름은 Route Handler와 서비스 코드까지 구현되어 있다. 아래 AI 흐름은 Phase 0–3의 현재 실행 경로다.
+인증 흐름, Content Graph Planning과 단일 Chapter Drafting 흐름은 Route Handler와 서비스 코드까지 구현되어 있다. 아래 AI 흐름은 현재 실행 경로다.
 
 ### 1. User synchronization
 
@@ -622,9 +622,34 @@ DB update
 
 `result_json`은 `interactions.get()` 결과를 Chaek 형식으로 정규화한 값이다. Client는 nonterminal Build를 polling하고, 탭이 중지되었다가 다시 활성화되면 같은 Build Status API를 즉시 다시 호출한다. 그동안 Gemini가 완료되었다면 복귀 시점의 요청이 결과를 DB에 반영한다. 아직 제출되지 않은 `queued` Job은 이 request-driven reconciliation이 제출할 수 있고, `gemini_interaction_id`가 저장된 Job은 새 Interaction을 만들지 않고 기존 Interaction을 조회한다.
 
+### 4. Single Chapter generation
+
+```text
+Client
+  └── POST /api/content-projects/{projectId}/nodes/{nodeId}/generate
+            │
+            ▼
+content_builds + ai_jobs INSERT
+  ├── scope_type = chapter
+  ├── scope_node_id = selected Chapter
+  └── task_type = node_drafting
+            │
+            ▼
+Gemini Structured Output
+            │
+            ▼ client polling reconciliation
+ChapterContentResult runtime validation
+  ├── baseGraphVersion 일치 확인
+  ├── content_nodes.content_json 저장
+  ├── editorial_status = ready
+  └── Build completed
+```
+
+현재 Chapter 본문 저장은 Revision 도입 전 baseline이다. Google Search Grounding, Citation, 사용자 편집과 Revision Apply Gate는 포함하지 않는다.
+
 ## Application-level rules
 
-현재 DB 제약만으로는 다음 규칙을 모두 보장하지 않는다. 인증 및 Phase 0–3 AI 관련 규칙은 현재 서비스와 Route Handler에도 명시적으로 구현되어 있다.
+현재 DB 제약만으로는 다음 규칙을 모두 보장하지 않는다. 인증과 현재 AI 관련 규칙은 서비스와 Route Handler에도 명시적으로 구현되어 있다.
 
 - 인증된 사용자의 `users.id`와 `ai_jobs.user_id`가 일치해야 한다.
 - Google 로그인 callback은 `accounts.provider_id = 'google'`만 허용해야 한다.
@@ -654,6 +679,7 @@ DB update
 - 사용자 소유권
 - 기본 `content_generation` 작업 타입
 - Brief Generation과 Graph Planning 작업 타입
+- 단일 Chapter `node_drafting` 작업 타입과 Structured Output 저장
 - Gemini Background Interaction 연결 필드
 - AI Job 상태와 오류 모델
 - 사용자 요청 멱등성
@@ -661,6 +687,8 @@ DB update
 - Content Project, Node, Edge와 Build
 - Content Graph 소유권과 Project 생성 멱등성
 - AI Job과 Project, Build, Target Node 연결
+- `content_nodes.content_json` Chapter 본문 필드
+- `/content` 사용자 화면과 Chapter 생성·읽기 흐름
 - Drizzle migrations
 
 현재 포함되지 않은 범위:
@@ -673,4 +701,4 @@ DB update
 - Scheduled reconciliation
 - 데이터 보존 기간과 자동 삭제
 - Chapter Revision, Research Source, Issue와 Review 테이블
-- Content Compiler 사용자 화면
+- Google Search Grounding과 Citation

@@ -4,7 +4,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | Phase 0–3 implemented, verification pending |
+| 상태 | Phase 0–3 + single Chapter drafting implemented, verification pending |
 | 작성일 | 2026-07-27 |
 | 대상 프로젝트 | Chaek |
 | 대상 기능 | 사용자 입력을 장편 독립 콘텐츠로 완성하는 Content Compiler |
@@ -13,7 +13,7 @@
 
 이 문서는 Chaek의 콘텐츠 생성 기능에 대한 구현 Source of Truth다. 여기서 말하는 구현은 사용자 입력을 해석해 콘텐츠 그래프를 만들고, Gemini를 이용해 각 그래프 노드를 리서치·작성·검수·수정하여 한 권의 장편 독립 콘텐츠로 완성하는 흐름을 뜻한다.
 
-이 문서는 목표 구조와 단계별 구현 경계를 정의한다. Phase 0–3의 계약, Graph 영속성, Brief/Graph Planning과 client polling 기반 Reconciliation 코드는 구현되어 있다. Phase 4 이후의 Revision, Research, 전체 의존성 Build와 Review 구조는 아직 목표 설계이며, 문서에 등장한다는 이유만으로 현재 구현으로 간주하지 않는다.
+이 문서는 목표 구조와 단계별 구현 경계를 정의한다. Phase 0–3의 계약, Graph 영속성, Brief/Graph Planning과 client polling 기반 Reconciliation에 더해, 선택한 Chapter 하나를 생성·저장·조회하는 baseline Vertical Slice가 구현되어 있다. Grounding, Revision, Research, 전체 의존성 Build와 Review 구조는 아직 목표 설계이며, 문서에 등장한다는 이유만으로 현재 구현으로 간주하지 않는다.
 
 ## 요약
 
@@ -41,7 +41,7 @@ Chaek은 Gemini에게 한 권의 책을 한 번에 생성하도록 요청하지 
 7. `previous_interaction_id`는 동일 작업의 짧은 Repair에만 사용하고 책 전체의 기억으로 사용하지 않는다.
 8. Background Interaction의 완료 결과는 client가 Build Status API를 polling할 때 `interactions.get()`으로 회수한다.
 9. 탭이 중지된 동안 즉시 반영되지 않아도, 사용자가 돌아와 다시 조회하면 동일한 idempotent reconciliation이 결과를 DB에 적용한다.
-10. 최초 구현은 전체 자동 생성이 아니라 Graph Planning 수직 단면부터 시작한다.
+10. Graph Planning 다음 수직 단면은 사용자가 선택한 Chapter 하나를 독립적으로 생성하는 흐름이며, Research와 Revision은 baseline 품질을 확인한 뒤 붙인다.
 
 ## 1. 배경과 제품 정의
 
@@ -105,9 +105,10 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
 ### 3.2 Chapter Generation
 
 - 하나의 Chapter Contract와 관련 Graph Context만으로 Chapter를 생성할 수 있다.
-- 생성 결과에 Markdown 본문과 Continuity Capsule이 함께 포함된다.
-- Chapter 생성 중 사용자가 편집한 경우 오래된 결과가 최신 Revision을 덮어쓰지 않는다.
-- 실패한 Chapter만 재시도할 수 있다.
+- 생성 결과는 도입, Section, Code Example, 결론과 Key Takeaway로 구성된 Structured JSON이다.
+- 현재 baseline은 선택한 Chapter 하나를 생성해 Node의 `content_json`에 직접 저장한다.
+- 현재 baseline은 `baseGraphVersion`으로 Outline 변경과 늦은 결과의 충돌을 차단한다.
+- Continuity Capsule, 사용자 편집 충돌과 Revision Apply Gate는 후속 범위다.
 
 ### 3.3 Graph Completion
 
@@ -142,10 +143,13 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
 - Turso/libSQL과 Drizzle ORM
 - Google OAuth와 Chaek opaque session
 - Zod 4 기반 `ContentBriefResult`와 `GraphPlanResult`
+- Zod 4 기반 `ChapterDraftingJobInput`과 `ChapterContentResult`
 - 결정론적 Graph Validator, Stable Topological Sort와 Impact Analyzer
 - `content_projects`, `content_nodes`, `content_edges`, `content_builds`
 - `POST /api/content-projects`와 Project, Graph, Build 조회 Route Handler
 - Brief Generation과 Graph Planning Background Interaction
+- 선택한 Chapter의 Graph Context Compiler와 `node_drafting` Background Interaction
+- Chapter 결과의 Structured Output 검증, Graph Version 확인과 `content_nodes.content_json` 저장
 - Structured Output 회수, 런타임 검증과 Graph 저장 Transaction
 - Build Status 요청 기반 Polling과 Reconciliation 경로
 - `/content` 사용자용 생성·상태·Outline 화면
@@ -153,6 +157,10 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
   - background 탭에서는 조회 중지
   - 탭 복귀 시 즉시 Build Status 재조회
   - 완료 후 Project Summary를 조회해 Part와 Chapter 표시
+  - Chapter 선택, 단일 Chapter 생성, polling 완료 후 본문 읽기
+- Chapter API
+  - `GET /api/content-projects/{projectId}/nodes/{nodeId}`
+  - `POST /api/content-projects/{projectId}/nodes/{nodeId}/generate`
 - `/content/test` 인증 없는 정적 Content View 검증 화면
 - 실제 Gemini credential, Vercel Production과 Turso를 사용한
   `LLM From Scratch` Brief → Graph Planning → Graph 저장 E2E
@@ -165,6 +173,7 @@ Chaek은 이 입력에서 대상 독자, 선수 지식, 학습 목표, 범위, �
 
 - Chapter Revision과 Apply Gate
 - Research Packet, Source와 Citation
+- Google Search Grounding
 - 여러 Chapter의 의존성 Scheduler
 - 실제 Revision 변경에 따른 `stale` 전파
 - Node Review, Project Review와 Completion 판정
@@ -418,6 +427,7 @@ Part, Chapter, Concept와 Example을 저장한다.
 | `title` | text | Yes | 표시 제목 |
 | `position` | integer | No | 같은 부모 아래의 표시 순서 |
 | `contract_json` | text JSON | No | Chapter Contract 또는 Concept 정의 |
+| `content_json` | text JSON | No | 현재 baseline의 검증된 Chapter 본문 |
 | `editorial_status` | text | Yes | `planned`, `approved`, `drafting`, `review`, `ready`, `published` |
 | `freshness` | text | Yes | `fresh`, `stale` |
 | `stale_reason_json` | text JSON | No | 변경된 선행 Node와 사유 |
@@ -434,6 +444,8 @@ INDEX (project_id, editorial_status, freshness)
 ```
 
 `position` 중복은 재정렬 Transaction과 애플리케이션 검증으로 방지한다. SQLite에서 `NULL` 부모를 포함한 복합 Unique 동작에 의존하지 않는다.
+
+`content_json`은 Revision 모델이 도입되기 전 Vertical Slice의 직접 저장 위치다. 현재는 `ChapterContentResult` 런타임 계약을 통과한 결과만 저장한다. 사용자 편집과 여러 Revision이 필요해지면 본문 Source of Truth를 `content_revisions`로 옮기고 이 컬럼의 역할을 제거하거나 Projection으로 재정의한다.
 
 ### 9.4 `content_edges`
 
@@ -1029,7 +1041,25 @@ GraphPlanResult
 
 동일 Plan의 짧은 Repair에만 `previous_interaction_id`를 사용할 수 있다. Repair 횟수는 설정 가능한 작은 상한을 둔다. 상한을 넘으면 Build를 `waiting_for_user` 또는 `failed`로 종료한다.
 
-### 13.4 Phase 4: Research
+### 13.4 Phase 4A: Baseline Chapter Drafting
+
+현재 구현된 다음 수직 단면이다.
+
+```text
+사용자가 Chapter 선택
+  → Brief + Part + Chapter Contract
+  → 이전/다음 Chapter 책임
+  → 연결된 Concept 정의
+  → node_drafting Background Job
+  → client polling reconciliation
+  → ChapterContentResult 검증
+  → baseGraphVersion 확인
+  → content_nodes.content_json 저장
+```
+
+이 단계는 Google Search Grounding, Research Packet, Revision과 Review를 사용하지 않는다. Chapter별 본문 품질과 Context Compiler의 유효성을 먼저 검증하기 위한 baseline이다.
+
+### 13.4B Phase 4 후속: Research
 
 Chapter Contract에서 근거가 필요한 질문을 만들고 독립적인 Chapter Research Job을 실행한다.
 
@@ -1375,7 +1405,26 @@ GET /api/content-projects/{projectId}/graph
 
 UI용 Outline과 내부 Graph Inspector용 데이터를 구분한다. 일반 사용자는 Outline Projection을 사용하고 전체 Edge 데이터는 필요한 화면에서만 조회한다.
 
-### 17.4 Build 생성
+### 17.4 Chapter Build 생성
+
+현재 단일 Chapter 생성 API는 다음과 같다.
+
+```http
+POST /api/content-projects/{projectId}/nodes/{nodeId}/generate
+Idempotency-Key: <client-generated-key>
+```
+
+처리:
+
+1. 사용자와 Project/Chapter 소유권 확인
+2. Brief, Part, Chapter Contract, 앞뒤 Chapter와 연결 Concept로 Context 구성
+3. `scope_type = chapter` Build와 `node_drafting` Job 생성
+4. Gemini Background Interaction 제출
+5. `202 Accepted`
+
+Project, Part와 affected subgraph를 같은 API로 생성하는 일반화된 Build Route는 후속 목표다.
+
+목표 API:
 
 ```http
 POST /api/content-projects/{projectId}/builds
@@ -1437,10 +1486,17 @@ POST /api/content-projects/{projectId}/builds/{buildId}/cancel
 
 ```http
 GET /api/content-projects/{projectId}/nodes/{nodeId}
+```
+
+Chapter 조회는 현재 구현되어 있으며 Outline 응답에서 제외한 전체 `content_json`을 반환한다.
+
+사용자 Revision 저장은 후속 목표다.
+
+```http
 POST /api/content-projects/{projectId}/nodes/{nodeId}/revisions
 ```
 
-사용자 저장도 새 Revision을 생성한다. 요청에는 현재 `baseRevisionId`를 포함해 낙관적 동시성 제어를 적용한다.
+Revision을 도입할 때 사용자 저장은 새 Revision을 생성한다. 요청에는 현재 `baseRevisionId`를 포함해 낙관적 동시성 제어를 적용한다.
 
 ### 17.8 Client polling lifecycle
 
