@@ -22,6 +22,10 @@ import {
   ContentOutline,
   type ProjectSummary,
 } from "@/components/content-outline";
+import {
+  ChapterReader,
+  type ChapterDetail,
+} from "@/components/chapter-reader";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +37,7 @@ const terminalBuildStatuses = new Set(["cancelled", "completed", "failed"]);
 
 type ActiveBuild = {
   buildId: string;
+  targetNodeId?: string;
   projectId: string;
 };
 
@@ -48,12 +53,14 @@ type BuildStatus = {
   phase: string;
   progress: {
     briefCompleted: boolean;
+    chapterCompleted: boolean;
     graphCompleted: boolean;
     planned: number;
     stale: number;
   };
   projectId: string;
   status: string;
+  targetNodeId: string | null;
   jobs: BuildJob[];
 };
 
@@ -61,6 +68,10 @@ type CreateProjectResponse = {
   buildId: string;
   projectId: string;
   status: string;
+};
+
+type CreateChapterResponse = CreateProjectResponse & {
+  nodeId: string;
 };
 
 class ApiResponseError extends Error {
@@ -90,11 +101,15 @@ function getBuildLabel(status: BuildStatus | null) {
   }
 
   if (status.status === "completed") {
-    return "구조 완성";
+    return status.targetNodeId ? "Chapter 완성" : "구조 완성";
   }
 
   if (status.status === "failed") {
-    return "생성 실패";
+    return status.targetNodeId ? "Chapter 생성 실패" : "생성 실패";
+  }
+
+  if (status.targetNodeId) {
+    return "Chapter 작성 중";
   }
 
   if (status.progress.briefCompleted) {
@@ -145,24 +160,44 @@ function ProgressStep({
 
 export function ContentCompilerView({
   initialBuildId,
+  initialNodeId,
   initialProjectId,
   isAuthenticated,
 }: {
   initialBuildId: string | null;
+  initialNodeId: string | null;
   initialProjectId: string | null;
   isAuthenticated: boolean;
 }) {
   const router = useRouter();
   const idempotencyKeyRef = useRef<string | null>(null);
+  const chapterIdempotencyKeyRef = useRef<{
+    key: string;
+    nodeId: string;
+  } | null>(null);
   const [seedInput, setSeedInput] = useState("LLM From Scratch");
   const [activeBuild, setActiveBuild] = useState<ActiveBuild | null>(
     initialBuildId && initialProjectId
-      ? { buildId: initialBuildId, projectId: initialProjectId }
+      ? {
+          buildId: initialBuildId,
+          projectId: initialProjectId,
+          targetNodeId: initialNodeId ?? undefined,
+        }
       : null,
   );
   const [buildStatus, setBuildStatus] = useState<BuildStatus | null>(null);
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(
+    initialNodeId,
+  );
+  const [chapterDetail, setChapterDetail] = useState<ChapterDetail | null>(
+    null,
+  );
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingChapter, setIsLoadingChapter] = useState(
+    Boolean(initialNodeId),
+  );
+  const [isStartingChapter, setIsStartingChapter] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -196,6 +231,20 @@ export function ContentCompilerView({
       setSummary(nextSummary);
     };
 
+    const loadChapter = async (nodeId: string) => {
+      const response = await fetch(
+        `/api/content-projects/${encodeURIComponent(activeBuild.projectId)}/nodes/${encodeURIComponent(nodeId)}`,
+        {
+          cache: "no-store",
+          signal: controller.signal,
+        },
+      );
+      const nextChapter = await readJson<ChapterDetail>(response);
+      setSelectedChapterId(nodeId);
+      setChapterDetail(nextChapter);
+      setIsLoadingChapter(false);
+    };
+
     const poll = async () => {
       if (controller.signal.aborted || requestInFlight) {
         return;
@@ -216,7 +265,33 @@ export function ContentCompilerView({
         setErrorMessage(null);
 
         if (nextStatus.status === "completed") {
-          await loadSummary();
+          const targetNodeId =
+            nextStatus.targetNodeId ?? activeBuild.targetNodeId;
+          const [summaryResult, chapterResult] = await Promise.allSettled([
+            loadSummary(),
+            targetNodeId ? loadChapter(targetNodeId) : Promise.resolve(),
+          ]);
+
+          if (summaryResult.status === "rejected") {
+            throw summaryResult.reason;
+          }
+
+          if (chapterResult.status === "rejected") {
+            setIsLoadingChapter(false);
+            setErrorMessage("완성된 Chapter를 불러오지 못했습니다.");
+          }
+
+          return;
+        }
+
+        if (nextStatus.status === "failed") {
+          chapterIdempotencyKeyRef.current = null;
+          setIsLoadingChapter(false);
+          setErrorMessage(
+            nextStatus.targetNodeId
+              ? "Chapter를 완성하지 못했습니다. 다시 시도해 주세요."
+              : "콘텐츠 구조를 완성하지 못했습니다. 다시 시도해 주세요.",
+          );
           return;
         }
 
@@ -294,6 +369,9 @@ export function ContentCompilerView({
     setErrorMessage(null);
     setBuildStatus(null);
     setSummary(null);
+    setSelectedChapterId(null);
+    setChapterDetail(null);
+    setIsLoadingChapter(false);
 
     try {
       idempotencyKeyRef.current ??= `content-view:${window.crypto.randomUUID()}`;
@@ -337,18 +415,150 @@ export function ContentCompilerView({
 
   const handleReset = () => {
     idempotencyKeyRef.current = null;
+    chapterIdempotencyKeyRef.current = null;
     setActiveBuild(null);
     setBuildStatus(null);
     setSummary(null);
+    setSelectedChapterId(null);
+    setChapterDetail(null);
+    setIsLoadingChapter(false);
     setErrorMessage(null);
     startTransition(() => {
       router.replace("/content", { scroll: false });
     });
   };
 
-  const isRunning =
+  const handleSelectChapter = async (nodeId: string) => {
+    if (!summary) {
+      return;
+    }
+
+    setSelectedChapterId(nodeId);
+    setChapterDetail(null);
+    setIsLoadingChapter(true);
+    setErrorMessage(null);
+
+    startTransition(() => {
+      const query = new URLSearchParams({ projectId: summary.project.id });
+
+      if (activeBuild?.buildId) {
+        query.set("buildId", activeBuild.buildId);
+      }
+
+      query.set("nodeId", nodeId);
+      router.replace(`/content?${query.toString()}`, { scroll: false });
+    });
+
+    try {
+      const response = await fetch(
+        `/api/content-projects/${encodeURIComponent(summary.project.id)}/nodes/${encodeURIComponent(nodeId)}`,
+        { cache: "no-store" },
+      );
+      const chapter = await readJson<ChapterDetail>(response);
+      setChapterDetail(chapter);
+    } catch (error) {
+      setSelectedChapterId(null);
+
+      if (error instanceof ApiResponseError && error.status === 404) {
+        setErrorMessage("이 Chapter를 찾을 수 없습니다.");
+      } else {
+        setErrorMessage("Chapter를 불러오지 못했습니다.");
+      }
+    } finally {
+      setIsLoadingChapter(false);
+    }
+  };
+
+  const handleBackToOutline = () => {
+    setSelectedChapterId(null);
+    setChapterDetail(null);
+    setIsLoadingChapter(false);
+
+    if (!summary) {
+      return;
+    }
+
+    startTransition(() => {
+      const query = new URLSearchParams({ projectId: summary.project.id });
+
+      if (activeBuild?.buildId) {
+        query.set("buildId", activeBuild.buildId);
+      }
+
+      router.replace(`/content?${query.toString()}`, { scroll: false });
+    });
+  };
+
+  const handleGenerateChapter = async () => {
+    if (!summary || !selectedChapterId) {
+      return;
+    }
+
+    setIsStartingChapter(true);
+    setErrorMessage(null);
+
+    try {
+      if (
+        !chapterIdempotencyKeyRef.current ||
+        chapterIdempotencyKeyRef.current.nodeId !== selectedChapterId
+      ) {
+        chapterIdempotencyKeyRef.current = {
+          key: `chapter-view:${window.crypto.randomUUID()}`,
+          nodeId: selectedChapterId,
+        };
+      }
+
+      const response = await fetch(
+        `/api/content-projects/${encodeURIComponent(summary.project.id)}/nodes/${encodeURIComponent(selectedChapterId)}/generate`,
+        {
+          headers: {
+            "idempotency-key": chapterIdempotencyKeyRef.current.key,
+          },
+          method: "POST",
+        },
+      );
+      const build = await readJson<CreateChapterResponse>(response);
+      const nextBuild: ActiveBuild = {
+        buildId: build.buildId,
+        projectId: build.projectId,
+        targetNodeId: build.nodeId,
+      };
+
+      setBuildStatus(null);
+      setActiveBuild(nextBuild);
+      startTransition(() => {
+        const query = new URLSearchParams({
+          buildId: build.buildId,
+          nodeId: build.nodeId,
+          projectId: build.projectId,
+        });
+        router.replace(`/content?${query.toString()}`, { scroll: false });
+      });
+    } catch (error) {
+      if (error instanceof ApiResponseError && error.status === 409) {
+        setErrorMessage(
+          "현재 Content Graph로 이 Chapter를 만들 수 없습니다.",
+        );
+      } else {
+        setErrorMessage("Chapter 생성을 시작하지 못했습니다.");
+      }
+    } finally {
+      setIsStartingChapter(false);
+    }
+  };
+
+  const isRunning = Boolean(
     activeBuild &&
-    (!buildStatus || !terminalBuildStatuses.has(buildStatus.status));
+      (!buildStatus || !terminalBuildStatuses.has(buildStatus.status)),
+  );
+  const chapterBuildTarget =
+    buildStatus?.targetNodeId ?? activeBuild?.targetNodeId ?? null;
+  const isChapterBuild = Boolean(chapterBuildTarget);
+  const isSelectedChapterGenerating = Boolean(
+    selectedChapterId &&
+      chapterBuildTarget === selectedChapterId &&
+      isRunning,
+  );
 
   return (
     <div className="py-12 sm:py-16">
@@ -358,9 +568,15 @@ export function ContentCompilerView({
       >
         <div className="lg:sticky lg:top-10 lg:self-start">
           <Badge
-            variant={summary ? "success" : isRunning ? "secondary" : "outline"}
+            variant={isRunning ? "secondary" : summary ? "success" : "outline"}
           >
-            {summary ? "완료" : isRunning ? "생성 중" : "Content Compiler"}
+            {isRunning
+              ? isChapterBuild
+                ? "Chapter 생성 중"
+                : "생성 중"
+              : summary
+                ? "완료"
+                : "Content Compiler"}
           </Badge>
           <h1
             className="mt-5 text-4xl leading-[1.08] font-medium tracking-[-0.045em] text-balance sm:text-5xl"
@@ -455,22 +671,34 @@ export function ContentCompilerView({
               </div>
 
               <ol className="mt-6 space-y-4">
-                <ProgressStep
-                  complete={Boolean(buildStatus?.progress.briefCompleted)}
-                  label="입력 해석과 Brief"
-                  running={Boolean(
-                    isRunning && !buildStatus?.progress.briefCompleted,
-                  )}
-                />
-                <ProgressStep
-                  complete={Boolean(buildStatus?.progress.graphCompleted)}
-                  label="Part와 Chapter 설계"
-                  running={Boolean(
-                    isRunning &&
-                      buildStatus?.progress.briefCompleted &&
-                      !buildStatus.progress.graphCompleted,
-                  )}
-                />
+                {isChapterBuild ? (
+                  <ProgressStep
+                    complete={Boolean(
+                      buildStatus?.progress.chapterCompleted,
+                    )}
+                    label="선택한 Chapter 본문 작성"
+                    running={isRunning}
+                  />
+                ) : (
+                  <>
+                    <ProgressStep
+                      complete={Boolean(buildStatus?.progress.briefCompleted)}
+                      label="입력 해석과 Brief"
+                      running={Boolean(
+                        isRunning && !buildStatus?.progress.briefCompleted,
+                      )}
+                    />
+                    <ProgressStep
+                      complete={Boolean(buildStatus?.progress.graphCompleted)}
+                      label="Part와 Chapter 설계"
+                      running={Boolean(
+                        isRunning &&
+                          buildStatus?.progress.briefCompleted &&
+                          !buildStatus.progress.graphCompleted,
+                      )}
+                    />
+                  </>
+                )}
               </ol>
             </div>
           )}
@@ -490,10 +718,24 @@ export function ContentCompilerView({
         </div>
 
         <div className="min-w-0">
-          {summary ? (
-            <ContentOutline summary={summary} />
+          {chapterDetail ? (
+            <ChapterReader
+              chapter={chapterDetail}
+              isGenerating={
+                isStartingChapter || isSelectedChapterGenerating
+              }
+              onBack={handleBackToOutline}
+              onGenerate={handleGenerateChapter}
+            />
+          ) : summary && !selectedChapterId ? (
+            <ContentOutline
+              onSelectChapter={handleSelectChapter}
+              summary={summary}
+            />
+          ) : isLoadingChapter ? (
+            <ChapterLoadingView />
           ) : (
-            <EmptyContentView isRunning={Boolean(isRunning)} />
+            <EmptyContentView isRunning={isRunning} />
           )}
         </div>
       </section>
@@ -529,6 +771,24 @@ function EmptyContentView({ isRunning }: { isRunning: boolean }) {
               <div className="h-5 w-3/4 rounded-full bg-muted" />
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChapterLoadingView() {
+  return (
+    <div className="min-h-[32rem] rounded-2xl border border-border bg-card px-6 py-8 shadow-panel sm:px-9 sm:py-10">
+      <div className="flex min-h-[26rem] items-center justify-center">
+        <div className="text-center">
+          <LoaderCircleIcon
+            aria-hidden="true"
+            className="mx-auto size-5 animate-spin text-primary"
+          />
+          <p className="mt-3 text-sm text-muted-foreground">
+            Chapter를 불러오고 있습니다
+          </p>
         </div>
       </div>
     </div>

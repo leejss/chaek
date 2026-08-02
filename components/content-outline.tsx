@@ -27,6 +27,7 @@ export type ProjectSummary = {
       chapters: Array<{
         contract: ChapterContract | null;
         editorialStatus: string;
+        hasContent?: boolean;
         id: string;
         position: number | null;
         title: string;
@@ -45,7 +46,13 @@ export type ProjectSummary = {
   };
 };
 
-export function ContentOutline({ summary }: { summary: ProjectSummary }) {
+export function ContentOutline({
+  onSelectChapter,
+  summary,
+}: {
+  onSelectChapter?: (chapterId: string) => void;
+  summary: ProjectSummary;
+}) {
   const brief = summary.project.briefJson;
 
   return (
@@ -107,7 +114,24 @@ export function ContentOutline({ summary }: { summary: ProjectSummary }) {
                     {partIndex + 1}.{chapterIndex + 1}
                   </span>
                   <div>
-                    <h4 className="text-base font-medium">{chapter.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-medium">
+                        {onSelectChapter ? (
+                          <button
+                            className="rounded-sm text-left outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/20"
+                            onClick={() => onSelectChapter(chapter.id)}
+                            type="button"
+                          >
+                            {chapter.title}
+                          </button>
+                        ) : (
+                          chapter.title
+                        )}
+                      </h4>
+                      {chapter.hasContent ? (
+                        <Badge variant="success">본문</Badge>
+                      ) : null}
+                    </div>
                     {chapter.contract?.purpose ? (
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         {chapter.contract.purpose}

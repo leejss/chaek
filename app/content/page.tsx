@@ -15,7 +15,11 @@ export const metadata: Metadata = {
 export default async function ContentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ buildId?: string; projectId?: string }>;
+  searchParams: Promise<{
+    buildId?: string;
+    nodeId?: string;
+    projectId?: string;
+  }>;
 }) {
   const [params, session] = await Promise.all([
     searchParams,
@@ -40,6 +44,7 @@ export default async function ContentPage({
 
         <ContentCompilerView
           initialBuildId={params.buildId ?? null}
+          initialNodeId={params.nodeId ?? null}
           initialProjectId={params.projectId ?? null}
           isAuthenticated={Boolean(session)}
         />
