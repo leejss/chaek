@@ -4,6 +4,8 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import {
   briefGenerationJobInputSchema,
+  chapterContentResultSchema,
+  chapterDraftingJobInputSchema,
   contentBriefResultSchema,
   type GraphPlanResult,
   graphPlanningJobInputSchema,
@@ -526,6 +528,199 @@ async function applyGraphResult(
   return {};
 }
 
+async function markChapterConflict(jobId: string, usage?: AiJobUsage) {
+  const now = new Date();
+
+  await getDb().transaction(async (tx) => {
+    const [claimed] = await tx
+      .update(aiJobs)
+      .set({
+        status: "completed",
+        usageJson: usage,
+        resultDisposition: "conflicted",
+        errorStage: "internal",
+        errorCode: "graph_version_conflict",
+        errorMessage:
+          "The project graph changed before the Chapter result was applied.",
+        finishedAt: now,
+        updatedAt: now,
+      })
+      .where(and(eq(aiJobs.id, jobId), isNull(aiJobs.resultDisposition)))
+      .returning({ buildId: aiJobs.contentBuildId });
+
+    if (!claimed?.buildId) {
+      return;
+    }
+
+    await tx
+      .update(contentBuilds)
+      .set({
+        status: "failed",
+        errorCode: "graph_version_conflict",
+        errorMessage:
+          "The project graph changed before the Chapter result was applied.",
+        finishedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(contentBuilds.id, claimed.buildId));
+  });
+}
+
+async function applyChapterResult(
+  jobId: string,
+  rawInput: unknown,
+  outputText: string,
+  usage: AiJobUsage | undefined,
+): Promise<CompletedJobApplication> {
+  const input = chapterDraftingJobInputSchema.safeParse(rawInput);
+  const parsedJson = (() => {
+    try {
+      return JSON.parse(outputText) as unknown;
+    } catch {
+      return null;
+    }
+  })();
+  const result = chapterContentResultSchema.safeParse(parsedJson);
+
+  if (!input.success || !result.success) {
+    await rejectCompletedJob(
+      jobId,
+      "invalid_structured_output",
+      "The Chapter result did not match contract version 1.",
+      parsedJson && typeof parsedJson === "object"
+        ? (parsedJson as AiJobResult)
+        : undefined,
+    );
+    return {};
+  }
+
+  const [job] = await getDb()
+    .select()
+    .from(aiJobs)
+    .where(eq(aiJobs.id, jobId))
+    .limit(1);
+
+  if (
+    !job?.contentProjectId ||
+    !job.contentBuildId ||
+    !job.targetNodeId ||
+    job.targetNodeId !== input.data.chapter.id
+  ) {
+    await rejectCompletedJob(
+      jobId,
+      "missing_content_context",
+      "The Chapter job is not connected to its target node and build.",
+    );
+    return {};
+  }
+
+  const [project] = await getDb()
+    .select({ graphVersion: contentProjects.graphVersion })
+    .from(contentProjects)
+    .where(eq(contentProjects.id, job.contentProjectId))
+    .limit(1);
+
+  if (!project || project.graphVersion !== input.data.baseGraphVersion) {
+    await markChapterConflict(jobId, usage);
+    return {};
+  }
+
+  const now = new Date();
+  let chapterApplied = false;
+  let graphConflicted = false;
+  let targetMissing = false;
+
+  await getDb().transaction(async (tx) => {
+    const [currentProject] = await tx
+      .select({ graphVersion: contentProjects.graphVersion })
+      .from(contentProjects)
+      .where(eq(contentProjects.id, job.contentProjectId as string))
+      .limit(1);
+
+    if (currentProject?.graphVersion !== input.data.baseGraphVersion) {
+      graphConflicted = true;
+      return;
+    }
+
+    const [target] = await tx
+      .select({ id: contentNodes.id })
+      .from(contentNodes)
+      .where(
+        and(
+          eq(contentNodes.id, job.targetNodeId as string),
+          eq(contentNodes.projectId, job.contentProjectId as string),
+          eq(contentNodes.kind, "chapter"),
+        ),
+      )
+      .limit(1);
+
+    if (!target) {
+      targetMissing = true;
+      return;
+    }
+
+    const [claimed] = await tx
+      .update(aiJobs)
+      .set({
+        status: "completed",
+        resultJson: result.data as unknown as AiJobResult,
+        usageJson: usage,
+        resultDisposition: "applied",
+        appliedAt: now,
+        finishedAt: now,
+        updatedAt: now,
+        errorStage: null,
+        errorCode: null,
+        errorMessage: null,
+      })
+      .where(and(eq(aiJobs.id, jobId), isNull(aiJobs.resultDisposition)))
+      .returning({ id: aiJobs.id });
+
+    if (!claimed) {
+      return;
+    }
+
+    await tx
+      .update(contentNodes)
+      .set({
+        contentJson: result.data,
+        editorialStatus: "ready",
+        freshness: "fresh",
+        staleReasonJson: null,
+        updatedAt: now,
+      })
+      .where(eq(contentNodes.id, target.id));
+
+    await tx
+      .update(contentBuilds)
+      .set({
+        phase: "finalizing",
+        status: "completed",
+        resultGraphVersion: currentProject.graphVersion,
+        finishedAt: now,
+        updatedAt: now,
+        errorCode: null,
+        errorMessage: null,
+      })
+      .where(eq(contentBuilds.id, job.contentBuildId as string));
+
+    chapterApplied = true;
+  });
+
+  if (!chapterApplied && graphConflicted) {
+    await markChapterConflict(jobId, usage);
+  } else if (!chapterApplied && targetMissing) {
+    await rejectCompletedJob(
+      jobId,
+      "missing_content_context",
+      "The target Chapter no longer exists.",
+      result.data as unknown as AiJobResult,
+    );
+  }
+
+  return {};
+}
+
 export async function applyCompletedAiJob(
   jobId: string,
   outputText: string | undefined,
@@ -555,6 +750,8 @@ export async function applyCompletedAiJob(
       return applyBriefResult(jobId, job.inputJson, outputText, usage);
     case "graph_planning":
       return applyGraphResult(jobId, job.inputJson, outputText, usage);
+    case "node_drafting":
+      return applyChapterResult(jobId, job.inputJson, outputText, usage);
     default:
       await rejectCompletedJob(
         jobId,

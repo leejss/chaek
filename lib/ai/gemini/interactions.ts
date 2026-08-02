@@ -8,13 +8,17 @@ import {
 } from "@/lib/content/build/advance";
 import {
   briefGenerationJobInputSchema,
+  chapterContentJsonSchema,
+  chapterDraftingJobInputSchema,
   contentBriefJsonSchema,
   graphPlanJsonSchema,
   graphPlanningJobInputSchema,
 } from "@/lib/content/contracts";
 import {
   BRIEF_SYSTEM_INSTRUCTION,
+  CHAPTER_SYSTEM_INSTRUCTION,
   compileBriefInput,
+  compileChapterInput,
   compileGraphPlanInput,
   GRAPH_PLAN_SYSTEM_INSTRUCTION,
 } from "@/lib/content/prompts";
@@ -52,6 +56,16 @@ function compileInteraction(
       systemInstruction: GRAPH_PLAN_SYSTEM_INSTRUCTION,
       input: compileGraphPlanInput(input),
       responseJsonSchema: graphPlanJsonSchema,
+    };
+  }
+
+  if (taskType === "node_drafting") {
+    const input = chapterDraftingJobInputSchema.parse(rawInput);
+
+    return {
+      systemInstruction: CHAPTER_SYSTEM_INSTRUCTION,
+      input: compileChapterInput(input),
+      responseJsonSchema: chapterContentJsonSchema,
     };
   }
 

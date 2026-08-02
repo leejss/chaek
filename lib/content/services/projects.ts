@@ -116,6 +116,7 @@ export async function getContentProjectSummary(
           editorialStatus: chapter.editorialStatus,
           freshness: chapter.freshness,
           contract: chapter.contractJson,
+          hasContent: chapter.contentJson !== null,
         })),
     }));
 
@@ -167,6 +168,7 @@ export async function getContentBuildStatus(
         taskType: aiJobs.taskType,
         status: aiJobs.status,
         resultDisposition: aiJobs.resultDisposition,
+        targetNodeId: aiJobs.targetNodeId,
         attemptNumber: aiJobs.attemptNumber,
         errorCode: aiJobs.errorCode,
         createdAt: aiJobs.createdAt,
@@ -186,12 +188,14 @@ export async function getContentBuildStatus(
 
   const briefJob = jobs.find((job) => job.taskType === "brief_generation");
   const graphJob = jobs.find((job) => job.taskType === "graph_planning");
+  const chapterJob = jobs.find((job) => job.taskType === "node_drafting");
 
   return {
     id: build.id,
     projectId,
     projectStatus,
     phase: build.phase,
+    targetNodeId: build.scopeNodeId,
     status: build.status,
     errorCode: build.errorCode,
     createdAt: build.createdAt,
@@ -204,6 +208,9 @@ export async function getContentBuildStatus(
       graphCompleted:
         graphJob?.status === "completed" &&
         graphJob.resultDisposition === "applied",
+      chapterCompleted:
+        chapterJob?.status === "completed" &&
+        chapterJob.resultDisposition === "applied",
       planned: nodes.filter((node) => node.kind === "chapter").length,
       stale: nodes.filter((node) => node.freshness === "stale").length,
     },
