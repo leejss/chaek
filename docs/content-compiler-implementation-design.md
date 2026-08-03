@@ -9,7 +9,7 @@
 | 대상 프로젝트 | Chaek |
 | 대상 기능 | 사용자 입력을 장편 독립 콘텐츠로 완성하는 Content Compiler |
 | 구현 기준 | Next.js 16.2.11, TypeScript, Turso/libSQL, Drizzle ORM, `@google/genai` 2.13.0 |
-| 관련 문서 | [`database-schema.md`](./database-schema.md), [`design-system.md`](./design-system.md) |
+| 관련 문서 | [`database-schema.md`](./database-schema.md), [`design-system.md`](./design-system.md), [`content-workspace-api-handoff.md`](./content-workspace-api-handoff.md) |
 
 이 문서는 Chaek의 콘텐츠 생성 기능에 대한 구현 Source of Truth다. 여기서 말하는 구현은 사용자 입력을 해석해 콘텐츠 그래프를 만들고, Gemini를 이용해 각 그래프 노드를 리서치·작성·검수·수정하여 한 권의 장편 독립 콘텐츠로 완성하는 흐름을 뜻한다.
 
