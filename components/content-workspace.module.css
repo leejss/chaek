@@ -1,0 +1,55 @@
+.workspaceGrid {
+  min-height: calc(100svh - 3.5rem);
+}
+
+.structureRail {
+  height: 18rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.inspector {
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 48rem) {
+  .workspaceGrid {
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+
+  .structureRail {
+    position: sticky;
+    top: 3.5rem;
+    grid-row: span 2;
+    height: calc(100svh - 3.5rem);
+    align-self: start;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+  }
+}
+
+@media (min-width: 85rem) {
+  .workspaceGrid {
+    height: calc(100svh - 3.5rem);
+    min-height: 0;
+    grid-template-columns: 18rem minmax(0, 1fr) 18rem;
+    overflow: hidden;
+  }
+
+  .structureRail {
+    position: static;
+    grid-row: span 1;
+  }
+
+  .canvas {
+    overflow-y: auto;
+  }
+
+  .inspector {
+    grid-column-start: 3;
+    grid-row-start: 1;
+    overflow-y: auto;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
+}

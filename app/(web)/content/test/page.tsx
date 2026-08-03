@@ -202,7 +202,7 @@ const testSummary: ProjectSummary = {
 
 export default function ContentTestPage() {
   return (
-    <div className="py-12 sm:py-16">
+    <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
       <section
         aria-labelledby="content-test-title"
         className="grid gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-16"

@@ -22,6 +22,7 @@ export default async function WebLayout({
       <MobileNavigationProvider>
         <SiteHeader
           hasContentNavigation={Boolean(session)}
+          projects={projects}
           user={
             session
               ? {
@@ -37,9 +38,7 @@ export default async function WebLayout({
           </Suspense>
         ) : null}
       </MobileNavigationProvider>
-      <main className={cn("px-5 sm:px-8", session && "lg:pl-72")}>
-        <div className="mx-auto w-full max-w-6xl">{children}</div>
-      </main>
+      <main className={cn(session && "lg:pl-60")}>{children}</main>
     </div>
   );
 }

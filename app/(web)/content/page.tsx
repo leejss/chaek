@@ -51,6 +51,7 @@ export default async function ContentPage({
       initialProjectId={session ? (params.projectId ?? null) : null}
       initialSeedInput={params.topic?.trim() || undefined}
       isAuthenticated={Boolean(session)}
+      key={`${params.projectId ?? "new"}:${params.buildId ?? "none"}`}
       signInReturnTo={signInReturnTo}
     />
   );

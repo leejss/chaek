@@ -5,6 +5,8 @@ import Form from "next/form";
 import { Button } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/auth/session";
 
+import styles from "./page.module.css";
+
 export const metadata: Metadata = {
   title: "콘텐츠 만들기 | Chaek",
   description: "한 줄의 주제로 읽히는 콘텐츠 구조를 만듭니다.",
@@ -17,7 +19,7 @@ export default async function Home() {
   return (
     <section
       aria-labelledby="home-title"
-      className="flex min-h-[calc(100svh-3.5rem)] items-center justify-center py-12 sm:py-16"
+      className={`${styles.hero} flex items-center justify-center px-5 py-12 sm:px-8 sm:py-16`}
     >
       <div className="w-full max-w-2xl">
         <h1

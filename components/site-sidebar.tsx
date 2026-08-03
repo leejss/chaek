@@ -135,7 +135,7 @@ function SidebarContent({
   }));
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-5 py-6">
+    <div className="flex min-h-0 flex-1 flex-col px-4 py-5">
       {isMobile ? (
         <div className="mb-4 flex items-center justify-between">
           <span className="text-sm font-semibold tracking-[-0.02em]">
@@ -222,7 +222,7 @@ export function SiteSidebar({
     <>
       <aside
         aria-label="내 콘텐츠"
-        className="fixed top-14 bottom-0 left-0 z-50 hidden w-72 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex"
+        className="fixed top-14 bottom-0 left-0 z-50 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex"
       >
         <SidebarContent
           idPrefix="desktop-content"
@@ -257,7 +257,7 @@ export function SiteSidebarFallback() {
   return (
     <aside
       aria-hidden="true"
-      className="fixed top-14 bottom-0 left-0 z-50 hidden w-72 border-r border-sidebar-border bg-sidebar lg:block"
+      className="fixed top-14 bottom-0 left-0 z-50 hidden w-60 border-r border-sidebar-border bg-sidebar lg:block"
     />
   );
 }
