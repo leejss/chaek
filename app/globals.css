@@ -42,10 +42,11 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --font-sans:
-    var(--font-geist), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    var(--font-suit), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-serif:
-    var(--font-geist), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --font-mono: var(--font-geist-mono);
+    var(--font-suit), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-mono:
+    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --container-page: 80rem;
   --shadow-control: var(--control-shadow);
   --shadow-panel: var(--panel-shadow);
