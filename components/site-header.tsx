@@ -16,14 +16,7 @@ export function SiteHeader({
   return (
     <header className="sticky top-0 z-50 w-full">
       <div className="mx-auto flex w-full max-w-page items-center p-4">
-        <div
-          className={cn(
-            "flex h-full items-center gap-2",
-            user
-              ? "lg:w-60 lg:shrink-0 lg:border-r lg:border-border"
-              : "flex-1",
-          )}
-        >
+        <div className={cn("flex h-full items-center gap-2", "flex-1")}>
           <Link
             className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/20"
             href="/"
@@ -33,7 +26,7 @@ export function SiteHeader({
           </Link>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center justify-between gap-4">
           {user ? (
             <AccountMenu user={user} />
           ) : (
