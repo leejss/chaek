@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   return (
-    <div className="px-4 pb-4 flex flex-col flex-1">
+    <div className="flex flex-col flex-1 max-w-page mx-auto w-full pb-4">
       <section
         aria-labelledby="home-title"
-        className="relative flex flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/10"
+        className="relative flex flex-1 items-center justify-center overflow-hidden rounded-2xl"
       >
         <Image
           alt=""
@@ -37,10 +37,7 @@ export default async function Home() {
             설계합니다.
           </p>
           <div className="mt-8 flex justify-center">
-            <Link
-              className={buttonVariants({ size: "lg" })}
-              href="/content"
-            >
+            <Link className={buttonVariants({ size: "lg" })} href="/content">
               생성하기
             </Link>
           </div>

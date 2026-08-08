@@ -46,6 +46,7 @@
   --font-serif:
     var(--font-geist), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-mono: var(--font-geist-mono);
+  --container-page: 80rem;
   --shadow-control: var(--control-shadow);
   --shadow-panel: var(--panel-shadow);
   --shadow-popover: var(--popover-shadow);
@@ -161,9 +162,34 @@
 
   body {
     @apply bg-background font-sans text-foreground;
+    background-image:
+      radial-gradient(
+        ellipse 90% 65% at 100% 0%,
+        oklch(0.82 0.035 220 / 0.36),
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 90% 70% at 0% 100%,
+        oklch(0.83 0.03 155 / 0.42),
+        transparent 74%
+      );
     isolation: isolate;
     position: relative;
     text-rendering: optimizeLegibility;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(
+        ellipse 110% 75% at 50% -10%,
+        oklch(0.18 0.05 245 / 0.44),
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 90% 70% at 100% 100%,
+        oklch(0.24 0.04 215 / 0.22),
+        transparent 74%
+      );
   }
 
   ::selection {

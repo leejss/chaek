@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Rules
 
 - Understand the product.
-- Use design system.
+- Use design system. check components.json
 - SoT is the conversation between You and I.
 - Do not use arbitrary values as you write tailwind class.
 
