@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
+import { createSignInPath } from "@/lib/auth/redirects";
+import { getCurrentSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "콘텐츠 만들기 | Chaek",
@@ -10,6 +12,11 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
+  const session = await getCurrentSession();
+  const createHref = session
+    ? "/content"
+    : createSignInPath({ returnTo: "/content" });
+
   return (
     <div className="flex flex-col flex-1 max-w-page mx-auto w-full pb-4">
       <section
@@ -37,7 +44,7 @@ export default async function Home() {
             설계합니다.
           </p>
           <div className="mt-8 flex justify-center">
-            <Link className={buttonVariants({ size: "lg" })} href="/content">
+            <Link className={buttonVariants({ size: "lg" })} href={createHref}>
               생성하기
             </Link>
           </div>
