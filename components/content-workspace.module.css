@@ -2,54 +2,159 @@
   min-height: calc(100svh - 3.5rem);
 }
 
+.canvas {
+  order: 1;
+}
+
+.canvasScroller {
+  min-width: 0;
+}
+
+.workspaceToolbar {
+  position: sticky;
+  top: 3.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
 .structureRail {
+  order: 2;
   height: 18rem;
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
 
 .inspector {
+  order: 3;
   border-top: 1px solid var(--border);
 }
 
 @media (min-width: 48rem) {
-  .workspaceGrid {
+  .workspaceGrid[data-workspace-active="true"] {
     display: grid;
+  }
+
+  .workspaceGrid[data-structure-open="true"] {
     grid-template-columns: 16rem minmax(0, 1fr);
+  }
+
+  .workspaceGrid[data-structure-open="false"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canvas,
+  .inspector,
+  .structureRail {
+    order: 0;
+  }
+
+  .workspaceGrid[data-structure-open="true"] .canvas,
+  .workspaceGrid[data-structure-open="true"] .inspector {
+    grid-column: 2;
+  }
+
+  .workspaceGrid[data-structure-open="false"] .canvas,
+  .workspaceGrid[data-structure-open="false"] .inspector {
+    grid-column: 1;
+  }
+
+  .canvas {
+    grid-row: 1;
+  }
+
+  .inspector {
+    grid-row: 2;
   }
 
   .structureRail {
     position: sticky;
     top: 3.5rem;
-    grid-row: span 2;
+    grid-column: 1;
+    grid-row: 1;
     height: calc(100svh - 3.5rem);
     align-self: start;
+    border-top: 0;
     border-right: 1px solid var(--border);
     border-bottom: 0;
+  }
+
+  .workspaceGrid[data-inspector-open="true"] .structureRail {
+    grid-row: 1 / span 2;
   }
 }
 
 @media (min-width: 85rem) {
-  .workspaceGrid {
+  .workspaceGrid[data-workspace-active="true"] {
     height: calc(100svh - 3.5rem);
     min-height: 0;
-    grid-template-columns: 18rem minmax(0, 1fr) 18rem;
     overflow: hidden;
   }
 
+  .workspaceGrid[data-structure-open="true"][data-inspector-open="true"] {
+    grid-template-columns: 18rem minmax(0, 1fr) 18rem;
+  }
+
+  .workspaceGrid[data-structure-open="true"][data-inspector-open="false"] {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+
+  .workspaceGrid[data-structure-open="false"][data-inspector-open="true"] {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+
+  .workspaceGrid[data-structure-open="false"][data-inspector-open="false"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspaceGrid[data-inspector-open="true"] .structureRail,
   .structureRail {
     position: static;
-    grid-row: span 1;
+    grid-row: 1;
   }
 
   .canvas {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .canvasScroller {
+    min-height: 0;
+    flex: 1;
     overflow-y: auto;
   }
 
+  .workspaceToolbar {
+    position: static;
+    flex: none;
+  }
+
+  .workspaceGrid[data-structure-open="true"] .canvas {
+    grid-column: 2;
+  }
+
+  .workspaceGrid[data-structure-open="false"] .canvas {
+    grid-column: 1;
+  }
+
   .inspector {
-    grid-column-start: 3;
-    grid-row-start: 1;
+    grid-row: 1;
     overflow-y: auto;
     border-top: 0;
     border-left: 1px solid var(--border);
+  }
+
+  .workspaceGrid[data-structure-open="true"] .inspector {
+    grid-column: 3;
+  }
+
+  .workspaceGrid[data-structure-open="false"] .inspector {
+    grid-column: 2;
   }
 }

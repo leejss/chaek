@@ -24,12 +24,17 @@ import {
 } from "@/components/content-compiler/content-compiler-state";
 import { useBuildPolling } from "@/components/content-compiler/use-build-polling";
 import { useWorkspaceHydration } from "@/components/content-compiler/use-workspace-hydration";
-import { createWorkspacePath } from "@/components/content-compiler/workspace-navigation";
+import {
+  createWorkspacePath,
+  toggleWorkspacePanel,
+  type WorkspacePanelLayout,
+} from "@/components/content-compiler/workspace-navigation";
 import type { ActiveBuild } from "@/lib/content/contracts/workspace-api";
 
 type ContentCompilerControllerOptions = {
   initialBuildId: string | null;
   initialNodeId: string | null;
+  initialPanelLayout: WorkspacePanelLayout;
   initialProjectId: string | null;
   initialSeedInput: string;
   isAuthenticated: boolean;
@@ -38,6 +43,7 @@ type ContentCompilerControllerOptions = {
 export function useContentCompilerController({
   initialBuildId,
   initialNodeId,
+  initialPanelLayout,
   initialProjectId,
   initialSeedInput,
   isAuthenticated,
@@ -48,6 +54,7 @@ export function useContentCompilerController({
     createContentCompilerState({
       initialBuildId,
       initialNodeId,
+      initialPanelLayout,
       initialProjectId,
       initialSeedInput,
     }),
@@ -60,6 +67,7 @@ export function useContentCompilerController({
   const chapterGenerationRequestRef = useRef<AbortController | null>(null);
   const chapterRequestRef = useRef<AbortController | null>(null);
   const initialNodeIdRef = useRef(initialNodeId);
+  const panelLayoutRef = useRef(initialPanelLayout);
   const selectionEpochRef = useRef(0);
   const selectedChapterIdRef = useRef<string | null>(initialNodeId);
   const { buildStatus, clearPollingError, isPollingHalted, pollingError } =
@@ -164,6 +172,7 @@ export function useContentCompilerController({
     }
 
     dispatch({ type: "createStarted" });
+    panelLayoutRef.current = "both";
     clearHydrationError();
     clearPollingError();
     selectedChapterIdRef.current = null;
@@ -181,7 +190,13 @@ export function useContentCompilerController({
 
       dispatch({ type: "buildStarted", activeBuild });
       startTransition(() => {
-        router.replace(createWorkspacePath(activeBuild), { scroll: false });
+        router.replace(
+          createWorkspacePath({
+            ...activeBuild,
+            panels: panelLayoutRef.current,
+          }),
+          { scroll: false },
+        );
       });
     } catch (error) {
       if (error instanceof ApiResponseError && error.status === 401) {
@@ -210,6 +225,7 @@ export function useContentCompilerController({
     idempotencyKeyRef.current = null;
     chapterIdempotencyKeyRef.current = null;
     selectedChapterIdRef.current = null;
+    panelLayoutRef.current = "both";
     selectionEpochRef.current += 1;
     clearHydrationError();
     clearPollingError();
@@ -240,6 +256,7 @@ export function useContentCompilerController({
         createWorkspacePath({
           buildId,
           nodeId,
+          panels: panelLayoutRef.current,
           projectId,
         }),
         { scroll: false },
@@ -271,9 +288,14 @@ export function useContentCompilerController({
           nodeId,
         });
         startTransition(() => {
-          router.replace(createWorkspacePath({ buildId, projectId }), {
-            scroll: false,
-          });
+          router.replace(
+            createWorkspacePath({
+              buildId,
+              panels: panelLayoutRef.current,
+              projectId,
+            }),
+            { scroll: false },
+          );
         });
       }
     } finally {
@@ -298,6 +320,7 @@ export function useContentCompilerController({
         router.replace(
           createWorkspacePath({
             buildId: state.activeBuild?.buildId,
+            panels: panelLayoutRef.current,
             projectId: state.summary?.project.id ?? "",
           }),
           { scroll: false },
@@ -358,6 +381,7 @@ export function useContentCompilerController({
           createWorkspacePath({
             buildId: build.buildId,
             nodeId: build.nodeId,
+            panels: panelLayoutRef.current,
             projectId: build.projectId,
           }),
           { scroll: false },
@@ -389,6 +413,32 @@ export function useContentCompilerController({
     }
   };
 
+  const handleTogglePanel = (panel: "inspector" | "structure") => {
+    const panelLayout = toggleWorkspacePanel(panelLayoutRef.current, panel);
+    panelLayoutRef.current = panelLayout;
+    dispatch({ type: "panelLayoutChanged", panelLayout });
+
+    const projectId =
+      state.activeBuild?.projectId ??
+      state.summary?.project.id ??
+      initialProjectId;
+
+    if (!projectId) {
+      return;
+    }
+
+    window.history.replaceState(
+      null,
+      "",
+      createWorkspacePath({
+        buildId: state.activeBuild?.buildId,
+        nodeId: state.selectedChapterId,
+        panels: panelLayout,
+        projectId,
+      }),
+    );
+  };
+
   const isRunning = Boolean(
     state.activeBuild &&
       !isPollingHalted &&
@@ -409,6 +459,8 @@ export function useContentCompilerController({
     handleReset,
     handleSeedChange,
     handleSelectChapter,
+    handleToggleInspector: () => handleTogglePanel("inspector"),
+    handleToggleStructure: () => handleTogglePanel("structure"),
     isChapterBuild: Boolean(buildTargetNodeId),
     isRunning,
     isSelectedChapterGenerating: Boolean(

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-
+import { parseWorkspacePanelLayout } from "@/components/content-compiler/workspace-navigation";
 import { ContentCompilerView } from "@/components/content-compiler-view";
 import { getCurrentSession } from "@/lib/auth/session";
 
@@ -14,6 +14,7 @@ export default async function ContentPage({
   searchParams: Promise<{
     buildId?: string;
     nodeId?: string;
+    panels?: string;
     projectId?: string;
     topic?: string;
   }>;
@@ -32,6 +33,10 @@ export default async function ContentPage({
     contentSearchParams.set("nodeId", params.nodeId);
   }
 
+  if (params.panels) {
+    contentSearchParams.set("panels", params.panels);
+  }
+
   if (params.projectId) {
     contentSearchParams.set("projectId", params.projectId);
   }
@@ -48,6 +53,7 @@ export default async function ContentPage({
     <ContentCompilerView
       initialBuildId={session ? (params.buildId ?? null) : null}
       initialNodeId={session ? (params.nodeId ?? null) : null}
+      initialPanelLayout={parseWorkspacePanelLayout(params.panels)}
       initialProjectId={session ? (params.projectId ?? null) : null}
       initialSeedInput={params.topic?.trim() || undefined}
       isAuthenticated={Boolean(session)}

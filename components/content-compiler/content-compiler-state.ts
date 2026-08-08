@@ -1,4 +1,5 @@
 import type { ChapterDetail } from "@/components/chapter-reader";
+import type { WorkspacePanelLayout } from "@/components/content-compiler/workspace-navigation";
 import type { ProjectSummary } from "@/components/content-outline";
 import type { ActiveBuild } from "@/lib/content/contracts/workspace-api";
 
@@ -10,6 +11,8 @@ export type ContentCompilerState = {
   isLoadingChapter: boolean;
   isLoadingProject: boolean;
   isStartingChapter: boolean;
+  isWorkspaceActive: boolean;
+  panelLayout: WorkspacePanelLayout;
   seedInput: string;
   selectedChapterId: string | null;
   summary: ProjectSummary | null;
@@ -27,6 +30,7 @@ export type ContentCompilerAction =
   | { type: "createFinished" }
   | { type: "createStarted" }
   | { type: "errorChanged"; message: string | null }
+  | { type: "panelLayoutChanged"; panelLayout: WorkspacePanelLayout }
   | {
       type: "projectLoadFailed";
       message: string;
@@ -44,11 +48,13 @@ export type ContentCompilerAction =
 export function createContentCompilerState({
   initialBuildId,
   initialNodeId,
+  initialPanelLayout,
   initialProjectId,
   initialSeedInput,
 }: {
   initialBuildId: string | null;
   initialNodeId: string | null;
+  initialPanelLayout: WorkspacePanelLayout;
   initialProjectId: string | null;
   initialSeedInput: string;
 }): ContentCompilerState {
@@ -63,6 +69,8 @@ export function createContentCompilerState({
     isLoadingChapter: Boolean(initialNodeId),
     isLoadingProject: Boolean(initialProjectId && !initialBuildId),
     isStartingChapter: false,
+    isWorkspaceActive: Boolean(initialProjectId || initialBuildId),
+    panelLayout: initialPanelLayout,
     seedInput: initialSeedInput,
     selectedChapterId: initialNodeId,
     summary: null,
@@ -87,6 +95,7 @@ export function contentCompilerReducer(
         ...state,
         activeBuild: action.activeBuild,
         errorMessage: null,
+        isWorkspaceActive: true,
       };
     case "chapterGenerationFinished":
       return { ...state, isStartingChapter: false };
@@ -130,7 +139,11 @@ export function contentCompilerReducer(
         selectedChapterId: action.nodeId,
       };
     case "createFinished":
-      return { ...state, isCreating: false };
+      return {
+        ...state,
+        isCreating: false,
+        isWorkspaceActive: Boolean(state.activeBuild || state.summary),
+      };
     case "createStarted":
       return {
         ...state,
@@ -140,11 +153,15 @@ export function contentCompilerReducer(
         isCreating: true,
         isLoadingChapter: false,
         isLoadingProject: false,
+        isWorkspaceActive: true,
+        panelLayout: "both",
         selectedChapterId: null,
         summary: null,
       };
     case "errorChanged":
       return { ...state, errorMessage: action.message };
+    case "panelLayoutChanged":
+      return { ...state, panelLayout: action.panelLayout };
     case "projectLoadFailed":
       return {
         ...state,
@@ -172,6 +189,8 @@ export function contentCompilerReducer(
         isLoadingChapter: false,
         isLoadingProject: false,
         isStartingChapter: false,
+        isWorkspaceActive: false,
+        panelLayout: "both",
         seedInput: "",
         selectedChapterId: null,
         summary: null,
