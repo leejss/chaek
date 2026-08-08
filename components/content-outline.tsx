@@ -119,7 +119,7 @@ export function ContentStructure({
 
   return (
     <nav aria-label="콘텐츠 구조" className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-border px-5 py-5">
+      <div className="px-5 py-5">
         <p className="text-sm font-semibold tracking-tight">콘텐츠 구조</p>
         <p className="mt-1 text-xs text-muted-foreground">
           {summary.outline.parts.length} Parts · {chapterCount} Chapters
@@ -200,7 +200,7 @@ export function ContentOutline({ summary }: { summary: ProjectSummary }) {
 
   return (
     <article className="mx-auto w-full max-w-3xl px-6 py-10 sm:px-10 sm:py-14">
-      <header className="border-b border-border pb-9">
+      <header className="pb-9">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="success">구조 완성</Badge>
           <span className="text-xs text-muted-foreground">
@@ -259,10 +259,7 @@ export function ContentOutline({ summary }: { summary: ProjectSummary }) {
             </h3>
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
               {brief.scope.map((item) => (
-                <li
-                  className="flex gap-2 border-t border-border py-3 text-sm leading-6"
-                  key={item}
-                >
+                <li className="flex gap-2 py-3 text-sm leading-6" key={item}>
                   <CheckCircle2Icon
                     aria-hidden="true"
                     className="mt-1 size-3.5 shrink-0 text-live"

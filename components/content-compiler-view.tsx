@@ -82,7 +82,10 @@ export function ContentCompilerView({
   const inspectorOpen = isInspectorPanelOpen(panelLayout);
 
   return (
-    <section aria-labelledby="content-title" className="bg-background">
+    <section
+      aria-labelledby="content-title"
+      className="max-w-page w-full mx-auto"
+    >
       <h1 className="sr-only" id="content-title">
         {summary?.project.title ?? "콘텐츠 만들기"}
       </h1>
@@ -95,10 +98,7 @@ export function ContentCompilerView({
       >
         {isWorkspaceActive && structureOpen ? (
           <aside
-            className={cn(
-              styles.structureRail,
-              "flex min-h-0 flex-col bg-muted/25",
-            )}
+            className={cn(styles.structureRail, "flex min-h-0 flex-col")}
             id="content-structure"
           >
             {outlineSummary ? (
@@ -117,7 +117,7 @@ export function ContentCompilerView({
           </aside>
         ) : null}
 
-        <main className={cn(styles.canvas, "min-w-0 bg-card/30")}>
+        <main className={cn(styles.canvas, "min-w-0")}>
           {isWorkspaceActive ? (
             <WorkspaceToolbar
               inspectorOpen={inspectorOpen}
@@ -163,7 +163,7 @@ export function ContentCompilerView({
 
         {isWorkspaceActive && inspectorOpen ? (
           <aside
-            className={cn(styles.inspector, "min-h-0 bg-muted/20")}
+            className={cn(styles.inspector, "min-h-0")}
             id="content-inspector"
           >
             {chapterDetail ? (

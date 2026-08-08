@@ -62,14 +62,9 @@ export function NewContentCanvas({
   return (
     <div className="flex min-h-128 items-center px-6 py-12 sm:px-10">
       <div className="mx-auto w-full max-w-2xl">
-        <Badge variant="outline">Content Compiler</Badge>
-        <h2 className="mt-5 text-4xl leading-tight font-medium tracking-tight text-balance sm:text-5xl">
-          한 줄에서 한 권의 구조까지
+        <h2 className="mt-5 text-3xl leading-tight font-medium tracking-tight sm:text-4xl">
+          주제와 독자, 원하는 결과를 알려주세요.
         </h2>
-        <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-          주제와 독자, 원하는 결과를 알려주세요. 먼저 Content Brief와 읽는
-          순서를 설계한 뒤 Chapter별로 본문을 완성합니다.
-        </p>
 
         <form className="mt-9" onSubmit={onSubmit}>
           <label className="text-sm font-medium" htmlFor="seed-input">
@@ -96,24 +91,12 @@ export function NewContentCanvas({
 
           {isAuthenticated ? (
             <Button
-              className="mt-5 w-full sm:w-auto"
+              className="mt-5 w-full"
               disabled={isCreating}
               size="lg"
               type="submit"
             >
-              {isCreating ? (
-                <LoaderCircleIcon
-                  aria-hidden="true"
-                  className="animate-spin"
-                  data-icon="inline-start"
-                />
-              ) : (
-                <BookOpenIcon aria-hidden="true" data-icon="inline-start" />
-              )}
               {isCreating ? "생성 시작 중" : "콘텐츠 구조 만들기"}
-              {!isCreating ? (
-                <ArrowRightIcon aria-hidden="true" data-icon="inline-end" />
-              ) : null}
             </Button>
           ) : (
             <a
@@ -124,7 +107,6 @@ export function NewContentCanvas({
               href={createSignInPath({ returnTo: signInReturnTo })}
             >
               Google로 로그인
-              <ArrowRightIcon aria-hidden="true" data-icon="inline-end" />
             </a>
           )}
         </form>
