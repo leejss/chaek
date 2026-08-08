@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 
 import { MobileNavigationProvider } from "@/components/mobile-navigation";
-import { SiteSidebar, SiteSidebarFallback } from "@/components/site-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { getContentProjectNavigation } from "@/lib/content/services/projects";
+import { SiteSidebar, SiteSidebarFallback } from "@/components/site-sidebar";
 import { getCurrentSession } from "@/lib/auth/session";
+import { getContentProjectNavigation } from "@/lib/content/services/projects";
 import { cn } from "@/lib/utils";
 
 export default async function WebLayout({
@@ -18,11 +18,9 @@ export default async function WebLayout({
     : [];
 
   return (
-    <div className="min-h-svh">
+    <div className="flex min-h-svh flex-col">
       <MobileNavigationProvider>
         <SiteHeader
-          hasContentNavigation={Boolean(session)}
-          projects={projects}
           user={
             session
               ? {
@@ -38,7 +36,14 @@ export default async function WebLayout({
           </Suspense>
         ) : null}
       </MobileNavigationProvider>
-      <main className={cn(session && "lg:pl-60")}>{children}</main>
+      <main
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          session && "lg:pl-60",
+        )}
+      >
+        {children}
+      </main>
     </div>
   );
 }

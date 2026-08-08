@@ -11,6 +11,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Understand the product.
 - Use design system.
 - SoT is the conversation between You and I.
+- Do not use arbitrary values as you write tailwind class.
 
 ## Current Stages
 
