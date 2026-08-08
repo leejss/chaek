@@ -17,7 +17,7 @@ export function SiteHeader({
     <header className="sticky top-0 z-50 flex w-full items-center p-4">
       <div
         className={cn(
-          "flex h-full items-center gap-2 px-5 sm:px-6",
+          "flex h-full items-center gap-2",
           user ? "lg:w-60 lg:shrink-0 lg:border-r lg:border-border" : "flex-1",
         )}
       >
@@ -30,7 +30,7 @@ export function SiteHeader({
         </Link>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-4">
         {user ? (
           <AccountMenu user={user} />
         ) : (
