@@ -108,7 +108,7 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.115 0.018 165);
+  --background: oklch(12.832% 0.02684 165.41);
   --foreground: oklch(0.93 0.008 96);
   --card: oklch(0.155 0.022 165);
   --card-foreground: oklch(0.93 0.008 96);
@@ -145,8 +145,7 @@
   --sidebar-border: oklch(0.285 0.028 165);
   --sidebar-ring: oklch(0.72 0.09 150);
   --control-shadow: 0 1px 2px oklch(0 0 0 / 0.35);
-  --panel-shadow:
-    0 1px 2px oklch(0 0 0 / 0.3), 0 20px 48px oklch(0 0 0 / 0.28);
+  --panel-shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 20px 48px oklch(0 0 0 / 0.28);
   --popover-shadow:
     0 6px 16px oklch(0 0 0 / 0.38), 0 24px 56px oklch(0 0 0 / 0.4);
 }
